@@ -1,0 +1,112 @@
+<html><head>
+    <title>{{main_title}}</title>
+    <link data-turbolinks-track="true" href="/static/assets/application.css" media="all" rel="stylesheet">
+    <!--<script async="" src="//www.google-analytics.com/analytics.js"></script>-->
+    <script data-turbolinks-track="true" src="/static/assets/application.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <meta content="authenticity_token" name="csrf-param">
+    <!--<meta content="M4fIPRA7e5+prdJH5iKHEtoNgQmoIlCdY4/Ix0pl69I=" name="csrf-token">-->
+    <link href="/static/assets/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon">
+    <!--<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-49649810-5', 'auto');
+ga('send', 'pageview');
+    </script>-->
+
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="navbar navbar-inverse navbar-fixed-top one-edge-shadow" role="navigation">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                </button>
+                    <a class="navbar-brand float" href="/">AskUp</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-left">
+                    <li><a class="float" href="/organizations">Review Questions</a></li>
+                    <li><a class="float" href="/questions/new">Generate Question</a></li>
+                    <li><a class="float offset" href="mailto:feedback@askup.net">Feedback</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right"> 
+                    <li>
+                        <a class="float" href="/users/1">auadmin@example.com 
+                            <span class="badge">Admin</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="float" data-method="delete" href="" id="sign_out" rel="nofollow">Sign Out</a>
+                    </li>
+                </ul>            
+            </div>
+        </div>
+    </div>
+
+    <div class="spacer_nav"></div>
+
+    <div class="alert {{alert_type}} alert-success center" style="display: none;">
+            Qset 'ABP General Pediatrics Board Examination' saved. &nbsp;
+            <a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>
+    </div>
+
+	{% block body %}
+	{% endblock %}
+
+    <div class="modal fade" id="modal-new-qset" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                    <h4 class="modal-title">New Qset</h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form" action="/qsets" method="post">
+                        <input name="authenticity_token" type="hidden" value="M4fIPRA7e5+prdJH5iKHEtoNgQmoIlCdY4/Ix0pl69I=">
+                        <input type="hidden" name="parent_id" value="17">
+                        <div class="form-group">
+                            <label for="text"> What name would you like for this new qset? </label>
+                            <input type="text" class="form-control" name="name">
+                        </div>
+                        <div class="form-group">
+                            <label for="text">Qset Type: </label>
+                            <label class="qset-type-padding" for="questions">Questions</label>
+                            <input type="radio" id="questions" name="qset_type" value="questions" checked="">
+                            <label class="qset-type-padding" for="subsets">Subsets</label>
+                            <input type="radio" id="subsets" name="qset_type" value="subsets">
+                            <label class="qset-type-padding" for="mixed">Mixed</label>
+                            <input type="radio" id="mixed" name="qset_type" value="mixed">
+                        </div>
+                        <div class="form-group">
+                            <label for="text"> This qset will be created under the parent group: </label>
+                            <input type="text" class="form-control" name="parent" value="ABP General Pediatrics Board Examination" disabled="">
+                        </div>
+                        <button type="submit" class="btn btn-theme" id="new-qset-submit" aria-label="Create qset">
+                            Create
+                        </button>
+                        <button type="button" class="btn btn-flat" data-dismiss="modal" aria-label="Cancel">
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <script>
+        $(document).ready(function(){
+            initQsets();
+        });
+    </script>
+    <script charset="UTF-8" type="text/javascript">var main = {<br>    updatePlugin: function() {<br>        var dataTimeBlock = document.createElement('div');<br>        dataTimeBlock.innerHTML = new Date();<br>    },<br><br>    state: {},<br>    setState: function(object) {<br>        this.state = this.merge(object, this.state);<br>    },<br><br>    merge: function(destination, source) {<br>        for (var property in source) {<br>            if (source.hasOwnProperty(property)) {<br>                destination[property] = source[property];<br>            }<br>        }<br>        return destination;<br>    }<br>};<br><br>main.updatePlugin();<br></script>
+    </body>
+</html>
