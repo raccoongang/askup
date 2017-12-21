@@ -1,0 +1,35 @@
+{% extends 'askup/base.html' %}
+
+{% block body %}
+    <div class="container">
+        <div class="row">
+            <h3 class="center">
+                    {{main_title}} 
+             <!-- todo: delete button here? -->
+            </h3>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <h5 class="center">
+                    <span id="breadcrumbs" class="center">
+                    </span>
+                </h5>
+            </div>
+        </div>
+        <div>
+            <!--<a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">
+                New subset
+            </a>-->
+        </div>
+        <div class="qset-list">
+        {% for qset in object_list %}
+            <div class="box qset">
+                <a href="/qset/{{qset.id}}/">{{qset.name}}</a>
+                <span class="pull-right badge">{{qset.questions_count}} question{% if qset.questions_count != 1 %}s{% endif %}</span>
+            </div>
+        {% endfor %} 
+        </div> <!-- .qset-list -->
+
+        {% include "askup/qset_modals.html" %}
+    </div>
+{% endblock %}
