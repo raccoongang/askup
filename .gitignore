@@ -99,3 +99,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Docker compose subdirs
+.dc-*
+
+# Vim swap files
+.*.sw*

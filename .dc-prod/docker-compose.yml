@@ -1,0 +1,23 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:10.1
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: askup
+  django:
+    build: 
+      context: ..
+      dockerfile: .dc-prod/django/Dockerfile
+    restart: always
+    environment:
+      PGPASSWORD: pass
+      MOCKUPDATA: $MOCKUPDATA # set to any non-empty string if the app should be filled with the mockup data
+    volumes:
+      - /opt/docker-volumes/askup/postgres/data:/var/lib/postgresql/data
+      - /opt/docker-volumes/askup/askup/log:/var/log
+    ports:
+      - 8001:8001
+    depends_on:
+      - postgres

@@ -1,0 +1,245 @@
+[
+    {
+        "model": "auth.user",
+        "pk": 2,
+        "fields": {
+            "password": "pbkdf2_sha256$36000$DdnLLPRd1HCl$aBwYZketYSeVa1LyiftAPbRbc64z9Xl712enxrXuaxs=",
+            "last_login": null,
+            "is_superuser": false,
+            "username": "teacher01",
+            "first_name": "Wise",
+            "last_name": "Teacher",
+            "email": "wise@teacher.org",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2017-12-22T09:21:07Z",
+            "groups": [
+                1
+            ],
+            "user_permissions": [
+                
+            ]
+        }
+    },
+    {
+        "model": "auth.user",
+        "pk": 3,
+        "fields": {
+            "password": "pbkdf2_sha256$36000$06sTKy2gAEVk$8oWPAivFs+88jaAIx/Gma0+mbolrW/GQsjuch1Atdgc=",
+            "last_login": null,
+            "is_superuser": false,
+            "username": "student01",
+            "first_name": "Curious",
+            "last_name": "Student",
+            "email": "curious@student.org",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2017-12-22T11:21:54Z",
+            "groups": [
+                2
+            ],
+            "user_permissions": [
+                
+            ]
+        }
+    },
+    {
+        "model": "askup.qset",
+        "pk": 1,
+        "fields": {
+            "name": "Organization 1",
+            "type": 1,
+            "parent_qset": null,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 3,
+            "users": [
+                2,
+                3
+            ]
+        }
+    },
+    {
+        "model": "askup.qset",
+        "pk": 2,
+        "fields": {
+            "name": "Organization 2",
+            "type": 1,
+            "parent_qset": null,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 1,
+            "users": [
+                2
+            ]
+        }
+    },
+    {
+        "model": "askup.qset",
+        "pk": 3,
+        "fields": {
+            "name": "Organization 3",
+            "type": 1,
+            "parent_qset": null,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 0,
+            "users": [
+                
+            ]
+        }
+    },
+    {
+        "model": "askup.qset",
+        "pk": 4,
+        "fields": {
+            "name": "Qset 1-1",
+            "type": 0,
+            "parent_qset": 1,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 2,
+            "users": [
+                
+            ]
+        }
+    },
+    {
+        "model": "askup.qset",
+        "pk": 5,
+        "fields": {
+            "name": "Qset 1-2",
+            "type": 0,
+            "parent_qset": 1,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 1,
+            "users": [
+                
+            ]
+        }
+    },
+    {
+        "model": "askup.qset",
+        "pk": 17,
+        "fields": {
+            "name": "Qset 2-1",
+            "type": 0,
+            "parent_qset": 2,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 1,
+            "users": [
+                
+            ]
+        }
+    },
+    {
+        "model": "askup.question",
+        "pk": 1,
+        "fields": {
+            "text": "Question 1-1-1",
+            "answer_text": "Answer 1-1-1",
+            "qset": 17,
+            "created_at": "2017-12-20T12:40:05.950Z",
+            "updated_at": "2017-12-22T12:37:25.448Z",
+            "user": 3,
+            "blooms_tag": 0
+        }
+    },
+    {
+        "model": "askup.question",
+        "pk": 2,
+        "fields": {
+            "text": "Question 1-1-2",
+            "answer_text": "Answer 1-1-2",
+            "qset": 4,
+            "created_at": "2017-12-20T12:40:17.130Z",
+            "updated_at": "2017-12-22T12:38:10.890Z",
+            "user": 2,
+            "blooms_tag": null
+        }
+    },
+    {
+        "model": "askup.question",
+        "pk": 3,
+        "fields": {
+            "text": "Question 1-2-1",
+            "answer_text": "Answer 1-2-1",
+            "qset": 5,
+            "created_at": "2017-12-20T12:48:54.975Z",
+            "updated_at": "2017-12-22T12:38:23.867Z",
+            "user": 2,
+            "blooms_tag": null
+        }
+    },
+    {
+        "model": "askup.question",
+        "pk": 4,
+        "fields": {
+            "text": "Question 1-1-3",
+            "answer_text": "Answer 1-1-3",
+            "qset": 4,
+            "created_at": "2017-12-20T12:49:52.814Z",
+            "updated_at": "2017-12-22T12:38:15.646Z",
+            "user": 3,
+            "blooms_tag": null
+        }
+    },
+    {
+        "model": "askup.emailpattern",
+        "pk": 1,
+        "fields": {
+            "organization": 1,
+            "text": "maildomain1.com"
+        }
+    },
+    {
+        "model": "askup.emailpattern",
+        "pk": 2,
+        "fields": {
+            "organization": 1,
+            "text": "maildomain11.com"
+        }
+    },
+    {
+        "model": "askup.organization",
+        "pk": 1,
+        "fields": {
+            "users": [
+                2,
+                3
+            ]
+        }
+    },
+    {
+        "model": "askup.organization",
+        "pk": 2,
+        "fields": {
+            "users": [
+                2
+            ]
+        }
+    },
+    {
+        "model": "askup.organization",
+        "pk": 3,
+        "fields": {
+            "users": [
+                
+            ]
+        }
+    }
+]
