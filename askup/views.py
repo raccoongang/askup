@@ -1,4 +1,4 @@
-""" Views of the Askup application """
+"""Views of the Askup application"""
 
 from django.views import generic
 
@@ -6,7 +6,7 @@ from .models import Qset, Question
 
 
 class OrganizationsView(generic.ListView):
-    """ Handle the User Organizations list view """
+    """Handle the User Organizations list view"""
     template_name = 'askup/organizations.html'
 
     def get_context_data(self, **kwargs):
@@ -19,7 +19,7 @@ class OrganizationsView(generic.ListView):
 
 
 class OrganizationView(generic.ListView):
-    """ Beholds the Organization's root qsets list view """
+    """Beholds the Organization's root qsets list view"""
     template_name = 'askup/organization.html'
 
     def get_context_data(self, **kwargs):
@@ -34,7 +34,7 @@ class OrganizationView(generic.ListView):
 
 
 class QsetView(generic.ListView):
-    """ Handles the Qset list view (subsets only/questions only/mixed) """
+    """Handles the Qset list view (subsets only/questions only/mixed)"""
     model = Qset
 
     def get_template_names(self):
@@ -62,6 +62,6 @@ class QsetView(generic.ListView):
 
 
 class QuestionView(generic.DetailView):
-    """ Handles the Question detailed view """
+    """Handles the Question detailed view"""
     model = Question
     template_name = 'askup/question.html'

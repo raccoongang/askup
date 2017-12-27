@@ -1,4 +1,4 @@
-""" Admin views """
+"""Admin views"""
 
 from django.contrib import admin
 
@@ -6,7 +6,7 @@ from .models import EmailPattern, Organization, Question, Qset
 
 
 class OrganizationAdmin(admin.ModelAdmin):
-    """ Admin view for the Organization model """
+    """Admin view for the Organization model"""
     list_display = ('name', 'email_patterns')
     fields = (
         'name',
@@ -19,7 +19,7 @@ class OrganizationAdmin(admin.ModelAdmin):
 
     @staticmethod
     def email_patterns(obj):
-        """ Return email-patters of the organization comma separated """
+        """Return email-patters of the organization comma separated"""
         return ", ".join(tuple(ep.text for ep in obj.emailpattern_set.all()))
 
     def get_queryset(self, request):
@@ -28,7 +28,7 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 
 class QsetAdmin(admin.ModelAdmin):
-    """ Admin list and detailed view for the Qset model """
+    """Admin list and detailed view for the Qset model"""
     fields = (
         'parent_qset',
         'name',
@@ -58,7 +58,7 @@ class QsetAdmin(admin.ModelAdmin):
 
 
 class QuestionAdmin(admin.ModelAdmin):
-    """ Admin list and detailed view for the Question model """
+    """Admin list and detailed view for the Question model"""
     list_display = ('text', 'qset')
 
     def get_form(self, request, obj=None, **kwargs):
@@ -74,7 +74,7 @@ class QuestionAdmin(admin.ModelAdmin):
 
 
 class EmailPatternAdmin(admin.ModelAdmin):
-    """ Admin list and detailed view for the EmailPattern model """
+    """Admin list and detailed view for the EmailPattern model"""
     list_display = ('text', 'organization')
 
 

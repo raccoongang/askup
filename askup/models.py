@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
-from django.utils import timezone
 
 
 class Qset(models.Model):
@@ -17,25 +16,29 @@ class Qset(models.Model):
         "self",
         on_delete=models.CASCADE,
         null=True,
-        blank=True,
-        db_index=True
+        blank=True
     )
     for_any_authenticated = models.BooleanField(default=False, db_index=True)
     for_unauthenticated = models.BooleanField(default=False, db_index=True)
     show_authors = models.BooleanField(default=True)
     own_questions_only = models.BooleanField(default=False)
-    users = models.ManyToManyField(User, blank=True, db_index=True)
+    users = models.ManyToManyField(User, blank=True)
     questions_count = models.PositiveIntegerField(default=0, db_index=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._previous_parent_qset_id = self.parent_qset_id
 
     @transaction.atomic
     def save(self, *args, **kwargs):
-        previous_parent_id = self.parent_qset_id
-        super().save(*args, **kwargs)
-
-        if (self.parent_qset_id != previous_parent_id
-                and self.parent_qset_id
-                and self.questions_count != 0):
-            previous_parent = Qset.objects.get(id=previous_parent_id)
+        """Overriding the Qset model save method"""
+        if self.parent_qset_id is None:
+            # If it's an Organization object
+            super().save(*args, **kwargs)
+            return
+    
+        if self.parent_qset_id != self.previous_parent_id and self.questions_count != 0:
+            previous_parent = Qset.objects.get(id=self.previous_parent_id)
             previous_parent.iterate_questions_count(-self.questions_count)
             previous_parent.save()
             self.parent_qset.iterate_questions_count(self.questions_count)
@@ -44,13 +47,22 @@ class Qset(models.Model):
 
     @transaction.atomic
     def delete(self, *args, **kwargs):
-        self.iterate_questions_count(-self.questions_count)
+        """Overriding the Qset model delete method"""
+        if self.parent_qset_id is None:
+            # If it's an Organization object
+            super().delete(*args, **kwargs)
+            return
+
+        self.parent_qset.iterate_questions_count(self.questions_count)
         super().delete(*args, **kwargs)
 
     def iterate_questions_count(self, amount):
         """
+        Iterate questions_count recursively.
+
         Iterate questions_count on a specific amount
-        recursively to the top parent (organization)
+        recursively from the self to the top parent
+        (organization).
         """
         self.questions_count += amount
 
@@ -86,8 +98,12 @@ class Organization(Qset):
 
 class EmailPattern(models.Model):
     """Contains all the email patterns of the organizations"""
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, db_index=True)
-    text = models.CharField(max_length=50, db_index=True)
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        null=True
+    )
+    text = models.CharField(max_length=50)
 
 
 class Question(models.Model):
@@ -102,10 +118,10 @@ class Question(models.Model):
     )
     text = models.TextField(db_index=True)
     answer_text = models.CharField(max_length=255)
-    qset = models.ForeignKey(Qset, on_delete=models.CASCADE, db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, db_index=True)
-    updated_at = models.DateTimeField(auto_now=True, db_index=True)
-    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE, db_index=True, default=0)
+    qset = models.ForeignKey(Qset, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE, default=0)
     blooms_tag = models.PositiveSmallIntegerField(
         choices=BLOOMS_TAGS,
         null=True,
@@ -148,10 +164,10 @@ class Answer(models.Model):
         (2, "correct"),
     )
     text = models.CharField(max_length=255)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, db_index=True)
-    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE, db_index=True)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE)
     self_evaluation = models.PositiveSmallIntegerField(choices=EVALUATIONS)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.text
@@ -163,10 +179,10 @@ class Vote(models.Model):
         (-1, 'vote down'),
         (1, 'vote up')
     )
-    value = models.SmallIntegerField(choices=VOTES, db_index=True)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, db_index=True)
-    voter = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, db_index=True)
+    value = models.SmallIntegerField(choices=VOTES)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    voter = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
         unique_together = ('question', 'voter')
