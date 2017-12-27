@@ -3,10 +3,6 @@ os:
 sudo: false
 language: python
 python:
-- "3.5"
+- "3.6"
 install: pip install tox-travis
 script: tox
-
-after_success:
-  - coveralls
-  - codecov
