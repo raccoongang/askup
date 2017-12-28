@@ -1,12 +1,13 @@
-"""Admin views"""
+"""Admin views."""
 
 from django.contrib import admin
 
-from .models import EmailPattern, Organization, Question, Qset
+from .models import EmailPattern, Organization, Qset, Question
 
 
 class OrganizationAdmin(admin.ModelAdmin):
-    """Admin view for the Organization model"""
+    """Admin view for the Organization model."""
+
     list_display = ('name', 'email_patterns')
     fields = (
         'name',
@@ -19,16 +20,22 @@ class OrganizationAdmin(admin.ModelAdmin):
 
     @staticmethod
     def email_patterns(obj):
-        """Return email-patters of the organization comma separated"""
+        """Return email-patters of the organization comma separated."""
         return ", ".join(tuple(ep.text for ep in obj.emailpattern_set.all()))
 
     def get_queryset(self, request):
+        """
+        Get queryset for the list view.
+
+        Overriding the queriset for the admin list view of the Organization
+        """
         queryset = super().get_queryset(request)
         return queryset.order_by('name')
 
 
 class QsetAdmin(admin.ModelAdmin):
-    """Admin list and detailed view for the Qset model"""
+    """Admin list and detailed view for the Qset model."""
+
     fields = (
         'parent_qset',
         'name',
@@ -41,10 +48,20 @@ class QsetAdmin(admin.ModelAdmin):
     list_display = ('name', 'parent_qset', 'type')
 
     def get_queryset(self, request):
+        """
+        Get queryset for the list view.
+
+        Override the queriset for the admin list view of the Qset.
+        """
         queryset = super().get_queryset(request)
         return queryset.filter(parent_qset_id__isnull=False).order_by('parent_qset_id', 'name')
 
     def get_form(self, request, obj=None, **kwargs):
+        """
+        Get queryset for the list view.
+
+        Overriding the form fields for the admin model form of the Qset.
+        """
         form = super().get_form(request, obj, **kwargs)
         form.base_fields['parent_qset'].required = True
         queryset = Qset.objects
@@ -58,10 +75,16 @@ class QsetAdmin(admin.ModelAdmin):
 
 
 class QuestionAdmin(admin.ModelAdmin):
-    """Admin list and detailed view for the Question model"""
+    """Admin list and detailed view for the Question model."""
+
     list_display = ('text', 'qset')
 
     def get_form(self, request, obj=None, **kwargs):
+        """
+        Get queryset for the list view.
+
+        Overriding the form fields for the admin model form of the Questions.
+        """
         form = super().get_form(request, obj, **kwargs)
         form.base_fields['qset'].queryset = Qset.objects.filter(
             parent_qset_id__isnull=False, type__in=(-1, 2)
@@ -69,12 +92,18 @@ class QuestionAdmin(admin.ModelAdmin):
         return form
 
     def get_queryset(self, request):
+        """
+        Get queryset for the list view.
+
+        Override the queriset for the admin list view of the Questions.
+        """
         queryset = super().get_queryset(request)
         return queryset.order_by('text', 'qset')
 
 
 class EmailPatternAdmin(admin.ModelAdmin):
-    """Admin list and detailed view for the EmailPattern model"""
+    """Admin list and detailed view for the EmailPattern model."""
+
     list_display = ('text', 'organization')
 
 

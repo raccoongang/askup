@@ -32,7 +32,9 @@
         <div class="qset-list">
         {% for qset in object_list %}
             <div class="box qset">
-                <a href="/qset/{{qset.id}}/" title="{{qset.name}}"><div class="box qset">{{qset.name}}</div></a>
+                <a href="{% url 'askup:qset' qset.id %}" title="{{qset.name}}">
+                    <div class="box qset">{{qset.name}}</div>
+                </a>
                 {% with questions_count=qset.questions_count %}
                 <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
                 {% endwith %}

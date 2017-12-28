@@ -24,7 +24,7 @@
         <div class="qset-list">
         {% for organization in object_list %}
             <div class="box qset">
-                <a href="/org/{{organization.id}}/">{{organization.name}}</a>
+                <a href="{% url 'askup:organization' organization.id %}">{{organization.name}}</a>
                 {% with questions_count=qset.questions_count %}
                 <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
                 {% endwith %}
