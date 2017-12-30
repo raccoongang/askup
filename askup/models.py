@@ -80,7 +80,10 @@ class Qset(models.Model):
         recursively from the self to the top parent
         (organization).
         """
-        self.questions_count += amount
+        if (self.questions_count + amount) < 0:
+            self.questions_count = amount
+        else:
+            self.questions_count += amount
 
         if self.parent_qset_id:
             self.parent_qset.iterate_questions_count(amount)
