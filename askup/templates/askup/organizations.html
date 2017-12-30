@@ -16,16 +16,11 @@
                 </h5>
             </div>
         </div>
-        <div>
-            <!--<a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">
-                New organization
-            </a>-->
-        </div>
         <div class="qset-list">
         {% for organization in object_list %}
             <div class="box qset">
-                <a href="{% url 'askup:organization' organization.id %}">{{organization.name}}</a>
-                {% with questions_count=qset.questions_count %}
+                {% with organization_name=organization.name questions_count=organization.questions_count %}
+                <a href="{% url 'askup:organization' organization.id %}" title="{{ organization_name }}">{{ organization_name }}</a>
                 <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
                 {% endwith %}
             </div>

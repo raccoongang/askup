@@ -58,7 +58,7 @@ class OrganizationView(generic.ListView):
 
         Overriding the get_queryset of generic.ListView
         """
-        return Qset.objects.filter(parent_qset_id=self.kwargs.get('pk'))
+        return Qset.objects.filter(parent_qset_id=self.kwargs.get('pk')).order_by('name')
 
 
 class QsetView(generic.ListView):
@@ -72,11 +72,9 @@ class QsetView(generic.ListView):
 
         Overriding the get_template_names of generic.ListView
         """
-        qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
-
-        if qset.type == 1:
+        if self._current_qset_type == 1:
             return ['askup/qset_subsets_only.html']
-        elif qset.type == 2:
+        elif self._current_qset_type == 2:
             return ['askup/qset_questions_only.html']
         else:
             return ['askup/qset_mixed.html']
@@ -87,9 +85,22 @@ class QsetView(generic.ListView):
 
         Overriding the get_context_data of generic.ListView
         """
+
+        current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+        self._current_qset_type = current_qset.type
         context = super().get_context_data(**kwargs)
-        context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
-        context['main_title'] = self._parent_qset.name
+
+        if self._current_qset_type == 2:
+            # Clear the qsets queryset if rendering the "questions only" Qset
+            context['object_list'] = []
+
+        if self._current_qset_type == 1:
+            # Clear the questions queryset if rendering the "qsets only" Qset
+            context['questions_list'] = []
+        else:
+            context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
+
+        context['main_title'] = current_qset.name
         context['is_qset_creator'] = self.request.user
         return context
 
