@@ -26,14 +26,22 @@
                     <li><a class="float offset" href="mailto:feedback@askup.net">Feedback</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right"> 
+                    {% if request.user.is_authenticated %}
                     <li>
-                        <a class="float" href="/users/1">auadmin@example.com 
-                            <span class="badge">Admin</span>
+                        {% with id=request.user.id username=request.user.username email=request.user.email name=request.user.name %}
+                        <a class="float" href="/users/{{ id }}">{{ email }}
+                            <span class="badge">{{ username }}</span>
                         </a>
+                        {% endwith %}
                     </li>
                     <li>
-                        <a class="float" data-method="delete" href="" id="sign_out" rel="nofollow">Sign Out</a>
+                        <a class="float" href="/askup/sign-out" id="sign_out" rel="nofollow">Sign Out</a>
                     </li>
+                    {% else %}
+                    <li>
+                        <a class="float" href="{% url 'askup:sign_in' %}" id="sign_in" rel="nofollow">Sign In</a>
+                    </li>
+                    {% endif %}
                 </ul>            
             </div>
         </div>

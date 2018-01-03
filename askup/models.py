@@ -14,6 +14,14 @@ class Qset(models.Model):
     )
     name = models.CharField(max_length=255, db_index=True)
     type = models.PositiveSmallIntegerField(choices=TYPES, default=1)
+    """top_qset (an organization) is a qset on the top of the tree"""
+    top_qset = models.ForeignKey(
+        "self",
+        related_name="organization_qsets",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=False
+    )
     parent_qset = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,
@@ -39,6 +47,9 @@ class Qset(models.Model):
 
         Overriding the models.Model save method.
         """
+        if self.id is None:
+            self.top_qset_id = self.id
+
         if self.parent_qset_id is None:
             # If it's an Organization object
             super().save(*args, **kwargs)
@@ -52,6 +63,7 @@ class Qset(models.Model):
             except models.Model.DoesNotExist:
                 pass
 
+            self.top_qset_id = self.get_parent_organization()
             self.parent_qset.iterate_questions_count(self.questions_count)
 
         self._previous_parent_qset_id = self.parent_qset_id
@@ -110,6 +122,18 @@ class Qset(models.Model):
     def __str__(self):
         """Return a string representation of a Qset object."""
         return self.name
+
+    def get_parent_organization(self):
+        """
+        Return an actual organization of this qset tree.
+
+        Returns an organization of the first parent qset.
+        If there's no parent qset then returns the id of itself.
+        """
+        if self.parent_qset is None:
+            return self.id
+        else:
+            return self.parent_qset.top_qset_id
 
     class Meta:
         unique_together = ('parent_qset', 'name')

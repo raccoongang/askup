@@ -1,7 +1,13 @@
 """Askup django views."""
-from django.shortcuts import get_object_or_404
+from django.contrib.auth import (
+    authenticate,
+    login,
+    logout
+)
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views import generic
 
+from .forms import UserLoginForm
 from .models import Qset, Question
 
 
@@ -26,7 +32,12 @@ class OrganizationsView(generic.ListView):
 
         Overriding the get_queryset of generic.ListView
         """
-        return Qset.objects.filter(parent_qset=None).order_by('name')
+        user = self.request.user
+
+        if user.is_authenticated():
+            return Qset.objects.filter(parent_qset=None, users__id=user.id).order_by('name')
+        else:
+            return []
 
 
 class OrganizationView(generic.ListView):
@@ -85,7 +96,6 @@ class QsetView(generic.ListView):
 
         Overriding the get_context_data of generic.ListView
         """
-
         current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
         self._current_qset_type = current_qset.type
         context = super().get_context_data(**kwargs)
@@ -124,3 +134,28 @@ class QuestionView(generic.DetailView):
 
     model = Question
     template_name = 'askup/question.html'
+
+
+def login_view(request):
+    """Provide the login view and functionality."""
+    if request.user.is_authenticated():
+        return redirect('/')
+
+    form = UserLoginForm(request.POST or None)
+
+    if form.is_valid():
+        username = form.cleaned_data.get('username')
+        password = form.cleaned_data.get('password')
+        user = authenticate(username=username, password=password)
+        login(request, user)
+
+        if request.user.is_authenticated():
+            return redirect('/')
+
+    return render(request, 'askup/login_form.html', {'form': form})
+
+
+def logout_view(request):
+    """Provide the logout view and functionality."""
+    logout(request)
+    return redirect('/')

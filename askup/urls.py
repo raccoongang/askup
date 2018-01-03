@@ -7,6 +7,8 @@ from . import views
 app_name = 'askup'
 
 urlpatterns = [
+    url(r'^sign-in$', views.login_view, name='sign_in'),
+    url(r'^sign-out$', views.logout_view, name='sign_out'),
     url(r'^org/(?P<pk>[0-9]+)/$', views.OrganizationView.as_view(), name='organization'),
     url(r'^organizations$', views.OrganizationsView.as_view(), name='organizations'),
     url(r'^qset/(?P<pk>[0-9]+)/$', views.QsetView.as_view(), name='qset'),
