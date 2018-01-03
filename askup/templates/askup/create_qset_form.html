@@ -1,0 +1,21 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<div class="prettyform">
+        <div class="box maxwidth-box">
+            <h2 class="fixed-title center">Create new Qset</h2>
+
+            <form accept-charset="UTF-8" action="" class="center" id="new_qset" method="post">
+                <div style="display:none">
+                {% csrf_token %}
+                </div>
+				{{ form|crispy }}
+                <div class="center">
+                    <input class="btn btn-theme" type="submit" value="Create">
+                    <a class="btn btn-theme" href="/">Cancel</a>
+                </div>
+            </form>
+        </div>
+</div>
+{% endblock %}

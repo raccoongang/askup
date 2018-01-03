@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import authenticate
 
+from .models import Qset
+
 
 class UserLoginForm(forms.Form):
     """Handles the user login form behaviour."""
@@ -28,3 +30,15 @@ class UserLoginForm(forms.Form):
             raise forms.ValidationError("This user is no longer active")
 
         return super().clean(*args, **kwargs)
+
+
+class QsetModelForm(forms.ModelForm):
+    """Create/update functionality for the Qset."""
+
+    class Meta:
+        model = Qset
+        fields = (
+            'name',
+            'parent_qset',
+            'type'
+        )

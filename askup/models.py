@@ -48,7 +48,7 @@ class Qset(models.Model):
         Overriding the models.Model save method.
         """
         if self.id is None:
-            self.top_qset_id = self.id
+            self.top_qset_id = self.top_qset_id if self.parent_qset_id is None else self.parent_qset.top_qset_id
 
         if self.parent_qset_id is None:
             # If it's an Organization object
@@ -134,6 +134,21 @@ class Qset(models.Model):
             return self.id
         else:
             return self.parent_qset.top_qset_id
+
+    def get_parents(self):
+        """Collect parents data for the breadcrumbs composing."""
+        parents = []
+        p = self.parent_qset
+
+        while p:
+            if p.parent_qset is None:
+                parents.append(('askup:organization', p.id, p.name))
+            else:
+                parents.append(('askup:qset', p.id, p.name))
+            p = p.parent_qset
+
+        parents.reverse()
+        return parents
 
     class Meta:
         unique_together = ('parent_qset', 'name')

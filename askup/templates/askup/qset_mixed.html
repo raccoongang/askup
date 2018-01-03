@@ -13,9 +13,11 @@
                 {% include "askup/qsets_list_qset_compressed.html" %}
                 <div class="button-actions">
                     <span>
+                        {% if is_qset_creator %}
                         <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">
                             New subset
                         </a>
+                        {% endif %}
                     </span>
                 </div>
             </div>

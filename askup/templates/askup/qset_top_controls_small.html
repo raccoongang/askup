@@ -23,7 +23,7 @@
     <div class="row center">
         <div class="col-xs-12">
             <span id="generate-question-group">
-                <a class="btn btn-primary" href="/questions/new?qset=91">Generate Question</a>
+                <a class="btn btn-primary" href="{% url 'askup:question_create' qset_id=current_qset_id %}">Generate Question</a>
             </span>
         </div>
     </div>

@@ -45,8 +45,8 @@
         </div>
         {% endwith %}
         {% empty %}
-        <div class="box valign no-questions hidden row">
-            <p></p>
+        <div class="box valign no-questions row">
+            <p>There are no questions here.{% if is_question_creator %} <a href="/question/new?qset={{ current_qset_id }}" title="Create new question">Create one now!</a>{% endif %}</p>
         </div>
         {% endfor %}
     </div>
