@@ -5,12 +5,11 @@
         <div class="row">
             <h3 class="center">
                 {{main_title}} 
-                {% if is_admin or is_teacher %}
+                {% if is_qset_creator %}
                 <a class="btn shortcut-button-link" id="edit-qset" data-toggle="modal" data-target="#modal-edit-qset">
                         <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
                 </a>
                 {% endif %}
-             <!-- todo: delete button here? -->
             </h3>
         </div>
         <div class="row">
@@ -22,8 +21,13 @@
             </div>
         </div>
         <div>
+            <h5>Subsets of {{main_title}}:</h5>
+        </div>
+        {% if is_qset_creator %}
+        <div>
             <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">New subset</a>
         </div>
+        {% endif %}
         <div class="qset-list">
         {% for qset in object_list %}
             <div class="box qset">
@@ -31,6 +35,10 @@
                 <a href="{% url 'askup:qset' qset.id %}" title="{{ qset_name }}">{{ qset_name }}</a>
                 <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
                 {% endwith %}
+            </div>
+        {% empty %}
+            <div class="box valign no-questions row">
+                <p>There are no subsets here.</p>
             </div>
         {% endfor %} 
         </div> <!-- .qset-list -->

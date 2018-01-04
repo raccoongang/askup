@@ -2,7 +2,7 @@
     <div class="row">
         <div id="generate-question-container" class="col-xs-4">
             <span id="generate-question-group">
-                <a class="btn btn-primary" href="/questions/new?qset={{ current_qset_id }}">Generate Question</a>
+                <a class="btn btn-primary" href="{% url 'askup:question_create' qset_id=current_qset_id %}">Generate Question</a>
             </span>
         </div>
         <div class="col-xs-4">
@@ -27,17 +27,7 @@
             </span>
         </div>
     </div>
-    <div class="row">
-        <div class="col-xs-12">
-            <h5 class="center">
-                <span id="breadcrumbs" class="center">
-                    <a class="btn-breadcrumb" href="/qsets/17">Lorem ipsum 1</a> &gt;
-                    <a class="btn-breadcrumb" href="/qsets/41">Loram ipsum 2</a> &gt;
-                    {{main_title}}
-                </span>
-            </h5>
-        </div>
-    </div>
+    {% include "askup/qset_breadcrumbs.html" %}
     <div class="row center">
         <div class="col-xs-12">
             <a data-toggle="modal" href="#" data-target="#question_display_Modal" class="btn btn-primary btn-large quiz-all">

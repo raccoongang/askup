@@ -1,13 +1,9 @@
 """Askup django views."""
-from django.contrib.auth import (
-    authenticate,
-    login,
-    logout
-)
+from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import generic
 
-from .forms import UserLoginForm
+from .forms import QsetModelForm, UserLoginForm
 from .models import Qset, Question
 
 
@@ -34,8 +30,10 @@ class OrganizationsView(generic.ListView):
         """
         user = self.request.user
 
+        if user.is_superuser:
+            return Qset.objects.filter(parent_qset=None).order_by('name')
         if user.is_authenticated():
-            return Qset.objects.filter(parent_qset=None, users__id=user.id).order_by('name')
+            return Qset.objects.filter(parent_qset=None, top_qset__users=user.id).order_by('name')
         else:
             return []
 
@@ -52,15 +50,15 @@ class OrganizationView(generic.ListView):
         Overriding the get_context_data of generic.ListView
         """
         context = super().get_context_data(**kwargs)
-
-        try:
-            main_title = Qset.objects.get(id=self.kwargs.get('pk')).name
-        except Exception:
-            main_title = 'N/A'
-
-        context['main_title'] = main_title
+        current_org = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+        context['main_title'] = current_org.name
+        context['current_qset_name'] = current_org.name
+        context['current_qset_id'] = current_org.id
         context['is_admin'] = self.request.user.is_superuser
-        context['is_teacher'] = self.request.user.is_superuser
+        context['is_teacher'] = 'Teachers' in self.request.user.groups.values_list('name', flat=True)
+        context['is_student'] = 'Students' in self.request.user.groups.values_list('name', flat=True)
+        context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
+        context['is_qset_allowed'] = True
         return context
 
     def get_queryset(self):
@@ -69,7 +67,15 @@ class OrganizationView(generic.ListView):
 
         Overriding the get_queryset of generic.ListView
         """
-        return Qset.objects.filter(parent_qset_id=self.kwargs.get('pk')).order_by('name')
+        pk = self.kwargs.get('pk')
+        user = self.request.user
+
+        if user.is_superuser:
+            return Qset.objects.filter(parent_qset_id=pk).order_by('name')
+        if user.is_authenticated():
+            return Qset.objects.filter(parent_qset=pk, top_qset__users=user.id).order_by('name')
+        else:
+            return []
 
 
 class QsetView(generic.ListView):
@@ -111,7 +117,15 @@ class QsetView(generic.ListView):
             context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
 
         context['main_title'] = current_qset.name
-        context['is_qset_creator'] = self.request.user
+        context['current_qset'] = current_qset
+        context['current_qset_name'] = current_qset.name
+        context['current_qset_id'] = current_qset.id
+        context['is_admin'] = self.request.user.is_superuser
+        context['is_teacher'] = 'Teachers' in self.request.user.groups.values_list('name', flat=True)
+        context['is_student'] = 'Students' in self.request.user.groups.values_list('name', flat=True)
+        context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
+        context['is_qset_allowed'] = current_qset.type in (0, 1)
+        context['is_question_creator'] = self.request.user.is_authenticated()
         return context
 
     def get_queryset(self):
@@ -159,3 +173,30 @@ def logout_view(request):
     """Provide the logout view and functionality."""
     logout(request)
     return redirect('/')
+
+
+def create_qset(request):
+    """Provide the create qset view for the student/teacher/admin."""
+    if request.method == 'GET':
+        form = QsetModelForm()
+    else:
+        form = QsetModelForm(request.POST or None)
+
+        if form.is_valid():
+            name = form.cleaned_data.get('name')
+            type = form.cleaned_data.get('type')
+            parent_qset = form.cleaned_data.get('parent_qset')
+            qset = Qset.objects.create(name=name, parent_qset_id=parent_qset.id, type=type)
+            return redirect('/askup/qset/{0}/'.format(qset.id))
+
+    return render(request, 'askup/create_qset_form.html', {'form': form})
+
+
+def create_question(request):
+    """Provide the create question view for the student/teacher/admin."""
+    pass
+
+
+def index_view(request):
+    """Provide the index view."""
+    return render(request, 'askup/index.html')

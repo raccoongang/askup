@@ -1,4 +1,4 @@
-<div class="modal fade" id="modal-edit-qset" role="dialog" aria-hidden="true">
+<div class="modal fade" tabindex="-1" id="modal-edit-qset" role="dialog" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -6,15 +6,14 @@
                 <h4 class="modal-title">Edit Qset</h4>
             </div>
             <div class="modal-body">
-                <form accept-charset="UTF-8" action="/qset/{{qset_id}}/" class="edit_qset" id="edit_qset_{{qset_id}}" method="post">
+                <form accept-charset="UTF-8" action="{% url 'askup:qset_create' %}" class="edit_qset" id="edit_qset_{{ current_qset_id }}" method="post">
                     <div style="display:none">
                         <input name="utf8" type="hidden" value="✓">
-                        <input name="_method" type="hidden" value="patch">
-                        <input name="authenticity_token" type="hidden" value="M4fIPRA7e5+prdJH5iKHEtoNgQmoIlCdY4/Ix0pl69I=">
+                        {% csrf_token %}
                     </div>
                     <div class="form-group">
                         <label for="qset_name">Change the name of this qset</label>
-                        <input id="qset_name" name="qset[name]" type="text" value="{{qset_name}}">
+                        <input id="qset_name" name="name" type="text" value="{{ current_qset_name }}">
                     </div>
                     <div class="form-group">
                         <strong>Qset permissions</strong>: note that these permissions apply only to non-admin users,
@@ -29,8 +28,8 @@
                     </div>
                     <div class="form-group">
                         <label for="qset_permissions_question_authors_visible">Questions authors are visible to all users</label>
-                        <input name="qset[permissions][question_authors_visible]" type="hidden" value="false">
-                        <input id="qset_permissions_question_authors_visible" name="qset[permissions][question_authors_visible]" type="checkbox" value="true">
+                        <input name="show_authors" type="hidden" value="false">
+                        <input id="qset_permissions_question_authors_visible" name="show_authors" type="checkbox" value="true">
                     </div>
                     <div class="form-group">
                         <label for="qset_permissions_questions_visible_to_unauth_user">Questions are visible to unauthenticated users</label>
@@ -40,22 +39,23 @@
                     <div class="form-group">
                         <label for="qset_permissions_qset_type">Qset type:</label>
                         <label class="qset-type-padding" for="qset_permissions_qset_type_questions">Questions</label>
-                        <input id="qset_permissions_qset_type_questions" name="qset[permissions][qset_type]" type="radio" value="questions">
+                        <input id="qset_permissions_qset_type_questions" name="type" type="radio" value="2">
                         <label class="qset-type-padding" for="qset_permissions_qset_type_subsets">Subsets</label>
-                        <input checked="checked" id="qset_permissions_qset_type_subsets" name="qset[permissions][qset_type]" type="radio" value="subsets">
+                        <input checked="checked" id="qset_permissions_qset_type_subsets" name="type" type="radio" value="1">
                         <label class="qset-type-padding" for="qset_permissions_qset_type_mixed">Mixed</label>
-                        <input id="qset_permissions_qset_type_mixed" name="qset[permissions][qset_type]" type="radio" value="mixed">
+                        <input id="qset_permissions_qset_type_mixed" name="type" type="radio" value="0">
                     </div>
                     <input class="btn btn-theme" data-disable-with="Saving..." id="edit-qset-save" name="commit" type="submit" value="Save">
                     <button class="btn btn-flat" id="edit-qset-delete" name="button" type="button">Delete</button>
                     <button class="btn btn-flat" data-dismiss="modal" id="edit-qset-delete" name="button" type="button">Cancel</button>
                 </form>
+
                 <div id="delete_confirmation_form_container" style="display:none;">
                     <form accept-charset="UTF-8" action="/qset/{{qset_id}}/" class="edit_qset" id="edit_qset_{{qset_id}}" method="post">
                         <div style="display:none">
                             <input name="utf8" type="hidden" value="✓">
                             <input name="_method" type="hidden" value="delete">
-                            <input name="authenticity_token" type="hidden" value="M4fIPRA7e5+prdJH5iKHEtoNgQmoIlCdY4/Ix0pl69I=">
+                            {% csrf_token %}
                         </div>
                         <p> Are you sure you want to delete this qset? </p>
                         <p><i> All questions in this group will be moved into the parent group. </i></p>
@@ -67,7 +67,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="modal-new-qset" role="dialog" aria-hidden="true">
+<div class="modal fade" tabindex="-1" id="modal-new-qset" role="dialog" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -75,25 +75,23 @@
                 <h4 class="modal-title">New Qset</h4>
             </div>
             <div class="modal-body">
-                <form role="form" action="/qsets" method="post">
-                    <input name="authenticity_token" type="hidden" value="M4fIPRA7e5+prdJH5iKHEtoNgQmoIlCdY4/Ix0pl69I=">
-                    <input type="hidden" name="parent_id" value="{{qset_id}}">
+                <form role="form" action="{% url 'askup:qset_create' %}" method="post">
+                    {% csrf_token %}
                     <div class="form-group">
                         <label for="text"> What name would you like for this new qset? </label>
                         <input type="text" class="form-control" name="name">
                     </div>
                     <div class="form-group">
-                        <label for="text">Qset Type: </label>
-                        <label class="qset-type-padding" for="questions">Questions</label>
-                        <input type="radio" id="questions" name="qset_type" value="questions" checked="">
-                        <label class="qset-type-padding" for="subsets">Subsets</label>
-                        <input type="radio" id="subsets" name="qset_type" value="subsets">
-                        <label class="qset-type-padding" for="mixed">Mixed</label>
-                        <input type="radio" id="mixed" name="qset_type" value="mixed">
+                        <label class="qset-type-padding" for="0">Mixed</label>
+                        <input type="radio" id="mixed" name="type" value="0">
+                        <label class="qset-type-padding" for="1">Subsets</label>
+                        <input type="radio" id="subsets" name="type" value="1">
+                        <label class="qset-type-padding" for="2">Questions</label>
+                        <input type="radio" id="questions" name="type" value="2" checked="">
                     </div>
                     <div class="form-group">
                         <label for="text"> This qset will be created under the parent group: </label>
-                        <input type="text" class="form-control" name="parent" value="{{qset_name}}" disabled="">
+                        <input type="hidden" class="form-control" name="parent_qset" value="{{ current_qset_id }}">
                     </div>
                     <button type="submit" class="btn btn-theme" id="new-qset-submit" aria-label="Create qset">
                         Create

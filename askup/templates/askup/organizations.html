@@ -23,6 +23,10 @@
                 <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
                 {% endwith %}
             </div>
+        {% empty %}
+            <div class="box valign no-questions row">
+                <p>There are no subsets here.</p>
+            </div>
         {% endfor %} 
         </div> <!-- .qset-list -->
 
