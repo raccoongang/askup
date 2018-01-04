@@ -4646,11 +4646,40 @@ function(t) {
         }, "slow"), !1
     })
 });
+
 var quizQuestions = [],
     quizAllIndex = 0;
+
 $(function() {
     $(".close-alert").click(function() {
         $(".alert").slideUp()
     })
 });
 (askup)
+
+var main = {
+    updatePlugin: function() {
+        var dataTimeBlock = document.createElement('div');
+        dataTimeBlock.innerHTML = new Date();
+    },
+
+    state: {},
+    setState: function(object) {
+        this.state = this.merge(object, this.state);
+    },
+
+    merge: function(destination, source) {
+        for (var property in source) {
+            if (source.hasOwnProperty(property)) {
+                destination[property] = source[property];
+            }
+        }
+        return destination;
+    }
+};
+
+main.updatePlugin();
+
+$(document).ready(function(){
+    initQsets();
+});

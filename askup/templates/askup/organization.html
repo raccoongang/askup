@@ -22,18 +22,15 @@
             </div>
         </div>
         <div>
-            <!--<a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">
-                New subset
-            </a>-->
-        </div>
-        <div>
             <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">New subset</a>
         </div>
         <div class="qset-list">
         {% for qset in object_list %}
             <div class="box qset">
-                <a href="/qset/{{qset.id}}/">{{qset.name}}</a>
-                <span class="pull-right badge">{{qset.questions_count}} question{% if qset.questions_count != 1 %}s{% endif %}</span>
+                {% with qset_name=qset.name questions_count=qset.questions_count %}
+                <a href="{% url 'askup:qset' qset.id %}" title="{{ qset_name }}">{{ qset_name }}</a>
+                <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
+                {% endwith %}
             </div>
         {% endfor %} 
         </div> <!-- .qset-list -->

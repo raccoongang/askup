@@ -1,45 +1,17 @@
 {% extends 'askup/base.html' %}
 
 {% block body %}
-    <div class="container">
-        <div class="row">
-            <h3 class="center">
-                    {{main_title}}
-                    <a class="btn shortcut-button-link" id="edit-qset" data-toggle="modal" data-target="#modal-edit-qset">
-                        <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
-                    </a>
-             <!-- todo: delete button here? -->
-            </h3>
+<div class="container-fluid" id="qset-show-container" data-qset-id="{{ current_qset_id }}">
+    {% include "askup/qset_top_controls_large.html" %}
+    {% include "askup/qset_top_controls_small.html" %}
+    <div class="row">
+        <div class="col-sm-12 show-large-question">
+            {% include "askup/qset_questions_list_question_large.html" %}
         </div>
-        <div class="row">
-            <div class="col-xs-12">
-                <h5 class="center">
-                    <span id="breadcrumbs" class="center">
-                    </span>
-                </h5>
-            </div>
+        <div class="col-sm-12 show-small-question">
+        {% include "askup/qset_questions_list_question_small.html" %}
         </div>
-        <div>
-            <h5>Qsets of {{main_title}}:</h5>
-        </div>
-        {% if is_creator %}
-        <div>
-            <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">
-                Add new Qset
-            </a>
-        </div>
-        {% endif %}
-        <div class="qset-list">
-        {% for qset in object_list %}
-            <div class="box qset">
-                <a href="/qset/{{qset.id}}/" title="{{qset.name}}"><div class="box qset">{{qset.name}}</div></a>
-                <span class="pull-right badge">{{qset.questions_count}} question{% if qset.questions_count != 1 %}s{% endif %}</span>
-            </div> <!-- .qset -->
-        {% endfor %} 
-        </div> <!-- .qset-list -->
-
-        {% include "askup/qset_modals.html" %}
     </div>
+    {% include "askup/qset_modals.html" %}
+</div>
 {% endblock %}
-
-

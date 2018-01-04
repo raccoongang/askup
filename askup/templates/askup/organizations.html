@@ -5,7 +5,6 @@
         <div class="row">
             <h3 class="center">
                     {{main_title}} 
-             <!-- todo: delete button here? -->
             </h3>
         </div>
         <div class="row">
@@ -16,16 +15,13 @@
                 </h5>
             </div>
         </div>
-        <div>
-            <!--<a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">
-                New organization
-            </a>-->
-        </div>
         <div class="qset-list">
         {% for organization in object_list %}
             <div class="box qset">
-                <a href="/org/{{organization.id}}/">{{organization.name}}</a>
-                <span class="pull-right badge">{{organization.questions_count}} question{% if organization.questions_count != 1 %}s{% endif %}</span>
+                {% with organization_name=organization.name questions_count=organization.questions_count %}
+                <a href="{% url 'askup:organization' organization.id %}" title="{{ organization_name }}">{{ organization_name }}</a>
+                <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
+                {% endwith %}
             </div>
         {% endfor %} 
         </div> <!-- .qset-list -->

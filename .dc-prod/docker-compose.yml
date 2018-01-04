@@ -1,23 +1,36 @@
-version: '3'
+version: '3.4'
 services:
   postgres:
     image: postgres:10.1
     restart: always
     environment:
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: askup
+      POSTGRES_PASSWORD: $PGPASSWORD
+      POSTGRES_DB: $PGDBNAME
+    volumes:
+      - /opt/docker-volumes/askup/postgres/data:/var/lib/postgresql/data
   django:
     build: 
       context: ..
       dockerfile: .dc-prod/django/Dockerfile
     restart: always
     environment:
-      PGPASSWORD: pass
+      PGPASSWORD: $PGPASSWORD
       MOCKUPDATA: $MOCKUPDATA # set to any non-empty string if the app should be filled with the mockup data
     volumes:
-      - /opt/docker-volumes/askup/postgres/data:/var/lib/postgresql/data
       - /opt/docker-volumes/askup/askup/log:/var/log
-    ports:
-      - 8001:8001
+      - django_static:/code/askup/static
     depends_on:
       - postgres
+  nginx:
+    image: nginx:1.9.12
+    depends_on:
+      - django
+    ports:
+      - 80:80
+    volumes:
+      - django_static:/var/www/sites/static:ro
+      - /opt/docker-volumes/askup/nginx/logs:/var/logs
+      - /opt/docker-volumes/askup/nginx/tmp:/tmp
+      - ./nginx/conf.d:/etc/nginx/conf.d
+volumes:
+  django_static:

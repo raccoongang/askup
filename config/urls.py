@@ -14,27 +14,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 
 """
-from django.conf.urls import url
-from django.conf.urls.static import static
+from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-
-from askup import views
-
-app_name = 'askup'
-
-STATIC_URL = '/assets/'
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
-    url(r'^$', views.OrganizationsView.as_view(), name='organizations'),
+    url(r'^$', RedirectView.as_view(url='askup/organizations', permanent=False), name='index'),
     url(r'^admin/', admin.site.urls),
     url(r'^login/$', auth_views.login, name='login'),
     url(r'^logout/$', auth_views.logout, name='logout'),
-    url(r'^org/(?P<pk>[0-9]+)/$', views.OrganizationView.as_view(), name='organization'),
-    url(r'^organizations$', views.OrganizationsView.as_view(), name='organizations'),
-    url(r'^qset/(?P<pk>[0-9]+)/$', views.QsetView.as_view(), name='qset'),
-    url(r'^question/(?P<pk>[0-9]+)/$', views.QuestionView.as_view(), name='question'),
-] + static(
-    '/assets/',
-    document_root='/home/khaimovmr/git/rg-askup-django/askup/assets/'
-)
+    url(r'^askup/', include('askup.urls')),
+]
