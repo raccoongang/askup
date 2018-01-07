@@ -1,7 +1,7 @@
 #!/bin/bash
 read -s -p "Please enter your PostgreSQL password: " PGPASSWORD
 export PGPASSWORD
-export DJANGO_SETTINGS_MODULE='config.settings'
+export DJANGO_SETTINGS_MODULE='config.settings.dev'
 [[ "$(which psql)" == "" ]] &&
 	echo "Inslatting postgresql-client... \n" &&
        	sudo apt-get install -y postgresql-client &&
