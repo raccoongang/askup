@@ -47,12 +47,20 @@ class Qset(models.Model):
 
         Overriding the models.Model save method.
         """
-        if self.id is None:
-            self.top_qset_id = self.top_qset_id if self.parent_qset_id is None else self.parent_qset.top_qset_id
+        is_new_object = self.id is None
 
         if self.parent_qset_id is None:
             # If it's an Organization object
             super().save(*args, **kwargs)
+
+            if is_new_object:
+                if self.parent_qset_id is None:
+                    self.top_qset_id = self.id
+                else:
+                    self.top_qset_id = self.parent_qset.top_qset_id
+
+                super().save(*args, **kwargs)
+
             return
 
         if self.parent_qset_id != self._previous_parent_qset_id and self.questions_count != 0:

@@ -1,4 +1,4 @@
-from .base import *
+from .base import * # noqa F403
 
 
 DEBUG = False
@@ -13,7 +13,7 @@ LOGGING = {
         'logfile': {
             'level': 'WARNING',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR + "/error.log",
+            'filename': BASE_DIR + "/../error.log", # noqa F405
         },
     },
     'root': {
