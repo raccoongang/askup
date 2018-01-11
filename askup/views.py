@@ -1,10 +1,15 @@
 """Askup django views."""
+import logging
+
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import generic
 
 from .forms import QsetModelForm, UserLoginForm
 from .models import Qset, Question
+
+
+log = logging.getLogger(__name__)
 
 
 class OrganizationsView(generic.ListView):
@@ -71,8 +76,10 @@ class OrganizationView(generic.ListView):
         user = self.request.user
 
         if user.is_superuser:
+            log.debug('Filtered qsets for the superuser by pk=%s', pk)
             return Qset.objects.filter(parent_qset_id=pk).order_by('name')
         if user.is_authenticated():
+            log.debug('Filtered qsets for the %s by pk=%s', user.username, pk)
             return Qset.objects.filter(parent_qset=pk, top_qset__users=user.id).order_by('name')
         else:
             return []

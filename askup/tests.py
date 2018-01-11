@@ -5,8 +5,9 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.http import HttpResponseRedirect
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 
-from .views import login_view
+from askup import views
 
 
 log = logging.getLogger(__name__)
@@ -27,41 +28,67 @@ class UserAuthenticationCase(TestCase):
             "username": "test_admin",
             "password": "test_admin",
         }
-        request = self.factory.post('/askup/sign-in', data=login_form_data)
+        request = self.factory.post(reverse('askup:sign_in'), data=login_form_data)
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
         request.user = AnonymousUser()
-        response = login_view(request)
+        response = views.login_view(request)
         self.assertIs(isinstance(response, HttpResponseRedirect), True)
 
 
 class OrganizationsListView(TestCase):
     """Tests the Organizations view."""
 
+    fixtures = ['groups', 'mockup_data']
+
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
+        self.factory = RequestFactory()
 
     def test_has_organizations(self):
         """Test an Organizations view with the organizations."""
-        pass
+        request = self.factory.get(reverse('askup:organizations'))
+        middleware = SessionMiddleware()
+        middleware.process_request(request)
+        request.session.save()
+        request.user = User.objects.get(id=2)  # teacher02 from the mockup_data
+        response = views.OrganizationsView.as_view()(request)
+        self.assertContains(response, 'Organization 1')
+        self.assertNotContains(response, 'You didn\'t apply to any organization')
 
     def test_has_no_organizations(self):
         """Test an Organizations view w/o the organizations."""
-        pass
+        request = self.factory.get(reverse('askup:organizations'))
+        middleware = SessionMiddleware()
+        middleware.process_request(request)
+        request.session.save()
+        request.user = User.objects.get(id=4)  # student02_no_orgs from the mockup_data
+        response = views.OrganizationsView.as_view()(request)
+        self.assertContains(response, 'You didn\'t apply to any organization')
 
 
 class OrganizationListView(TestCase):
     """Tests the Organization view."""
 
+    fixtures = ['groups', 'mockup_data']
+
     def setUp(self):
         """Set up the test assets."""
-        settings.DEBUG = False
+        settings.DEBUG = True
+        self.factory = RequestFactory()
 
     def test_has_subsets(self):
         """Test an Organization view with the subsets."""
-        pass
+        request = self.factory.get(reverse('askup:organization', args=(2,)))
+        middleware = SessionMiddleware()
+        middleware.process_request(request)
+        request.session.save()
+        request.user = User.objects.get(id=1)  # admin
+        response = views.OrganizationView.as_view()(request)
+        self.assertContains(response, 'Qset 1-1')
+        self.assertNotContains(response, 'There are no subsets here.')
 
     def test_has_no_subsets(self):
         """Test an Organization view w/o the subsets."""
@@ -82,6 +109,7 @@ class QsetListView(TestCase):
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
+        self.factory = RequestFactory()
 
     def test_has_subsets(self):
         """Test Qset list view with the subsets."""
@@ -111,45 +139,6 @@ class QsetListView(TestCase):
         """Test for an admin features presence."""
         pass
 
-
-class AdminQsetCreationView(TestCase):
-    """Tests the admin panel Qsets list view."""
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-
-    def test_create_qset(self):
-        """Test the create functionality."""
-        pass
-
-    def test_update_qset(self):
-        """Test the update functionality."""
-        pass
-
-    def test_delete_qset(self):
-        """Test the delete functionality."""
-        pass
-
-
-class AdminQuestionCreationView(TestCase):
-    """Tests the admin panel Questions list view."""
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-
-    def test_create(self):
-        """Test the create functionality."""
-        pass
-
-    def test_update(self):
-        """Test the update functionality."""
-        pass
-
-    def test_delete(self):
-        """Test the delete functionality."""
-        pass
 
 # class CreateQset(TestCase):
 #    def setUp(self):
