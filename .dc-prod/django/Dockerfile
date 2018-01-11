@@ -9,6 +9,7 @@ WORKDIR /askup
 RUN pip install -r requirements.txt
 
 VOLUME /var/log
+VOLUME /askup/askup/static
 
 EXPOSE 8001
 

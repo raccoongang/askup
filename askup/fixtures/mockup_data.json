@@ -13,12 +13,8 @@
             "is_staff": true,
             "is_active": true,
             "date_joined": "2017-12-22T09:21:07Z",
-            "groups": [
-                1
-            ],
-            "user_permissions": [
-                
-            ]
+            "groups": [1],
+            "user_permissions": []
         }
     },
     {
@@ -35,12 +31,26 @@
             "is_staff": false,
             "is_active": true,
             "date_joined": "2017-12-22T11:21:54Z",
-            "groups": [
-                2
-            ],
-            "user_permissions": [
-                
-            ]
+            "groups": [2],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "auth.user",
+        "pk": 4,
+        "fields": {
+            "password": "pbkdf2_sha256$36000$XYGIw0w0IQ7n$PziNHQoUtVgzSEFznfFt873oj3uRcgVSeVrECVdQ+no=",
+            "last_login": null,
+            "is_superuser": false,
+            "username": "student02_no_orgs",
+            "first_name": "Uncurious",
+            "last_name": "Student",
+            "email": "student02_no_orgs@example.com",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2018-01-11T08:27:49.583Z",
+            "groups": [2],
+            "user_permissions": []
         }
     },
     {
