@@ -74,6 +74,7 @@ class OrganizationView(generic.ListView):
         """
         pk = self.kwargs.get('pk')
         user = self.request.user
+        log.debug("USER in view: %s", self.request)
 
         if user.is_superuser:
             log.debug('Filtered qsets for the superuser by pk=%s', pk)

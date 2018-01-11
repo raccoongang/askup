@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from askup import views
+from .views import login_view, OrganizationsView
 
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class UserAuthenticationCase(TestCase):
         middleware.process_request(request)
         request.session.save()
         request.user = AnonymousUser()
-        response = views.login_view(request)
+        response = login_view(request)
         self.assertIs(isinstance(response, HttpResponseRedirect), True)
 
 
@@ -54,7 +54,7 @@ class OrganizationsListView(TestCase):
         middleware.process_request(request)
         request.session.save()
         request.user = User.objects.get(id=2)  # teacher02 from the mockup_data
-        response = views.OrganizationsView.as_view()(request)
+        response = OrganizationsView.as_view()(request)
         self.assertContains(response, 'Organization 1')
         self.assertNotContains(response, 'You didn\'t apply to any organization')
 
@@ -65,7 +65,7 @@ class OrganizationsListView(TestCase):
         middleware.process_request(request)
         request.session.save()
         request.user = User.objects.get(id=4)  # student02_no_orgs from the mockup_data
-        response = views.OrganizationsView.as_view()(request)
+        response = OrganizationsView.as_view()(request)
         self.assertContains(response, 'You didn\'t apply to any organization')
 
 
@@ -76,23 +76,19 @@ class OrganizationListView(TestCase):
 
     def setUp(self):
         """Set up the test assets."""
-        settings.DEBUG = True
-        self.factory = RequestFactory()
+        settings.DEBUG = False
+        self.client.login(username='admin', password='admin')
 
     def test_has_subsets(self):
         """Test an Organization view with the subsets."""
-        request = self.factory.get(reverse('askup:organization', args=(2,)))
-        middleware = SessionMiddleware()
-        middleware.process_request(request)
-        request.session.save()
-        request.user = User.objects.get(id=1)  # admin
-        response = views.OrganizationView.as_view()(request)
+        response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
         self.assertContains(response, 'Qset 1-1')
         self.assertNotContains(response, 'There are no subsets here.')
 
     def test_has_no_subsets(self):
         """Test an Organization view w/o the subsets."""
-        pass
+        response = self.client.get(reverse('askup:organization', kwargs={'pk': 3}))
+        self.assertContains(response, 'There are no subsets here.')
 
     def test_teacher_features_presence(self):
         """Test for a teacher features presence."""
