@@ -13,6 +13,10 @@ urlpatterns = [
     url(r'^organizations$', views.OrganizationsView.as_view(), name='organizations'),
     url(r'^qset/(?P<pk>\d+)/$', views.QsetView.as_view(), name='qset'),
     url(r'^qset/new/$', views.create_qset, name='qset_create'),
+    url(r'^qset/update/$', views.create_qset, name='qset_update'),
     url(r'^question/(?P<pk>\d+)/$', views.QuestionView.as_view(), name='question'),
-    url(r'^question/new/(?P<qset_id>\d+)/$', views.create_question, name='question_create'),
+    url(r'^question/new/(?P<qset_id>\d+)/$', views.question_create, name='qset_question_create'),
+    url(r'^question/new/$', views.question_create, name='question_create'),
+    url(r'^question/edit/(?P<pk>\d+)/$', views.question_edit, name='question_edit'),
+    url(r'^question/delete/(?P<pk>\d+)/$', views.question_delete, name='question_delete'),
 ]

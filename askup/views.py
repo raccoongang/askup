@@ -3,10 +3,12 @@ import logging
 
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views import generic
 
 from .forms import QsetModelForm, UserLoginForm
 from .models import Qset, Question
+from .utils import redirect_unauthenticated
 
 
 log = logging.getLogger(__name__)
@@ -48,6 +50,25 @@ class OrganizationView(generic.ListView):
 
     template_name = 'askup/organization.html'
 
+    @redirect_unauthenticated
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Check presence of required credentials and parameters.
+
+        Overriding the dispatch method of generic.ListView
+        """
+        pk = self.kwargs.get('pk')
+
+        if not pk:
+            return redirect(reverse('askup:organizations'))
+
+        self._current_org = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+
+        if not self._current_org.top_qset.users.filter(id=request.user.id):
+            return redirect(reverse('askup:organizations'))
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         """
         Get context data for the list view.
@@ -79,9 +100,9 @@ class OrganizationView(generic.ListView):
         if user.is_superuser:
             log.debug('Filtered qsets for the superuser by pk=%s', pk)
             return Qset.objects.filter(parent_qset_id=pk).order_by('name')
-        if user.is_authenticated():
+        elif user.is_authenticated():
             log.debug('Filtered qsets for the %s by pk=%s', user.username, pk)
-            return Qset.objects.filter(parent_qset=pk, top_qset__users=user.id).order_by('name')
+            return Qset.objects.filter(parent_qset_id=pk, top_qset__users=user.id).order_by('name')
         else:
             return []
 
@@ -91,48 +112,65 @@ class QsetView(generic.ListView):
 
     model = Qset
 
+    @redirect_unauthenticated
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Check presence of required credentials and parameters.
+
+        Overriding the dispatch method of generic.ListView
+        """
+        pk = self.kwargs.get('pk')
+
+        if not pk:
+            return redirect(reverse('askup:organizations'))
+
+        self._current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+
+        if not self._current_qset.top_qset.users.filter(id=request.user.id):
+            return redirect(reverse('askup:organizations'))
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get_template_names(self):
         """
         Get template names to use in the view.
 
         Overriding the get_template_names of generic.ListView
         """
-        if self._current_qset_type == 1:
+        if self._current_qset.type == 1:
             return ['askup/qset_subsets_only.html']
-        elif self._current_qset_type == 2:
+        elif self._current_qset.type == 2:
             return ['askup/qset_questions_only.html']
         else:
             return ['askup/qset_mixed.html']
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, *args, **kwargs):
         """
         Get context data for the list view.
 
         Overriding the get_context_data of generic.ListView
         """
-        current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
-        self._current_qset_type = current_qset.type
-        context = super().get_context_data(**kwargs)
+        context = super().get_context_data(*args, **kwargs)
 
-        if self._current_qset_type == 2:
+        if self._current_qset.type == 2:
             # Clear the qsets queryset if rendering the "questions only" Qset
             context['object_list'] = []
 
-        if self._current_qset_type == 1:
+        if self._current_qset.type == 1:
             # Clear the questions queryset if rendering the "qsets only" Qset
             context['questions_list'] = []
         else:
             context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
 
-        context['main_title'] = current_qset.name
-        context['current_qset'] = current_qset
-        context['current_qset_name'] = current_qset.name
-        context['current_qset_id'] = current_qset.id
+        context['main_title'] = self._current_qset.name
+        context['current_qset'] = self._current_qset
+        context['current_qset_name'] = self._current_qset.name
+        context['current_qset_id'] = self._current_qset.id
         context['is_admin'] = self.request.user.is_superuser
         context['is_teacher'] = 'Teachers' in self.request.user.groups.values_list('name', flat=True)
         context['is_student'] = 'Students' in self.request.user.groups.values_list('name', flat=True)
         context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
-        context['is_qset_allowed'] = current_qset.type in (0, 1)
+        context['is_qset_allowed'] = self._current_qset.type in (0, 1)
         context['is_question_creator'] = self.request.user.is_authenticated()
         return context
 
@@ -156,6 +194,17 @@ class QuestionView(generic.DetailView):
 
     model = Question
     template_name = 'askup/question.html'
+
+    @redirect_unauthenticated
+    def dispatch(*args, **kwargs):
+        """
+        Check presence of required credentials and parameters.
+
+        Overriding the dispatch method of generic.ListView
+        """
+        # return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
+        # Stub
+        return redirect(reverse('askup:organizations'))
 
 
 def login_view(request):
@@ -183,6 +232,7 @@ def logout_view(request):
     return redirect('/')
 
 
+@redirect_unauthenticated
 def create_qset(request):
     """Provide the create qset view for the student/teacher/admin."""
     if request.method == 'GET':
@@ -194,15 +244,43 @@ def create_qset(request):
             name = form.cleaned_data.get('name')
             type = form.cleaned_data.get('type')
             parent_qset = form.cleaned_data.get('parent_qset')
-            qset = Qset.objects.create(name=name, parent_qset_id=parent_qset.id, type=type)
+            qset = Qset.objects.create(
+                name=name,
+                parent_qset_id=parent_qset.id,
+                top_qset_id=parent_qset.top_qset_id,
+                type=type
+            )
             return redirect('/askup/qset/{0}/'.format(qset.id))
 
     return render(request, 'askup/create_qset_form.html', {'form': form})
 
 
-def create_question(request):
-    """Provide the create question view for the student/teacher/admin."""
-    pass
+def question_create(request, qset_id=None):
+    """Provide a create question view for the student/teacher/admin."""
+    log.debug('Got the question creation request for the qset_id: %s', qset_id)
+    # Stub
+    return redirect(reverse('askup:organizations'))
+
+    if request.user.id is None:
+        return redirect(reverse('askup:sign_in'))
+
+
+def question_edit(request):
+    """Provide an edit question view for the student/teacher/admin."""
+    # Stub
+    return redirect(reverse('askup:organizations'))
+
+    if request.user.id is None:
+        return redirect(reverse('askup:sign_in'))
+
+
+def question_delete(request):
+    """Provide a delete question view for the student/teacher/admin."""
+    # Stub
+    return redirect(reverse('askup:organizations'))
+
+    if request.user.id is None:
+        return redirect(reverse('askup:sign_in'))
 
 
 def index_view(request):

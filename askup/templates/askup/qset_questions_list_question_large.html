@@ -14,7 +14,7 @@
                     </div>
                     <div class="col-xs-8">
                         <div class="question-content">
-                            <a href="/questions/{{ question_id }}">
+                            <a href="{% url 'askup:question' question_id %}">
                                 {{ question_text }}
                             </a>          
                         </div>
@@ -26,10 +26,10 @@
                     <div class="col-md-6">
                         <div class="question-actions">
                             <span class="actions center">
-                                <a class="btn shortcut-button-link" href="/questions/{{ question_id }}/edit">
+                                <a class="btn shortcut-button-link" href="{% url 'askup:question_edit' question_id %}">
                                     <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
                                 </a>
-                                <a class="btn shortcut-button-link" data-method="delete" href="/questions/{{ question_id }}" rel="nofollow">
+                                <a class="btn shortcut-button-link" data-method="delete" href="{% url 'askup:question_delete' question_id %}" rel="nofollow">
                                     <span class="glyphicon glyphicon-trash shortcut-button-glyphicon"></span>
                                 </a>
                             </span>
