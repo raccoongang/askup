@@ -3,9 +3,9 @@ FROM python:3.6
 MAINTAINER Michael Khaimov <khaimovmr@gmail.com>
 
 RUN apt-get update && apt-get install -y postgresql-client netcat
-RUN mkdir /askup
-COPY . /askup
+
 WORKDIR /askup
+COPY . /askup
 RUN pip install -r requirements.txt
 
 VOLUME /var/log

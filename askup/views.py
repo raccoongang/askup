@@ -2,6 +2,7 @@
 import logging
 
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import generic
@@ -63,8 +64,9 @@ class OrganizationView(generic.ListView):
             return redirect(reverse('askup:organizations'))
 
         self._current_org = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+        applied_to_organization = self._current_org.top_qset.users.filter(id=request.user.id)
 
-        if not self._current_org.top_qset.users.filter(id=request.user.id):
+        if not request.user.is_superuser and not applied_to_organization:
             return redirect(reverse('askup:organizations'))
 
         return super().dispatch(request, *args, **kwargs)
@@ -125,8 +127,9 @@ class QsetView(generic.ListView):
             return redirect(reverse('askup:organizations'))
 
         self._current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+        applied_to_organization = self._current_qset.top_qset.users.filter(id=request.user.id)
 
-        if not self._current_qset.top_qset.users.filter(id=request.user.id):
+        if not request.user.is_superuser and not applied_to_organization:
             return redirect(reverse('askup:organizations'))
 
         return super().dispatch(request, *args, **kwargs)
@@ -200,7 +203,25 @@ class QuestionView(generic.DetailView):
         """
         Check presence of required credentials and parameters.
 
-        Overriding the dispatch method of generic.ListView
+        Overriding the dispatch method of generic.DetailView
+        """
+        # return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
+        # Stub
+        return redirect(reverse('askup:organizations'))
+
+
+class UserProfileView(generic.DetailView):
+    """Handles the Question detailed view."""
+
+    model = User
+    template_name = 'askup/user_profile.html'
+
+    @redirect_unauthenticated
+    def dispatch(*args, **kwargs):
+        """
+        Check presence of required credentials and parameters.
+
+        Overriding the dispatch method of generic.DetailView
         """
         # return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
         # Stub

@@ -19,4 +19,5 @@ urlpatterns = [
     url(r'^question/new/$', views.question_create, name='question_create'),
     url(r'^question/edit/(?P<pk>\d+)/$', views.question_edit, name='question_edit'),
     url(r'^question/delete/(?P<pk>\d+)/$', views.question_delete, name='question_delete'),
+    url(r'^user_profile/$', views.UserProfileView.as_view(), name='user_profile'),
 ]
