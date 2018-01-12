@@ -9167,6 +9167,8 @@ ul.qset-list-compressed {
     cursor: default
 }
 
+#new_qset .form-group .controls select,
+#new_qset .form-group .controls input,
 #new_user .form-group .controls input {
     margin-left: auto;
     margin-right: auto;
