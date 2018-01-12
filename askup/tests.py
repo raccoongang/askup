@@ -90,13 +90,17 @@ class OrganizationListView(TestCase):
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 3}))
         self.assertContains(response, 'There are no subsets here.')
 
-    def test_teacher_features_presence(self):
-        """Test for a teacher features presence."""
-        pass
-
     def test_admin_features_presence(self):
         """Test for an admin features presence."""
-        pass
+        response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
+        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
+
+    def test_teacher_features_presence(self):
+        """Test for a teacher features presence."""
+        self.client.login(username='teacher01', password='teacher01')
+        response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
+        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
+        self.client.login(username='admin', password='admin')
 
 
 class QsetListView(TestCase):
