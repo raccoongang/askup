@@ -35,6 +35,11 @@ class UserLoginForm(forms.Form):
 class QsetModelForm(forms.ModelForm):
     """Create/update functionality for the Qset."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['parent_qset'].required = True
+
     class Meta:
         model = Qset
         fields = (
