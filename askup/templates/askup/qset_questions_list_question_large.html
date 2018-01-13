@@ -1,7 +1,10 @@
+<div>
+    <h5>Questions of {{ current_qset_name }}:</h5>
+</div>
 <span id="question_list">
     <div class="question_list">
         {% for question in questions_list %}
-        {% with question_id=question.id question_text=question.text %}
+        {% with question_id=question.id question_text=question.text author_id=question.user.id author_name=question.user.username user_id=user.id %}
         <div class="box valign my-question row">
             <div class="col-xs-9">
                 <div class="row">
@@ -24,21 +27,10 @@
             <div class="col-xs-3">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="question-actions">
-                            <span class="actions center">
-                                <a class="btn shortcut-button-link" href="{% url 'askup:question_edit' question_id %}">
-                                    <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
-                                </a>
-                                <a class="btn shortcut-button-link" data-method="delete" href="{% url 'askup:question_delete' question_id %}" rel="nofollow">
-                                    <span class="glyphicon glyphicon-trash shortcut-button-glyphicon"></span>
-                                </a>
-                            </span>
-                        </div>
+                        {% include 'askup/question_author_buttons.html' %}
                     </div>
                     <div class="col-md-6">
-                        <span class="actions center">
-                            <a href="/users/{{ author_id }}">Author name</a>
-                        </span>
+                        {% include 'askup/question_author_name.html' %}
                     </div>
                 </div>
             </div>
@@ -46,7 +38,7 @@
         {% endwith %}
         {% empty %}
         <div class="box valign no-questions row">
-            <p>There are no questions here.{% if is_question_creator %} <a href="/question/new?qset={{ current_qset_id }}" title="Create new question">Create one now!</a>{% endif %}</p>
+            <p>There are no questions here.{% if is_question_creator %} <a href="{% url 'askup:qset_question_create' current_qset_id %}" title="Create new question">Create one now!</a>{% endif %}</p>
         </div>
         {% endfor %}
     </div>

@@ -1,10 +1,16 @@
+    <div class="qset-list">
     {% for qset in object_list %}
-        <ul class="qset-list-compressed">
-            <li>
-            {% with qset_name=qset.name questions_count=qset.questions_count %}
-                <a href="{% url 'askup:qset' qset.id %}" title="{{qset_name}}">{{qset_name}}</a>
-                <span class="pull-right badge">{{ questions_count }}</span>
+        <div class="box qset">
+            <a href="{% url 'askup:qset' qset.id %}" title="{{qset.name}}">
+                {{qset.name}}
+            </a>
+            {% with questions_count=qset.questions_count %}
+            <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
             {% endwith %}
-            </li>
-        </ul>
+        </div> <!-- .qset -->
+    {% empty %}
+        <div class="box valign no-questions row">
+            <p>There are no subsets here.</p>
+        </div>
     {% endfor %} 
+    </div> <!-- .qset-list -->

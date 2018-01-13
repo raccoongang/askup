@@ -6,27 +6,21 @@
     {% include "askup/qset_top_controls_small.html" %}
     <div class="row">
         <div class="col-sm-3">
+            <div>
+                <h5>Subsets of {{ main_title }}:</h5>
+            </div>
+            <div class="button-actions">
+                {% include "askup/new_subset_button.html" %}
+            </div>
             <div class="box qset-list">
-                <h5 class="pull-left">Subsets of {{ main_title }}:</h5>
-                <br/>
-                <br/>
                 {% include "askup/qsets_list_qset_compressed.html" %}
-                <div class="button-actions">
-                    <span>
-                        {% if is_qset_creator %}
-                        <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">
-                            New subset
-                        </a>
-                        {% endif %}
-                    </span>
-                </div>
             </div>
         </div>
         <div class="col-sm-9 show-large-question">
             {% include "askup/qset_questions_list_question_large.html" %}
         </div>
         <div class="col-sm-9 show-small-question">
-        {% include "askup/qset_questions_list_question_small.html" %}
+            {% include "askup/qset_questions_list_question_small.html" %}
         </div>
     </div>
     {% include "askup/qset_modals.html" %}

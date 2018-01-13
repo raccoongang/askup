@@ -3,23 +3,13 @@
         <div class="col-xs-12">
             <h3 class="center">
                 {{ main_title }}
-                <a class="btn shortcut-button-link" id="edit-qset" data-toggle="modal" data-target="#modal-edit-qset">
-                    <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
-                </a>
+                {% if is_qset_creator %}
+                    {% include 'askup/edit_qset_button.html' %}
+                {% endif %}
             </h3>
         </div>
     </div>
-    <div class="row center">
-        <div class="col-xs-12">
-            <h5 class="center">
-                <span id="breadcrumbs" class="center">
-                    <a class="btn-breadcrumb" href="/qsets/17">Lorem ipsum 1</a> &gt;
-                    <a class="btn-breadcrumb" href="/qsets/41">Lorem ipsum 2</a> &gt;
-                    {{ main_title }}
-                </span>
-            </h5>
-        </div>
-    </div>
+    {% include "askup/qset_breadcrumbs.html" %}
     <div class="row center">
         <div class="col-xs-12">
             <span id="generate-question-group">
@@ -31,13 +21,13 @@
         <div class="col-xs-12">
             <span id="all-mine-other-group" class="btn-group all-mine-other-filter" data-toggle="buttons">
                 <label class="btn btn-primary filter-choice all-radioactive">
-                    <input type="radio" name="all" checked=""> All
+                    <input type="radio" name="all" checked="">All
                 </label>
                 <label class="btn btn-primary filter-choice ">
-                    <input type="radio" name="mine"> Mine
+                    <input type="radio" name="mine">Mine
                 </label>
                 <label class="btn btn-primary filter-choice ">
-                    <input type="radio" name="other"> Other
+                    <input type="radio" name="other">Other
                 </label>
             </span>
 

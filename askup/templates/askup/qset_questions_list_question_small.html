@@ -1,7 +1,10 @@
+<div>
+    <h5>Questions of {{ current_qset_name }}:</h5>
+</div>
 <span id="question_list">
     <div class="question_list">
         {% for question in questions_list %}
-        {% with question_id=question.id question_text=question.text author_id=question.user.id %}
+        {% with question_id=question.id question_text=question.text author_id=question.user.id author_name=question.user.name user_id=user.id %}
         <div class="box valign my-question row">
             <div class="col-xs-12">
                 <div class="row">
@@ -20,19 +23,10 @@
                         </div>
                     </div>
                     <div class="col-xs-2">
-                        <div class="question-actions">
-                            <span class="actions pull-right">
-                                <a class="btn shortcut-button-link" href="{% url 'askup:question_edit' question_id %}">
-                                    <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
-                                </a>
-                                <a class="btn shortcut-button-link" data-method="delete" href="{% url 'askup:question_delete' question_id %}" rel="nofollow">
-                                    <span class="glyphicon glyphicon-trash shortcut-button-glyphicon"></span>
-                                </a>
-                            </span>
-                        </div>
+                        {% include 'askup/question_author_buttons.html' %}
                     </div>
                     <div class="col-xs-4">
-                        <a href="/users/{{ author_id }}">Author name</a>
+                        {% include 'askup/question_author_name.html' %}
                     </div>
                 </div>
             </div>
@@ -40,7 +34,7 @@
         {% endwith %}
         {% empty %}
         <div class="box valign no-questions hidden row">
-            <p></p>
+            <p>There are no questions here. <a href="{%url 'askup:qset_question_create' current_qset_id %}" title="Create new question">Create one now!</a></p>
         </div>
         {% endfor %}
     </div>

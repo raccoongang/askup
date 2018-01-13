@@ -166,6 +166,38 @@
         }
     },
     {
+        "model": "askup.qset",
+        "pk": 8,
+        "fields": {
+            "name": "Qset 1-3",
+            "type": 1,
+            "top_qset": 1,
+            "parent_qset": 1,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 0,
+            "users": []
+        }
+    },
+    {
+        "model": "askup.qset",
+        "pk": 9,
+        "fields": {
+            "name": "Qset 1-4",
+            "type": 2,
+            "top_qset": 1,
+            "parent_qset": 1,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 0,
+            "users": []
+        }
+    },
+    {
         "model": "askup.question",
         "pk": 1,
         "fields": {

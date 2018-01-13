@@ -93,6 +93,7 @@ class OrganizationListView(TestCase):
     def test_admin_features_presence(self):
         """Test for an admin features presence."""
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
+        self.assertContains(response, 'data-target="#modal-edit-qset"')
         self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
 
     def test_teacher_features_presence(self):
@@ -100,44 +101,112 @@ class OrganizationListView(TestCase):
         self.client.login(username='teacher01', password='teacher01')
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
         self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
+        self.assertNotContains(response, 'data-target="#modal-edit-qset"')
         self.client.login(username='admin', password='admin')
 
 
 class QsetListView(TestCase):
     """Tests the Qset views (all three types subsets/questions/mixed)."""
 
+    fixtures = ['groups', 'mockup_data']
+
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
-        self.factory = RequestFactory()
+        self.client.login(username='admin', password='admin')
 
-    def test_has_subsets(self):
+    def test_type_2_has_subsets_and_questions(self):
         """Test Qset list view with the subsets."""
-        pass
+        response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
+        self.assertContains(response, 'Qset 1-1-1')
+        self.assertContains(response, 'Question 1-1-1')
+        self.assertNotContains(response, 'There are no subsets here.')
+        self.assertNotContains(response, 'There are no questions here.')
 
-    def test_has_no_subsets(self):
+    def test_type_0_has_no_subsets_and_questions(self):
+        """Test Qset list view w/o the subsets and questions."""
+        response = self.client.get(reverse('askup:qset', kwargs={'pk': 6}))
+        self.assertContains(response, 'There are no subsets here.')
+        self.assertContains(response, 'There are no questions here.')
+
+    def test_type_1_has_no_subsets(self):
         """Test Qset list view w/o the subsets."""
-        pass
+        response = self.client.get(reverse('askup:qset', kwargs={'pk': 8}))
+        self.assertContains(response, 'There are no subsets here.')
 
-    def test_has_questions(self):
-        """Test Qset list view with the questions."""
-        pass
-
-    def test_has_no_questions(self):
+    def test_type_2_has_no_questions(self):
         """Test Qset list view w/o the questions."""
-        pass
+        response = self.client.get(reverse('askup:qset', kwargs={'pk': 9}))
+        self.assertContains(response, 'There are no questions here.')
 
     def test_student_features_presence(self):
         """Test for a student features presence."""
-        pass
+        self.client.login(username='student01', password='student01')
+        response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
+        self.assertContains(response, 'Generate Question')
+        self.assertContains(
+            response,
+            'a class="btn shortcut-button-link" href="{0}"'.format(
+                reverse('askup:question_edit', kwargs={'pk': 1})
+            )
+        )
+        self.assertContains(
+            response,
+            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+                reverse('askup:question_delete', kwargs={'pk': 1})
+            )
+        )
+        self.assertNotContains(
+            response,
+            'a class="btn shortcut-button-link" href="{0}"'.format(
+                reverse('askup:question_edit', kwargs={'pk': 2})
+            )
+        )
+        self.assertNotContains(
+            response,
+            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+                reverse('askup:question_delete', kwargs={'pk': 2})
+            )
+        )
+        self.client.login(username='admin', password='admin')
 
     def test_teacher_features_presence(self):
         """Test for a teacher features presence."""
-        pass
+        self.client.login(username='teacher01', password='teacher01')
+        response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
+        self.assertContains(response, 'Generate Question')
+        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
+        self.assertContains(
+            response,
+            'a class="btn shortcut-button-link" href="{0}"'.format(
+                reverse('askup:question_edit', kwargs={'pk': 1})
+            )
+        )
+        self.assertContains(
+            response,
+            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+                reverse('askup:question_delete', kwargs={'pk': 1})
+            )
+        )
+        self.client.login(username='admin', password='admin')
 
     def test_admin_features_presence(self):
         """Test for an admin features presence."""
-        pass
+        response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
+        self.assertContains(response, 'Generate Question')
+        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
+        self.assertContains(
+            response,
+            'a class="btn shortcut-button-link" href="{0}"'.format(
+                reverse('askup:question_edit', kwargs={'pk': 1})
+            )
+        )
+        self.assertContains(
+            response,
+            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+                reverse('askup:question_delete', kwargs={'pk': 1})
+            )
+        )
 
 
 # class CreateQset(TestCase):

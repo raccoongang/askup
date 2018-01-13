@@ -106,3 +106,8 @@ ENV/
 
 # Vim swap files
 .*.sw*
+
+# Git utility files
+.commit_message 
+AUTHORS
+ChangeLog

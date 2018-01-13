@@ -87,7 +87,7 @@ class QuestionAdmin(admin.ModelAdmin):
         """
         form = super().get_form(request, obj, **kwargs)
         form.base_fields['qset'].queryset = Qset.objects.filter(
-            parent_qset_id__isnull=False, type__in=(-1, 2)
+            parent_qset_id__isnull=False, type__in=(0, 2)
         )
         return form
 

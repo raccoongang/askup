@@ -169,6 +169,7 @@ class QsetView(generic.ListView):
         context['current_qset'] = self._current_qset
         context['current_qset_name'] = self._current_qset.name
         context['current_qset_id'] = self._current_qset.id
+        context['current_qset_show_authors'] = self._current_qset.show_authors
         context['is_admin'] = self.request.user.is_superuser
         context['is_teacher'] = 'Teachers' in self.request.user.groups.values_list('name', flat=True)
         context['is_student'] = 'Students' in self.request.user.groups.values_list('name', flat=True)
@@ -254,12 +255,12 @@ def logout_view(request):
 
 
 @redirect_unauthenticated
-def create_qset(request):
+def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
     if request.method == 'GET':
-        form = QsetModelForm()
+        form = QsetModelForm(user=request.user)
     else:
-        form = QsetModelForm(request.POST or None)
+        form = QsetModelForm(request.POST or None, user=request.user)
 
         if form.is_valid():
             name = form.cleaned_data.get('name')
@@ -271,7 +272,7 @@ def create_qset(request):
                 top_qset_id=parent_qset.top_qset_id,
                 type=type
             )
-            return redirect('/askup/qset/{0}/'.format(qset.id))
+            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
     return render(request, 'askup/create_qset_form.html', {'form': form})
 
