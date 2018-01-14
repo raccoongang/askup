@@ -3,7 +3,7 @@ import logging
 from django import forms
 from django.contrib.auth import authenticate
 
-from .models import Qset
+from .models import Organization, Qset
 
 
 log = logging.getLogger(__name__)
@@ -37,6 +37,24 @@ class UserLoginForm(forms.Form):
         return super().clean(*args, **kwargs)
 
 
+class OrganizationModelForm(forms.ModelForm):
+    """Create/update functionality for the Organization."""
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the OrganizationModelForm.
+
+        Overriding the same method of the forms.ModelForm
+        """
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = Organization
+        fields = (
+            'name',
+        )
+
+
 class QsetModelForm(forms.ModelForm):
     """Create/update functionality for the Qset."""
 
@@ -48,6 +66,7 @@ class QsetModelForm(forms.ModelForm):
         """
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
+
         self.fields['parent_qset'].required = True
         self.fields['parent_qset'].empty_label = None
 
@@ -72,5 +91,8 @@ class QsetModelForm(forms.ModelForm):
         fields = (
             'name',
             'parent_qset',
-            'type'
+            'type',
+            'for_any_authenticated',
+            'show_authors',
+            'for_unauthenticated',
         )

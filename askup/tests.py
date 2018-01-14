@@ -3,10 +3,12 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
+from .models import Qset
 from .views import login_view, OrganizationsView
 
 
@@ -207,6 +209,144 @@ class QsetListView(TestCase):
                 reverse('askup:question_delete', kwargs={'pk': 1})
             )
         )
+
+
+class QsetModelFormTest(TestCase):
+    """Tests the Qset model form (CRUD etc.)."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """Set up the test assets."""
+        settings.DEBUG = False
+        self.client.login(username='admin', password='admin')
+
+    def create_qset(self, name, type, parent_qset_id):
+        """Create qset with the parameters."""
+        self.client.post(
+            reverse(
+                'askup:qset_create'
+            ),
+            {
+                'name': name,
+                'parent_qset': parent_qset_id,
+                'type': type
+            }
+        )
+
+    def create_qset_success(self, name, type, parent_qset_id):
+        """Create qset and look for a success."""
+        self.create_qset(name, type, parent_qset_id)
+        qset = get_object_or_404(Qset, name=name)
+        self.assertEqual(qset.name, name)
+        self.assertEqual(qset.type, type)
+
+    def create_qset_fail_forbidden_parent(self, name, type, parent_qset_id):
+        """Create qset and look for a fail."""
+        self.client.login(username='teacher01', password='teacher01')
+
+        with self.assertRaises(Http404):
+            self.create_qset(name, type, parent_qset_id)
+            get_object_or_404(Qset, name=name)
+
+        self.client.login(username='admin', password='admin')
+
+    def update_qset(self, qset_id, new_name, new_type, new_parent_qset_id):
+        """Update qset with the parameters."""
+        self.client.post(
+            reverse(
+                'askup:qset_update',
+                kwargs={'pk': qset_id}
+            ),
+            {
+                'name': new_name,
+                'parent_qset': new_parent_qset_id,
+                'type': new_type
+            }
+        )
+
+    def update_qset_success(self, qset_id, new_name, new_type, new_parent_qset_id):
+        """Update qset and look for a success."""
+        self.update_qset(qset_id, new_name, new_type, new_parent_qset_id)
+        qset = get_object_or_404(Qset, pk=qset_id)
+        self.assertEqual(qset.name, new_name)
+        self.assertEqual(qset.type, new_type)
+
+    def test_create_qset(self):
+        """Test qset creation."""
+        parent_qset_id = 4
+
+        name = 'test qset mixed'
+        type = 0
+        self.create_qset_success(name, type, parent_qset_id)
+
+        name = 'test qset subsets only'
+        type = 1
+        self.create_qset_success(name, type, parent_qset_id)
+
+        name = 'test qset questions only'
+        type = 2
+        self.create_qset_success(name, type, parent_qset_id)
+
+        name = 'test qset mixed forbidden parent'
+        type = 0
+        self.create_qset_fail_forbidden_parent(name, type, 3)
+
+    def test_update_qset(self):
+        """Test qset updating."""
+        parent_qset_id = 1
+        qset_id = 4
+        name = 'Qset 1-1 updated'
+        type = 0
+        self.update_qset_success(qset_id, name, type, parent_qset_id)
+
+    def test_update_qset_fail_forbidden_parent(self):
+        """Test qset updating with the forbiden parent."""
+        self.client.login(username='teacher01', password='teacher01')
+
+        with self.assertRaises(Http404):
+            name = 'Qset 2-1 updated'
+            self.update_qset(6, name, 1, 3)
+            get_object_or_404(Qset, name=name)
+
+        self.client.login(username='admin', password='admin')
+
+    def test_delete_qset(self):
+        """Test qset deleting."""
+        pass
+
+    def test_create_qset_forbidden_parent(self):
+        """Test qset creation with the forbidden parent."""
+        self.client.login(username='teacher01', password='teacher01')
+        self.client.login(username='admin', password='admin')
+
+
+class QuestionModelFormTest(TestCase):
+    """Tests the Question model form (CRUD etc.)."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """Set up the test assets."""
+        settings.DEBUG = False
+        self.client.login(username='admin', password='admin')
+
+    def test_create_question(self):
+        """Test question creation."""
+        pass
+
+    def test_update_question(self):
+        """Test question updating."""
+        pass
+
+    def test_delete_question(self):
+        """Test question deletion."""
+        pass
+
+    def test_create_question_forbidden_parent(self):
+        """Test create question with the forbidden parent."""
+        self.client.login(username='student01', password='student01')
+        self.client.login(username='admin', password='admin')
 
 
 # class CreateQset(TestCase):

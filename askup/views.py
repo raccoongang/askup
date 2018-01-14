@@ -7,8 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import generic
 
-from .forms import QsetModelForm, UserLoginForm
-from .models import Qset, Question
+from .forms import OrganizationModelForm, QsetModelForm, UserLoginForm
+from .models import Organization, Qset, Question
 from .utils import redirect_unauthenticated
 
 
@@ -165,6 +165,8 @@ class QsetView(generic.ListView):
         else:
             context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
 
+        checked = ' checked="checked"'
+        context['parent_qset_id'] = self._current_qset.parent_qset_id
         context['main_title'] = self._current_qset.name
         context['current_qset'] = self._current_qset
         context['current_qset_name'] = self._current_qset.name
@@ -176,6 +178,12 @@ class QsetView(generic.ListView):
         context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
         context['is_qset_allowed'] = self._current_qset.type in (0, 1)
         context['is_question_creator'] = self.request.user.is_authenticated()
+        context['mixed_type'] = checked if self._current_qset.type == 0 else ''
+        context['subsets_type'] = checked if self._current_qset.type == 1 else ''
+        context['questions_type'] = checked if self._current_qset.type == 2 else ''
+        context['for_any_authenticated'] = checked if self._current_qset.for_any_authenticated else ''
+        context['show_authors'] = checked if self._current_qset.show_authors else ''
+        context['for_unauthenticated'] = checked if self._current_qset.for_unauthenticated else ''
         return context
 
     def get_queryset(self):
@@ -255,6 +263,25 @@ def logout_view(request):
 
 
 @redirect_unauthenticated
+def organization_update(request, pk):
+    """Provide the update qset view for the teacher/admin."""
+    if not request.user.is_superuser:
+        redirect(reverse('askup:organizations'))
+
+    organization = get_object_or_404(Organization, pk=pk)
+
+    if request.method == 'GET':
+        form = OrganizationModelForm(instance=organization)
+    else:
+        form = OrganizationModelForm(request.POST or None, instance=organization)
+
+        if form.is_valid():
+            form.save()
+
+    return redirect(reverse('askup:organization', kwargs={'pk': organization.id}))
+
+
+@redirect_unauthenticated
 def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
     if request.method == 'GET':
@@ -272,6 +299,23 @@ def qset_create(request):
                 top_qset_id=parent_qset.top_qset_id,
                 type=type
             )
+            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+
+    return render(request, 'askup/create_qset_form.html', {'form': form})
+
+
+@redirect_unauthenticated
+def qset_update(request, pk):
+    """Provide the update qset view for the student/teacher/admin."""
+    qset = get_object_or_404(Qset, pk=pk)
+
+    if request.method == 'GET':
+        form = QsetModelForm(user=request.user, instance=qset)
+    else:
+        form = QsetModelForm(request.POST or None, user=request.user, instance=qset)
+
+        if form.is_valid():
+            form.save()
             return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
     return render(request, 'askup/create_qset_form.html', {'form': form})
