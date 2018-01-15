@@ -7,7 +7,7 @@
 			<h2 class="title-no-margin">{{ question.text }}</h2>
 			<br>
 			<br>
-			<form accept-charset="UTF-8" action="{% url 'askup:question_answer' question_id %}" class="new_answer center" data-remote="true" id="new_answer" method="post">
+			<form accept-charset="UTF-8" action="{% url 'askup:question_answer' question.id %}" class="new_answer center" data-remote="true" id="new_answer" method="post">
 				<div style="display:none">
 					{{ csrf_token }}
 					<input type="hidden" name="question_id" value="{{ question.id }}">
