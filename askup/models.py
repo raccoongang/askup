@@ -237,6 +237,7 @@ class Question(models.Model):
                 previous_parent.save()
 
             self.qset.iterate_questions_count(1)
+            self._previous_qset_id = self.qset_id
             super().save(*args, **kwargs)
 
     @transaction.atomic
