@@ -312,11 +312,12 @@ class QsetModelFormTest(TestCase):
         self.client.login(username='admin', password='admin')
 
     def delete_qset(self, qset_id):
-        """Do actual qset delete."""
+        """Do delete particular qset through the client."""
         self.client.post(reverse('askup:qset_delete', kwargs={'pk': qset_id}))
 
     def delete_and_get_qset(self, qset_id):
-        self.delete_qset(qset_id)  
+        """Do delete and get the particular qset."""
+        self.delete_qset(qset_id)
         get_object_or_404(Qset, pk=qset_id)
 
     def test_delete_qset_success(self):

@@ -193,10 +193,6 @@ class QsetView(generic.ListView):
         Overriding the get_queryset of generic.ListView
         """
         queryset = Qset.objects.filter(parent_qset_id=self.kwargs.get('pk'))
-        parent_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
-
-        if parent_qset:
-            self._parent_qset = parent_qset
 
         return queryset
 
@@ -205,18 +201,15 @@ class QuestionView(generic.DetailView):
     """Handles the Question detailed view."""
 
     model = Question
-    template_name = 'askup/question.html'
 
     @redirect_unauthenticated
-    def dispatch(*args, **kwargs):
+    def dispatch(self, *args, **kwargs):
         """
         Check presence of required credentials and parameters.
 
         Overriding the dispatch method of generic.DetailView
         """
-        # return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
-        # Stub
-        return redirect(reverse('askup:organizations'))
+        return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
 
 
 class UserProfileView(generic.DetailView):
@@ -350,14 +343,22 @@ def qset_delete(request, pk):
     )
 
 
+def question_answer(request, question_id=None):
+    """Provide a create question view for the student/teacher/admin."""
+    log.debug('Got the question answer request for the question_id: %s', question_id)
+    # Stub
+    return redirect(reverse('askup:question', kwargs={'pk': question_id}))
+
+    if request.user.id is None:
+        return redirect(reverse('askup:sign_in'))
+
+
+@redirect_unauthenticated
 def question_create(request, qset_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question creation request for the qset_id: %s', qset_id)
     # Stub
-    return redirect(reverse('askup:organizations'))
-
-    if request.user.id is None:
-        return redirect(reverse('askup:sign_in'))
+    return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
 
 
 def question_edit(request):
