@@ -311,14 +311,103 @@ class QsetModelFormTest(TestCase):
 
         self.client.login(username='admin', password='admin')
 
-    def test_delete_qset(self):
-        """Test qset deleting."""
-        pass
+    def delete_qset(self, qset_id):
+        """Do actual qset delete."""
+        self.client.post(reverse('askup:qset_delete', kwargs={'pk': qset_id}))
 
-    def test_create_qset_forbidden_parent(self):
-        """Test qset creation with the forbidden parent."""
+    def delete_and_get_qset(self, qset_id):
+        self.delete_qset(qset_id)  
+        get_object_or_404(Qset, pk=qset_id)
+
+    def test_delete_qset_success(self):
+        """Test successful qset deletion."""
+        with self.assertRaises(Http404):
+            self.delete_and_get_qset(4)  # Try to delete Qset 1-1 by the admin
+
+    def test_delete_qset_fail(self):
+        """Test failed by permissions qset deletion."""
+        # Try to delete Qset 1-1 by the student01
+        self.client.login(username='student01', password='student01')
+        self.delete_and_get_qset(4)
+
+        # Try to delete Qset 4-1 by the teacher01
         self.client.login(username='teacher01', password='teacher01')
+        self.delete_and_get_qset(11)
+
         self.client.login(username='admin', password='admin')
+
+    def test_parent_questions_count_update_on_delete(self):
+        """Test parent question count update on qset delete."""
+        qsets = {
+            'org_qset': {
+                'id': 1,  # Organization 1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+            'first_qset': {
+                'id': 4,  # Qset 1-1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+        }
+        delete_qset = get_object_or_404(Qset, pk=7)
+        delete_qset_count = delete_qset.questions_count
+
+        for key in qsets.keys():
+            qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        delete_qset.delete()
+
+        for key in qsets.keys():
+            qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        org_qset = qsets['org_qset']
+        first_qset = qsets['first_qset']
+        self.assertEqual(
+            org_qset['new_count'],
+            org_qset['orig_count']
+        )
+        self.assertEqual(
+            first_qset['new_count'],
+            first_qset['orig_count'] + delete_qset_count
+        )
+
+    def test_parent_questions_count_update_on_parent_change(self):
+        """Test parent questions count update on parent change."""
+        qsets = {
+            'org_qset': {
+                'id': 1,  # Organization 1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+            'first_qset': {
+                'id': 4,  # Qset 1-1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+        }
+        move_qset = get_object_or_404(Qset, pk=7)
+        move_qset_count = move_qset.questions_count
+
+        for key in qsets.keys():
+            qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        move_qset.parent_qset_id = 10
+        move_qset.save()
+
+        for key in qsets.keys():
+            qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        org_qset = qsets['org_qset']
+        first_qset = qsets['first_qset']
+        self.assertEqual(
+            org_qset['new_count'],
+            org_qset['orig_count'] - move_qset_count
+        )
+        self.assertEqual(
+            first_qset['new_count'],
+            first_qset['orig_count'] - move_qset_count
+        )
 
 
 class QuestionModelFormTest(TestCase):

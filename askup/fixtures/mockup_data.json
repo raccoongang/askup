@@ -103,6 +103,22 @@
     },
     {
         "model": "askup.qset",
+        "pk": 10,
+        "fields": {
+            "name": "Organization 4",
+            "type": 1,
+            "top_qset": 10,
+            "parent_qset": null,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 0,
+            "users": []
+        }
+    },
+    {
+        "model": "askup.qset",
         "pk": 4,
         "fields": {
             "name": "Qset 1-1",
@@ -198,6 +214,22 @@
         }
     },
     {
+        "model": "askup.qset",
+        "pk": 11,
+        "fields": {
+            "name": "Qset 4-1",
+            "type": 0,
+            "top_qset": 10,
+            "parent_qset": 10,
+            "for_any_authenticated": false,
+            "for_unauthenticated": false,
+            "show_authors": true,
+            "own_questions_only": false,
+            "questions_count": 0,
+            "users": []
+        }
+    },
+    {
         "model": "askup.question",
         "pk": 1,
         "fields": {
@@ -282,28 +314,28 @@
         "model": "askup.organization",
         "pk": 1,
         "fields": {
-            "users": [
-                2,
-                3
-            ]
+            "users": [2, 3]
         }
     },
     {
         "model": "askup.organization",
         "pk": 2,
         "fields": {
-            "users": [
-                2
-            ]
+            "users": [2]
         }
     },
     {
         "model": "askup.organization",
         "pk": 3,
         "fields": {
-            "users": [
-                
-            ]
+            "users": []
+        }
+    },
+    {
+        "model":"askup.organization",
+        "pk":10,
+        "fields":{
+            "users": []
         }
     }
 ]

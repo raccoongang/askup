@@ -11,10 +11,6 @@ class OrganizationAdmin(admin.ModelAdmin):
     list_display = ('name', 'email_patterns')
     fields = (
         'name',
-        'for_any_authenticated',
-        'for_unauthenticated',
-        'show_authors',
-        'own_questions_only',
         'users',
     )
 

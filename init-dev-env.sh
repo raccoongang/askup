@@ -1,6 +1,5 @@
 #!/bin/bash
-read -s -p "Please enter your PostgreSQL password: " PGPASSWORD
-export PGPASSWORD
+export PGPASSWORD='pass'
 export DJANGO_SETTINGS_MODULE='config.settings.dev'
 [[ "$(which psql)" == "" ]] &&
 	echo "Inslatting postgresql-client... \n" &&

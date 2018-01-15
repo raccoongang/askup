@@ -38,7 +38,7 @@ class UserLoginForm(forms.Form):
 
 
 class OrganizationModelForm(forms.ModelForm):
-    """Create/update functionality for the Organization."""
+    """Provides the create/update functionality for the Organization."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -56,7 +56,7 @@ class OrganizationModelForm(forms.ModelForm):
 
 
 class QsetModelForm(forms.ModelForm):
-    """Create/update functionality for the Qset."""
+    """Provides the create/update functionality for the Qset."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -96,3 +96,11 @@ class QsetModelForm(forms.ModelForm):
             'show_authors',
             'for_unauthenticated',
         )
+
+
+class QsetDeleteModelForm(forms.ModelForm):
+    """Provides the delete functionality for the Qset."""
+
+    class Meta:
+        model = Qset
+        fields = []

@@ -47,20 +47,21 @@ class Qset(models.Model):
 
         Overriding the models.Model save method.
         """
-        is_new_object = self.id is None
+        is_organization = self.parent_qset_id is None
+        is_new = self.id is None
 
-        if self.parent_qset_id is None:
-            # If it's an Organization object
+        if is_new:
+            if is_organization:
+                super().save(*args, **kwargs)  # acquire an id (save into the DB)
+                self.top_qset_id = self.id
+            else:
+                self.top_qset_id = self.parent_qset.top_qset_id
+
             super().save(*args, **kwargs)
+            return
 
-            if is_new_object:
-                if self.parent_qset_id is None:
-                    self.top_qset_id = self.id
-                else:
-                    self.top_qset_id = self.parent_qset.top_qset_id
-
-                super().save(*args, **kwargs)
-
+        if is_organization:
+            super().save(*args, **kwargs)
             return
 
         if self.parent_qset_id != self._previous_parent_qset_id and self.questions_count != 0:
@@ -89,7 +90,15 @@ class Qset(models.Model):
             super().delete(*args, **kwargs)
             return
 
-        self.parent_qset.iterate_questions_count(self.questions_count)
+        if self.parent_qset.parent_qset_id is None:
+            # If parent qset is an Organization object
+            self.parent_qset.iterate_questions_count(-self.questions_count)
+        else:
+            # ...else move all the child questions into it
+            for question in self.question_set.all():
+                question.qset_id = self.parent_qset_id
+                question.save()
+
         super().delete(*args, **kwargs)
 
     def iterate_questions_count(self, amount):
@@ -146,14 +155,15 @@ class Qset(models.Model):
     def get_parents(self):
         """Collect parents data for the breadcrumbs composing."""
         parents = []
-        p = self.parent_qset
+        parent = self.parent_qset
 
-        while p:
-            if p.parent_qset is None:
-                parents.append(('askup:organization', p.id, p.name))
+        while parent:
+            if parent.parent_qset is None:
+                parents.append(('askup:organization', parent.id, parent.name))
             else:
-                parents.append(('askup:qset', p.id, p.name))
-            p = p.parent_qset
+                parents.append(('askup:qset', parent.id, parent.name))
+
+            parent = parent.parent_qset
 
         parents.reverse()
         return parents
@@ -222,7 +232,7 @@ class Question(models.Model):
         if self.qset_id != self._previous_qset_id:
             # Process the case when the question is just created
             if self._previous_qset_id:
-                previous_parent = Qset.objects.get(id=self._original_qset_id)
+                previous_parent = Qset.objects.get(id=self._previous_qset_id)
                 previous_parent.iterate_questions_count(-1)
                 previous_parent.save()
 

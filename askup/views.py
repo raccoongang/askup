@@ -7,9 +7,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import generic
 
-from .forms import OrganizationModelForm, QsetModelForm, UserLoginForm
+from .forms import OrganizationModelForm, QsetDeleteModelForm, QsetModelForm, UserLoginForm
 from .models import Organization, Qset, Question
-from .utils import redirect_unauthenticated
+from .utils import redirect_unauthenticated, user_group_required
 
 
 log = logging.getLogger(__name__)
@@ -262,12 +262,9 @@ def logout_view(request):
     return redirect('/')
 
 
-@redirect_unauthenticated
+@user_group_required('admins')
 def organization_update(request, pk):
     """Provide the update qset view for the teacher/admin."""
-    if not request.user.is_superuser:
-        redirect(reverse('askup:organizations'))
-
     organization = get_object_or_404(Organization, pk=pk)
 
     if request.method == 'GET':
@@ -304,7 +301,7 @@ def qset_create(request):
     return render(request, 'askup/create_qset_form.html', {'form': form})
 
 
-@redirect_unauthenticated
+@user_group_required('teachers', 'admins')
 def qset_update(request, pk):
     """Provide the update qset view for the student/teacher/admin."""
     qset = get_object_or_404(Qset, pk=pk)
@@ -319,6 +316,38 @@ def qset_update(request, pk):
             return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
     return render(request, 'askup/create_qset_form.html', {'form': form})
+
+
+@user_group_required('teachers', 'admins')
+def qset_delete(request, pk):
+    """Provide the delete qset view for the teacher/admin."""
+    qset = get_object_or_404(Qset, pk=pk)
+
+    if qset.parent_qset_id is None:
+        return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+
+    if not request.user.is_superuser and request.user.id not in qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if request.method == 'POST':
+        form = QsetDeleteModelForm(request.POST, instance=qset)
+
+        if form.is_valid():  # checks the CSRF
+            parent = qset.parent_qset
+            qset.delete()
+            redirect_url = 'askup:organization' if parent.parent_qset_id is None else 'askup:qset'
+            return redirect(reverse(redirect_url, kwargs={'pk': parent.id}))
+    else:
+        form = QsetDeleteModelForm(instance=qset)
+
+    return render(
+        request,
+        'askup/delete_qset_form.html',
+        {
+            'form': form,
+            'qset_name': qset.name,
+        }
+    )
 
 
 def question_create(request, qset_id=None):

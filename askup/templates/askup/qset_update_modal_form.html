@@ -39,6 +39,6 @@
         <input id="qset_permissions_qset_type_questions" name="type" type="radio" value="2"{{ questions_type }}>
     </div>
     <input class="btn btn-theme" data-disable-with="Saving..." id="edit-qset-save" name="commit" type="submit" value="Save">
-    <button class="btn btn-flat" id="edit-qset-delete" name="button" type="button">Delete</button>
+    <a href="{% url 'askup:qset_delete' current_qset_id %}" title="Delete qset"><button class="btn btn-flat" id="edit-qset-delete" name="button" type="button">Delete</button></a>
     <button class="btn btn-flat" data-dismiss="modal" id="edit-qset-delete" name="button" type="button">Cancel</button>
 </form>
