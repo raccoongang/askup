@@ -7,7 +7,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import generic
 
-from .forms import OrganizationModelForm, QsetDeleteModelForm, QsetModelForm, UserLoginForm
+from .forms import (
+    OrganizationModelForm,
+    QsetDeleteModelForm,
+    QsetModelForm,
+    QuestionDeleteModelForm,
+    QuestionModelForm,
+    UserLoginForm,
+)
 from .models import Organization, Qset, Question
 from .utils import redirect_unauthenticated, user_group_required
 
@@ -291,7 +298,15 @@ def qset_create(request):
             )
             return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
-    return render(request, 'askup/create_qset_form.html', {'form': form})
+    return render(
+        request,
+        'askup/qset_form.html',
+        {
+            'form': form,
+            'main_title': 'Create qset:',
+            'submit_label': 'Create'
+        }
+    )
 
 
 @user_group_required('teachers', 'admins')
@@ -308,7 +323,15 @@ def qset_update(request, pk):
             form.save()
             return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
-    return render(request, 'askup/create_qset_form.html', {'form': form})
+    return render(
+        request,
+        'askup/qset_form.html',
+        {
+            'form': form,
+            'main_title': 'Edit qset',
+            'submit_label': 'Save'
+        }
+    )
 
 
 @user_group_required('teachers', 'admins')
@@ -319,7 +342,7 @@ def qset_delete(request, pk):
     if qset.parent_qset_id is None:
         return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
-    if not request.user.is_superuser and request.user.id not in qset.top_qset.users.all():
+    if not request.user.is_superuser and request.user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     if request.method == 'POST':
@@ -343,6 +366,7 @@ def qset_delete(request, pk):
     )
 
 
+@redirect_unauthenticated
 def question_answer(request, question_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question answer request for the question_id: %s', question_id)
@@ -357,26 +381,112 @@ def question_answer(request, question_id=None):
 def question_create(request, qset_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question creation request for the qset_id: %s', qset_id)
-    # Stub
-    return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
+    user = request.user
+
+    if request.method == 'GET':
+        form = QuestionModelForm(initial={'qset': qset_id}, user=user)
+    else:
+        form = QuestionModelForm(request.POST or None, user=user)
+
+        if form.is_valid():
+            text = form.cleaned_data.get('text')
+            answer_text = form.cleaned_data.get('answer_text')
+            qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
+
+            if not user.is_superuser and user not in qset.top_qset.users.all():
+                return redirect(reverse('askup:organizations'))
+
+            Question.objects.create(
+                text=text,
+                answer_text=answer_text,
+                qset_id=qset.id,
+                user_id=user.id
+            )
+            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+
+    return render(
+        request,
+        'askup/question_form.html',
+        {
+            'form': form,
+            'main_title': 'Create question:',
+            'submit_label': 'Create',
+        }
+    )
 
 
-def question_edit(request):
+@redirect_unauthenticated
+def question_edit(request, pk):
     """Provide an edit question view for the student/teacher/admin."""
-    # Stub
-    return redirect(reverse('askup:organizations'))
+    question = get_object_or_404(Question, pk=pk)
+    user = request.user
+    is_teacher = 'Teachers' in user.groups.values_list('name', flat=True)
+    is_admin = user.is_superuser
 
-    if request.user.id is None:
-        return redirect(reverse('askup:sign_in'))
+    if not is_admin and user not in question.qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if not is_admin and not is_teacher and user.id != question.user_id:
+        return redirect(reverse('askup:organizations'))
+
+    if request.method == 'GET':
+        form = QuestionModelForm(
+            user=request.user,
+            instance=question,
+        )
+    else:
+        form = QuestionModelForm(
+            request.POST or None,
+            user=request.user,
+            instance=question
+        )
+
+        if form.is_valid():
+            form.save()
+
+    return render(
+        request,
+        'askup/question_form.html',
+        {
+            'form': form,
+            'main_title': 'Edit question:',
+            'submit_label': 'Save',
+        }
+    )
 
 
-def question_delete(request):
+@redirect_unauthenticated
+def question_delete(request, pk):
     """Provide a delete question view for the student/teacher/admin."""
-    # Stub
-    return redirect(reverse('askup:organizations'))
+    question = get_object_or_404(Question, pk=pk)
+    user = request.user
+    is_teacher = 'Teachers' in user.groups.values_list('name', flat=True)
+    is_admin = user.is_superuser
 
-    if request.user.id is None:
-        return redirect(reverse('askup:sign_in'))
+    if not is_admin and user not in question.qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if not is_admin and not is_teacher and user.id != question.user_id:
+        return redirect(reverse('askup:organizations'))
+
+    if request.method == 'POST':
+        form = QuestionDeleteModelForm(request.POST, instance=question)
+
+        if form.is_valid():  # checks the CSRF
+            qset_id = question.qset_id
+            question.delete()
+            return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
+    else:
+        form = QuestionDeleteModelForm(instance=question)
+
+    return render(
+        request,
+        'askup/delete_question_form.html',
+        {
+            'form': form,
+            'question_name': question.text,
+        }
+    )
 
 
 def index_view(request):

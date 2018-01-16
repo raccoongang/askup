@@ -168,6 +168,28 @@ class Qset(models.Model):
         parents.reverse()
         return parents
 
+    @staticmethod
+    def get_user_related_qsets(user, order_by):
+        """Return queryset of formatted qsets, permitted to the user."""
+        if user and user.id:
+            if user.is_superuser:
+                queryset = Qset.objects.all()
+            else:
+                queryset = Qset.objects.filter(top_qset__users=user.id)
+
+            queryset = queryset.extra(
+                select={
+                    'name': 'case when askup_qset.parent_qset_id is null' +
+                            " then askup_qset.name else concat('— ', askup_qset.name) end",
+                    'is_organization': 'askup_qset.parent_qset_id is null'
+                }
+            )
+            queryset = queryset.order_by(*order_by)
+        else:
+            queryset = []
+
+        return queryset
+
     class Meta:
         unique_together = ('parent_qset', 'name')
 
@@ -207,7 +229,7 @@ class Question(models.Model):
     qset = models.ForeignKey(Qset, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE, default=0)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
     blooms_tag = models.PositiveSmallIntegerField(
         choices=BLOOMS_TAGS,
         null=True,
@@ -254,6 +276,9 @@ class Question(models.Model):
         """Return a string representation of a Question object."""
         return self.text
 
+    class Meta:
+        unique_together = ('text', 'qset')
+
 
 class Answer(models.Model):
     """Describes a student answer model and it's behaviour."""
@@ -265,7 +290,7 @@ class Answer(models.Model):
     )
     text = models.CharField(max_length=255)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     self_evaluation = models.PositiveSmallIntegerField(choices=EVALUATIONS)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 

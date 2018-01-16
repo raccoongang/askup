@@ -1,0 +1,48 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<div class="prettyform">
+    <div class="full-width-container">
+        <div class="row">
+            <div class="col-sm-7">
+                <div class="box">
+                    <h2 class="title-no-margin center">{{ main_title }}</h2>
+
+                    <form accept-charset="UTF-8" action="" class="center" id="question_form" method="post">
+                        <div style="display:none">
+                        {% csrf_token %}
+                        </div>
+                        {{ form|crispy }}
+                        <div class="center">
+                            <input class="btn btn-theme" type="submit" value="{{ submit_label }}">
+                            <a class="btn btn-theme" href="/">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="col-sm-5">
+                <div class="box">
+                    <h4 class="center"><b>How to write good questions</b></h4>
+                    Try to use some of these useful question stems to formulate your questions:<br>
+                    <ul>
+                        <li>How would you use ___ to ___?</li>
+                        <li>What would happen if ___?</li>
+                        <li>What are risks and benefits of ___?</li>
+                        <li>How does ___ relate to what you’ve learned before?</li>
+                        <li>Explain why ___</li>
+                        <li>Explain how ___</li>
+                        <li>How does ___ affect ___?</li>
+                        <li>Why is ___ important?</li>
+                        <li>What is the difference between ___ and ___?</li>
+                        <li>How are ___ and ___ similar?</li>
+                        <li>How does ___ affect ___?</li>
+                        <li>What do you think causes ___?</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

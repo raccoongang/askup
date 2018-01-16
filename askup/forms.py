@@ -3,7 +3,7 @@ import logging
 from django import forms
 from django.contrib.auth import authenticate
 
-from .models import Organization, Qset
+from .models import Organization, Qset, Question
 
 
 log = logging.getLogger(__name__)
@@ -69,22 +69,10 @@ class QsetModelForm(forms.ModelForm):
 
         self.fields['parent_qset'].required = True
         self.fields['parent_qset'].empty_label = None
-
-        if user and user.id:
-            if user.is_superuser:
-                queryset = Qset.objects.all()
-            else:
-                queryset = Qset.objects.filter(top_qset__users=user.id)
-
-            queryset = queryset.extra(
-                select={
-                    'name': 'case when askup_qset.parent_qset_id is null' +
-                            " then askup_qset.name else concat('— ', askup_qset.name) end",
-                    'is_organization': 'askup_qset.parent_qset_id is null'
-                }
-            )
-            queryset = queryset.order_by('top_qset_id', '-is_organization', 'askup_qset.name')
-            self.fields['parent_qset'].queryset = queryset
+        self.fields['parent_qset'].queryset = Qset.get_user_related_qsets(
+            user,
+            ('top_qset_id', '-is_organization', 'askup_qset.name')
+        )
 
     class Meta:
         model = Qset
@@ -103,4 +91,49 @@ class QsetDeleteModelForm(forms.ModelForm):
 
     class Meta:
         model = Qset
+        fields = []
+
+
+class QuestionModelForm(forms.ModelForm):
+    """Provides the create/update functionality for the Qset."""
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the QuestionModelForm.
+
+        Overriding the same method of the forms.ModelForm
+        """
+        user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+
+        self.fields['qset'].required = True
+        self.fields['qset'].empty_label = None
+        self.fields['qset'].queryset = Qset.get_user_related_qsets(
+            user,
+            ('top_qset_id', '-is_organization', 'askup_qset.name')
+        )
+        self.fields['text'].placeholder = 'Question'
+        self.fields['text'].label = ''
+        self.fields['answer_text'].placeholder = 'Answer'
+        self.fields['answer_text'].label = ''
+        #import ipdb; ipdb.set_trace()
+
+    class Meta:
+        model = Question
+        fields = (
+            'qset',
+            'text',
+            'answer_text',
+        )
+        widgets = {
+            'text': forms.TextInput(attrs={'placeholder': 'Question'}),
+            'answer_text': forms.Textarea(attrs={'placeholder': 'Answer'})
+        }
+
+
+class QuestionDeleteModelForm(forms.ModelForm):
+    """Provides the delete functionality for the Question."""
+
+    class Meta:
+        model = Question
         fields = []

@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from .models import Qset
+from .models import Qset, Question
 from .views import login_view, OrganizationsView
 
 
@@ -154,7 +154,7 @@ class QsetListView(TestCase):
         )
         self.assertContains(
             response,
-            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+            'a class="btn shortcut-button-link" href="{0}"'.format(
                 reverse('askup:question_delete', kwargs={'pk': 1})
             )
         )
@@ -166,7 +166,7 @@ class QsetListView(TestCase):
         )
         self.assertNotContains(
             response,
-            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+            'a class="btn shortcut-button-link" href="{0}"'.format(
                 reverse('askup:question_delete', kwargs={'pk': 2})
             )
         )
@@ -186,7 +186,7 @@ class QsetListView(TestCase):
         )
         self.assertContains(
             response,
-            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+            'a class="btn shortcut-button-link" href="{0}"'.format(
                 reverse('askup:question_delete', kwargs={'pk': 1})
             )
         )
@@ -205,7 +205,7 @@ class QsetListView(TestCase):
         )
         self.assertContains(
             response,
-            'a class="btn shortcut-button-link" data-method="delete" href="{0}"'.format(
+            'a class="btn shortcut-button-link" href="{0}"'.format(
                 reverse('askup:question_delete', kwargs={'pk': 1})
             )
         )
@@ -237,7 +237,7 @@ class QsetModelFormTest(TestCase):
     def create_qset_success(self, name, type, parent_qset_id):
         """Create qset and look for a success."""
         self.create_qset(name, type, parent_qset_id)
-        qset = get_object_or_404(Qset, name=name)
+        qset = get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
         self.assertEqual(qset.name, name)
         self.assertEqual(qset.type, type)
 
@@ -247,7 +247,7 @@ class QsetModelFormTest(TestCase):
 
         with self.assertRaises(Http404):
             self.create_qset(name, type, parent_qset_id)
-            get_object_or_404(Qset, name=name)
+            get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
 
         self.client.login(username='admin', password='admin')
 
@@ -306,8 +306,9 @@ class QsetModelFormTest(TestCase):
 
         with self.assertRaises(Http404):
             name = 'Qset 2-1 updated'
-            self.update_qset(6, name, 1, 3)
-            get_object_or_404(Qset, name=name)
+            parent_qset_id = 3
+            self.update_qset(6, name, 1, parent_qset_id)
+            get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
 
         self.client.login(username='admin', password='admin')
 
@@ -320,21 +321,34 @@ class QsetModelFormTest(TestCase):
         self.delete_qset(qset_id)
         get_object_or_404(Qset, pk=qset_id)
 
-    def test_delete_qset_success(self):
-        """Test successful qset deletion."""
+    def test_delete_qset_as_admin_success(self):
+        """Test successful qset deletion by the admin."""
         with self.assertRaises(Http404):
-            self.delete_and_get_qset(4)  # Try to delete Qset 1-1 by the admin
+            # Try to delete Qset 1-1 by the admin
+            self.delete_and_get_qset(4)
 
-    def test_delete_qset_fail(self):
-        """Test failed by permissions qset deletion."""
+    def test_delete_qset_as_teacher_success(self):
+        """Test successful qset deletion by the teacher."""
+        # Try to delete Qset 1-2 by the teacher01
+        self.client.login(username='teacher01', password='teacher01')
+
+        with self.assertRaises(Http404):
+            self.delete_and_get_qset(5)
+
+        self.client.login(username='admin', password='admin')
+
+    def test_delete_qset_as_student_fail(self):
+        """Test failed by permissions student qset deletion."""
         # Try to delete Qset 1-1 by the student01
         self.client.login(username='student01', password='student01')
         self.delete_and_get_qset(4)
+        self.client.login(username='admin', password='admin')
 
+    def test_delete_qset_as_teacher_fail(self):
+        """Test failed by permissions teacher qset deletion."""
         # Try to delete Qset 4-1 by the teacher01
         self.client.login(username='teacher01', password='teacher01')
         self.delete_and_get_qset(11)
-
         self.client.login(username='admin', password='admin')
 
     def test_parent_questions_count_update_on_delete(self):
@@ -421,30 +435,166 @@ class QuestionModelFormTest(TestCase):
         settings.DEBUG = False
         self.client.login(username='admin', password='admin')
 
-    def test_create_question(self):
+    def create_question(self, text, answer_text, qset_id):
+        """Create question with the parameters."""
+        self.client.post(
+            reverse(
+                'askup:qset_question_create',
+                kwargs={'qset_id': qset_id},
+            ),
+            {
+                'text': text,
+                'answer_text': answer_text,
+                'qset': qset_id,
+            }
+        )
+
+    def test_question_fail_duplicate(self):
+        """Create question and look for a fail because on forbidden qset."""
+        text = 'Question 1-1-1'
+        answer_text = 'Different answer 1-1-1'
+        qset_id = 4  # Organization 1 -> Qset 1-1
+
+        with self.assertRaises(Http404):
+            self.create_question(text, answer_text, qset_id)
+            get_object_or_404(Question, text=text, answer_text=answer_text, qset_id=qset_id)
+
+    def test_question_fail_forbidden_parent(self):
+        """Create question and look for a fail because on forbidden qset."""
+        self.client.login(username='teacher01', password='teacher01')
+        text = 'Test question that failed 2'
+        answer_text = 'Test question answer that failed 2'
+        qset_id = 11  # Organization 3 -> Qset 4-1 (forbidden for the teacher01)
+
+        with self.assertRaises(Http404):
+            self.create_question(text, answer_text, qset_id)
+            get_object_or_404(Question, text=text, qset_id=qset_id)
+
+        self.client.login(username='admin', password='admin')
+
+    def test_create_question_success(self):
         """Test question creation."""
-        pass
+        qset_id = 4
+        text = 'Test question 1'
+        answer_text = 'Test answer 1'
+
+        self.create_question(text, answer_text, qset_id)
+        question = get_object_or_404(Question, text=text, qset_id=qset_id)
+        self.assertEqual(question.text, text)
+        self.assertEqual(question.answer_text, answer_text)
+        self.assertEqual(question.qset_id, qset_id)
 
     def test_update_question(self):
         """Test question updating."""
         pass
 
-    def test_delete_question(self):
-        """Test question deletion."""
-        pass
+    def delete_question(self, question_id):
+        """Do delete particular question through the client."""
+        self.client.post(reverse('askup:question_delete', kwargs={'pk': question_id}))
 
-    def test_create_question_forbidden_parent(self):
-        """Test create question with the forbidden parent."""
+    def delete_and_get_question(self, question_id):
+        """Do delete and get the particular question."""
+        self.delete_question(question_id)
+        get_object_or_404(Question, pk=question_id)
+
+    def test_delete_question_success(self):
+        """Test successful question deletion."""
+        with self.assertRaises(Http404):
+            self.delete_and_get_question(1)  # Try to delete Question 1-1 by the admin
+
+    def test_delete_question_failed_by_permissions(self):
+        """Test failed by permissions question deletion."""
         self.client.login(username='student01', password='student01')
+        self.delete_and_get_question(2)  # Try to delete Question 1-1-2 (teacher01) by the student01
         self.client.login(username='admin', password='admin')
 
+    def test_parent_questions_count_update_on_delete(self):
+        """Test parent question count update on qset delete."""
+        qsets = {
+            'org_qset': {
+                'id': 1,  # Organization 1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+            'parent_qset': {
+                'id': 4,  # Qset 1-1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+        }
+        question = get_object_or_404(Question, pk=1)
 
-# class CreateQset(TestCase):
-#    def setUp(self):
-#        self.admin = User.objects.create_superuser('test_admin', 'test_admin@example.com', 'test_admin')
-#        self.teacher = User.objects.create_user(
-#            'test_admin',
-#            'test_admin@example.com',
-#            'test_admin',
-#            groups=[1]
-#        )
+        for key in qsets.keys():
+            qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        question.delete()
+
+        for key in qsets.keys():
+            qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        org_qset = qsets['org_qset']
+        parent_qset = qsets['parent_qset']
+        self.assertEqual(
+            org_qset['new_count'],
+            org_qset['orig_count'] - 1
+        )
+        self.assertEqual(
+            parent_qset['new_count'],
+            parent_qset['orig_count'] - 1
+        )
+
+    def test_parent_questions_count_update_on_parent_change(self):
+        """Test parent questions count update on parent change."""
+        qsets = {
+            'old_org_qset': {
+                'id': 1,  # Organization 1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+            'old_parent_qset': {
+                'id': 4,  # Qset 1-1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+            'new_org_qset': {
+                'id': 10,  # Organization 4 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+            'new_parent_qset': {
+                'id': 11,  # Qset 4-1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+        }
+        question = get_object_or_404(Question, pk=1)  # Question 1-1-1 (with the parent: Qset 1-1)
+
+        for key in qsets.keys():
+            qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        question.qset_id = qsets['new_parent_qset']['id']
+        question.save()
+
+        for key in qsets.keys():
+            qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        old_org_qset = qsets['old_org_qset']
+        old_parent_qset = qsets['old_parent_qset']
+        new_org_qset = qsets['new_org_qset']
+        new_parent_qset = qsets['new_parent_qset']
+        self.assertEqual(
+            old_org_qset['new_count'],
+            old_org_qset['orig_count'] - 1
+        )
+        self.assertEqual(
+            old_parent_qset['new_count'],
+            old_parent_qset['orig_count'] - 1
+        )
+        self.assertEqual(
+            new_org_qset['new_count'],
+            new_org_qset['orig_count'] + 1
+        )
+        self.assertEqual(
+            new_parent_qset['new_count'],
+            new_parent_qset['orig_count'] + 1
+        )
