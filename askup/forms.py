@@ -116,7 +116,6 @@ class QuestionModelForm(forms.ModelForm):
         self.fields['text'].label = ''
         self.fields['answer_text'].placeholder = 'Answer'
         self.fields['answer_text'].label = ''
-        #import ipdb; ipdb.set_trace()
 
     class Meta:
         model = Question

@@ -103,11 +103,3 @@ ENV/
 
 # Docker compose subdirs
 .dc-*
-
-# Vim swap files
-.*.sw*
-
-# Git utility files
-.commit_message 
-AUTHORS
-ChangeLog
