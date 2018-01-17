@@ -227,12 +227,12 @@ class Question(models.Model):
     """Describes all the Qset's and the Organization's models and their behaviours."""
 
     BLOOMS_TAGS = (
-        (0, 'remember'),
-        (1, 'understand'),
-        (2, 'apply'),
-        (3, 'analyze'),
-        (4, 'evaluate'),
-        (5, 'create')
+        (0, 'remembering'),
+        (1, 'understanding'),
+        (2, 'applying'),
+        (3, 'analyzing'),
+        (4, 'evaluating'),
+        (5, 'creating')
     )
     text = models.TextField(db_index=True)
     answer_text = models.CharField(max_length=255)
@@ -262,7 +262,7 @@ class Question(models.Model):
         is_new = self.id is None
 
         super().save(*args, **kwargs)
-        
+
         if is_new:
             self.qset.iterate_questions_count(1)
         elif self.qset_id != self._previous_qset_id:

@@ -1,5 +1,8 @@
 import logging
 
+from crispy_forms.bootstrap import InlineRadios
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import ButtonHolder, Div, Fieldset, HTML, Layout, Submit
 from django import forms
 from django.contrib.auth import authenticate
 
@@ -117,6 +120,27 @@ class QuestionModelForm(forms.ModelForm):
         self.fields['text'].label = ''
         self.fields['answer_text'].placeholder = 'Answer'
         self.fields['answer_text'].label = ''
+        self.fields["blooms_tag"].choices[0] = ("", "- no tag -")
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Fieldset(
+                '',
+                InlineRadios('blooms_tag', template='askup/layout/radioselect_inline.html'),
+                Div(
+                    Div('text', css_class='col-sm-12'),
+                    css_class='row'
+                ),
+                Div(
+                    Div('answer_text', css_class='col-sm-12'),
+                    css_class='row'
+                ),
+                Div('qset'),
+            ),
+            ButtonHolder(
+                Submit('submit', 'Save', css_class='btn btn-theme'),
+                HTML('<a class="btn btn-theme" href="/">Cancel</a>')
+            )
+        )
 
     class Meta:
         model = Question
@@ -124,6 +148,7 @@ class QuestionModelForm(forms.ModelForm):
             'qset',
             'text',
             'answer_text',
+            'blooms_tag',
         )
         widgets = {
             'text': forms.TextInput(attrs={'placeholder': 'Question'}),
