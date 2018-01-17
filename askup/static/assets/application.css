@@ -5914,7 +5914,8 @@ button.close {
     top: 0;
     right: 0;
     left: 0;
-    background-color: black
+    background-color: black;
+    z-index: 1038
 }
 .modal-backdrop.fade {
     opacity: 0;
