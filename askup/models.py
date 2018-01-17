@@ -169,7 +169,7 @@ class Qset(models.Model):
         return parents
 
     @staticmethod
-    def get_user_related_qsets(user, order_by):
+    def get_user_related_qsets(user, order_by, qsets_only=False):
         """Return queryset of formatted qsets, permitted to the user."""
         if user and user.id:
             if user.is_superuser:
@@ -177,10 +177,20 @@ class Qset(models.Model):
             else:
                 queryset = Qset.objects.filter(top_qset__users=user.id)
 
+            if qsets_only:
+                queryset = queryset.filter(parent_qset_id__gt=0)
+                prefix = ''
+            else:
+                prefix = '— '
+
+            name_selector = ''.join((
+                "case when askup_qset.parent_qset_id is null ",
+                "then askup_qset.name ",
+                "else concat('{0}', askup_qset.name) end".format(prefix),
+            ))
             queryset = queryset.extra(
                 select={
-                    'name': 'case when askup_qset.parent_qset_id is null' +
-                            " then askup_qset.name else concat('— ', askup_qset.name) end",
+                    'name': name_selector,
                     'is_organization': 'askup_qset.parent_qset_id is null'
                 }
             )
@@ -249,9 +259,13 @@ class Question(models.Model):
 
         Overriding the models.Model save method.
         """
-        super().save(*args, **kwargs)
+        is_new = self.id is None
 
-        if self.qset_id != self._previous_qset_id:
+        super().save(*args, **kwargs)
+        
+        if is_new:
+            self.qset.iterate_questions_count(1)
+        elif self.qset_id != self._previous_qset_id:
             # Process the case when the question is just created
             if self._previous_qset_id:
                 previous_parent = Qset.objects.get(id=self._previous_qset_id)
@@ -260,7 +274,6 @@ class Question(models.Model):
 
             self.qset.iterate_questions_count(1)
             self._previous_qset_id = self.qset_id
-            super().save(*args, **kwargs)
 
     @transaction.atomic
     def delete(self, *args, **kwargs):

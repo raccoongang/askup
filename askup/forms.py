@@ -110,7 +110,8 @@ class QuestionModelForm(forms.ModelForm):
         self.fields['qset'].empty_label = None
         self.fields['qset'].queryset = Qset.get_user_related_qsets(
             user,
-            ('top_qset_id', '-is_organization', 'askup_qset.name')
+            ('top_qset_id', '-is_organization', 'askup_qset.name'),
+            qsets_only=True
         )
         self.fields['text'].placeholder = 'Question'
         self.fields['text'].label = ''
