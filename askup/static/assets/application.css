@@ -6794,18 +6794,20 @@ a:hover {
     margin-left: 15px
 }
 .navbar-inverse .navbar-nav>li>a {
-    color: white
+    color: white;
+    opacity: 0.8;
 }
 .navbar-inverse .navbar-nav>li>a:hover,
 .navbar-inverse .navbar-nav>li>a:focus {
-    color: white
+    opacity: 1;
 }
 .navbar-inverse .navbar-nav>li>a.offset {
-    color: white
+    color: white;
+    opacity: 0.8;
 }
 .navbar-inverse .navbar-nav>li>a.offset:hover,
 .navbar-inverse .navbar-nav>li>a.offset:focus {
-    color: white
+    opacity: 1;
 }
 .one-edge-shadow {
     -webkit-box-shadow: 0px 1px 10px 0px rgba(50, 50, 50, 0.3);
@@ -7266,19 +7268,13 @@ input.btn {
 }
 .float {
     display: inline-block;
-    -webkit-transition-duration: 0.3s;
-    transition-duration: 0.3s;
-    -webkit-transition-property: transform;
-    transition-property: transform;
+    -webkit-transition-duration: 0.2s;
+    transition-duration: 0.2s;
+    -webkit-transition-property: all;
+    transition-property: all;
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
     box-shadow: 0 0 1px rgba(0, 0, 0, 0)
-}
-.float:hover,
-.float:focus,
-.float:active {
-    -webkit-transform: translateY(-5px);
-    transform: translateY(-5px)
 }
 .sink {
     display: inline-block;
