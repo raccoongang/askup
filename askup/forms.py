@@ -151,8 +151,8 @@ class QuestionModelForm(forms.ModelForm):
             'blooms_tag',
         )
         widgets = {
-            'text': forms.TextInput(attrs={'placeholder': 'Question'}),
-            'answer_text': forms.Textarea(attrs={'placeholder': 'Answer'})
+            'text': forms.TextInput(attrs={'placeholder': 'Type a question here...'}),
+            'answer_text': forms.Textarea(attrs={'placeholder': 'Type an answer here...'}),
         }
 
 
@@ -162,3 +162,16 @@ class QuestionDeleteModelForm(forms.ModelForm):
     class Meta:
         model = Question
         fields = []
+
+
+class AnswerCreateModelForm(forms.ModelForm):
+    """Provides the create/update functionality for the Answer."""
+
+    class Meta:
+        model = Question
+        fields = [
+            'text',
+        ]
+        widgets = {
+            'text': forms.Textarea(attrs={'placeholder': 'Type your answer here...'}),
+        }

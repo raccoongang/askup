@@ -489,6 +489,44 @@ def question_delete(request, pk):
     )
 
 
+@redirect_unauthenticated
+def answer_evaluate(request, answer_id=None):
+    """Provide a self-evaluation for the student/teacher/admin."""
+    log.debug('Got the question answering request for the answer_id: %s', answer_id)
+    user = request.user
+
+    if request.method == 'GET':
+        form = QuestionModelForm(initial={'qset': answer_id}, user=user)
+    else:
+        form = QuestionModelForm(request.POST or None, user=user)
+
+        if form.is_valid():
+            text = form.cleaned_data.get('text')
+            answer_text = form.cleaned_data.get('answer_text')
+            qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
+
+            if not user.is_superuser and user not in qset.top_qset.users.all():
+                return redirect(reverse('askup:organizations'))
+
+            Question.objects.create(
+                text=text,
+                answer_text=answer_text,
+                answer_id=qset.id,
+                user_id=user.id
+            )
+            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+
+    return render(
+        request,
+        'askup/question_form.html',
+        {
+            'form': form,
+            'main_title': 'Create question:',
+            'submit_label': 'Create',
+        }
+    )
+
+
 def index_view(request):
     """Provide the index view."""
     return render(request, 'askup/index.html')
