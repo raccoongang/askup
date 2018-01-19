@@ -120,7 +120,7 @@ class QuestionModelForm(forms.ModelForm):
         self.fields['text'].label = ''
         self.fields['answer_text'].placeholder = 'Answer'
         self.fields['answer_text'].label = ''
-        self.fields["blooms_tag"].choices[0] = ("", "- no tag -")
+        self.fields['blooms_tag'].choices[0] = ("", "- no tag -")
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Fieldset(

@@ -1,0 +1,60 @@
+{% extends 'askup/base.html' %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="prettyform">
+        <div class="box center">
+            <h2 class="title-no-margin">{{ question_text }}</h2>
+            <br>
+            <br>
+            <form accept-charset="UTF-8" action="{% url 'askup:question_answer' question_id %}" class="new_answer center" data-remote="true" id="new_answer" method="post">
+                <div style="display:none">
+                    {% csrf_token %}
+                </div>
+                <textarea autofocus="autofocus" class="form-control answer-text" id="single-answer-text" name="text" placeholder="Type your answer here..."></textarea>
+                <div class="btn-div">
+                    <input class="btn btn-theme btn-lg submit-answer" id="single-submit-answer" type="submit" value="Submit answer">
+                </div>
+            </form>
+        </div>   
+    </div>
+	{% if is_answered %}
+    <div class="prettyform answers">
+        <div class="box center">
+            <h3>Correct answer:</h3>
+            <div class="net-votes">
+                <p id="question-{{ question_id }}-net-votes">1</p><br>
+            </div>
+            <div class="question-voting">
+                <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="65"></div>
+                <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="65"></div>
+            </div>
+            <div class="correct-container">
+                <h4 class="correct">{{ question_answer_text }}</h4>
+            </div>
+        </div>  
+    </div>
+    <div class="prettyform response" style="">
+        <br>
+        <h4 class="center"><b>Did you know the answer?</b></h4>
+        <div class="row row-no-padding">
+            <div class="col-xs-4 center">
+                <a class="btn-feedback btn-success" href="{% url 'askup:answer_evaluate' answer_id 2 %}" title="Yes">
+                    <i class="fa fa-check"></i>
+                </a>
+            </div>
+            <div class="col-xs-4 center">
+                <a class="btn-feedback btn-maybe" href="{% url 'askup:answer_evaluate' answer_id 1 %}" title="Not sure">
+                    <i class="fa fa-question"></i>
+                </a>
+            </div>
+            <div class="col-xs-4 center">
+                <a class="btn-feedback btn-pink" href="{% url 'askup:answer_evaluate' answer_id 0 %}" title="No">
+                    <i class="fa fa-times"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+	{% endif %}
+</div>
+{% endblock %}

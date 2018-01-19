@@ -304,7 +304,7 @@ class Answer(models.Model):
     text = models.CharField(max_length=255)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    self_evaluation = models.PositiveSmallIntegerField(choices=EVALUATIONS)
+    self_evaluation = models.PositiveSmallIntegerField(choices=EVALUATIONS, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):

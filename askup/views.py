@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views import generic
 
 from .forms import (
+    AnswerCreateModelForm,
     OrganizationModelForm,
     QsetDeleteModelForm,
     QsetModelForm,
@@ -15,7 +16,7 @@ from .forms import (
     QuestionModelForm,
     UserLoginForm,
 )
-from .models import Organization, Qset, Question
+from .models import Answer, Organization, Qset, Question
 from .utils import redirect_unauthenticated, user_group_required
 
 
@@ -369,12 +370,44 @@ def qset_delete(request, pk):
 @redirect_unauthenticated
 def question_answer(request, question_id=None):
     """Provide a create question view for the student/teacher/admin."""
-    log.debug('Got the question answer request for the question_id: %s', question_id)
-    # Stub
-    return redirect(reverse('askup:question', kwargs={'pk': question_id}))
+    log.debug('Got the question answering request for the question_id: %s', question_id)
+    question = get_object_or_404(Question, pk=question_id)
+    user = request.user
+    answer = None
 
-    if request.user.id is None:
-        return redirect(reverse('askup:sign_in'))
+    if request.method == 'GET':
+        form = AnswerCreateModelForm()
+    else:
+        form = AnswerCreateModelForm(request.POST or None)
+
+        if form.is_valid():
+            text = form.cleaned_data.get('text')
+
+            if not request.user.is_superuser and user not in question.qset.top_qset.users.all():
+                log.info(
+                    'User %s have tried to answer the question without the permissions.',
+                    user.id
+                )
+                return redirect(reverse('askup:organizations'))
+
+            answer = Answer.objects.create(
+                text=text,
+                question_id=question.id,
+                user_id=user.id
+            )
+
+    return render(
+        request,
+        'askup/question_answer.html',
+        {
+            'form': form,
+            'question_id': question.id,
+            'question_text': question.text,
+            'question_answer_text': question.answer_text,
+            'is_answered': answer is not None,
+            'answer_id': answer.id if answer is not None else None,
+        }
+    )
 
 
 @redirect_unauthenticated
@@ -490,41 +523,25 @@ def question_delete(request, pk):
 
 
 @redirect_unauthenticated
-def answer_evaluate(request, answer_id=None):
+def answer_evaluate(request, answer_id, evaluation):
     """Provide a self-evaluation for the student/teacher/admin."""
-    log.debug('Got the question answering request for the answer_id: %s', answer_id)
-    user = request.user
-
-    if request.method == 'GET':
-        form = QuestionModelForm(initial={'qset': answer_id}, user=user)
-    else:
-        form = QuestionModelForm(request.POST or None, user=user)
-
-        if form.is_valid():
-            text = form.cleaned_data.get('text')
-            answer_text = form.cleaned_data.get('answer_text')
-            qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
-
-            if not user.is_superuser and user not in qset.top_qset.users.all():
-                return redirect(reverse('askup:organizations'))
-
-            Question.objects.create(
-                text=text,
-                answer_text=answer_text,
-                answer_id=qset.id,
-                user_id=user.id
-            )
-            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
-
-    return render(
-        request,
-        'askup/question_form.html',
-        {
-            'form': form,
-            'main_title': 'Create question:',
-            'submit_label': 'Create',
-        }
+    log.debug(
+        'Got the "%s" evaluation for the answer_id - %s',
+        evaluation,
+        answer_id
     )
+    user = request.user
+    answer = get_object_or_404(Answer, pk=answer_id)
+    evaluation_int = int(evaluation)
+
+    if user not in answer.question.qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
+        answer.self_evaluation = evaluation_int
+        answer.save()
+
+    return redirect(reverse('askup:question_answer', kwargs={'question_id': answer.question_id}))
 
 
 def index_view(request):
