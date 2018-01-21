@@ -3,12 +3,13 @@ import logging
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import generic
 
 from .forms import (
-    AnswerCreateModelForm,
+    AnswerModelForm,
     OrganizationModelForm,
     QsetDeleteModelForm,
     QsetModelForm,
@@ -135,6 +136,10 @@ class QsetView(generic.ListView):
             return redirect(reverse('askup:organizations'))
 
         self._current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+
+        if self._current_qset.parent_qset_id is None:
+            return redirect(reverse('askup:organization', kwargs={'pk': self._current_qset.id}))
+
         applied_to_organization = self._current_qset.top_qset.users.filter(id=request.user.id)
 
         if not request.user.is_superuser and not applied_to_organization:
@@ -192,6 +197,7 @@ class QsetView(generic.ListView):
         context['for_any_authenticated'] = checked if self._current_qset.for_any_authenticated else ''
         context['show_authors'] = checked if self._current_qset.show_authors else ''
         context['for_unauthenticated'] = checked if self._current_qset.for_unauthenticated else ''
+        context['breadcrumbs'] = self._current_qset.get_parents()
         return context
 
     def get_queryset(self):
@@ -282,10 +288,13 @@ def organization_update(request, pk):
 @redirect_unauthenticated
 def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
+    parent_qset_id = request.POST.get('parent_qset')
+    parent_qset = get_object_or_404(Qset, pk=parent_qset_id)
+
     if request.method == 'GET':
-        form = QsetModelForm(user=request.user)
+        form = QsetModelForm(user=request.user, parent_qset_id=parent_qset_id)
     else:
-        form = QsetModelForm(request.POST or None, user=request.user)
+        form = QsetModelForm(request.POST or None, user=request.user, parent_qset_id=parent_qset_id)
 
         if form.is_valid():
             name = form.cleaned_data.get('name')
@@ -305,7 +314,8 @@ def qset_create(request):
         {
             'form': form,
             'main_title': 'Create qset:',
-            'submit_label': 'Create'
+            'submit_label': 'Create',
+            'breadcrumbs': parent_qset.get_parents()
         }
     )
 
@@ -316,9 +326,9 @@ def qset_update(request, pk):
     qset = get_object_or_404(Qset, pk=pk)
 
     if request.method == 'GET':
-        form = QsetModelForm(user=request.user, instance=qset)
+        form = QsetModelForm(user=request.user, instance=qset, parent_qset_id=qset.id)
     else:
-        form = QsetModelForm(request.POST or None, user=request.user, instance=qset)
+        form = QsetModelForm(request.POST or None, user=request.user, instance=qset, parent_qset_id=qset.id)
 
         if form.is_valid():
             form.save()
@@ -330,7 +340,8 @@ def qset_update(request, pk):
         {
             'form': form,
             'main_title': 'Edit qset',
-            'submit_label': 'Save'
+            'submit_label': 'Save',
+            'breadcrumbs': qset.get_parents()
         }
     )
 
@@ -363,6 +374,7 @@ def qset_delete(request, pk):
         {
             'form': form,
             'qset_name': qset.name,
+            'breadcrumbs': qset.get_parents(),
         }
     )
 
@@ -376,9 +388,21 @@ def question_answer(request, question_id=None):
     answer = None
 
     if request.method == 'GET':
-        form = AnswerCreateModelForm()
+        form = AnswerModelForm(parent_qset_id=question.qset_id)
+
+        return render(
+            request,
+            'askup/question_answer.html',
+            {
+                'form': form,
+                'question_id': question.id,
+                'question_text': question.text,
+                'question_answer_text': question.answer_text,
+            }
+        )
     else:
-        form = AnswerCreateModelForm(request.POST or None)
+        form = AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
+        response = {'result': 'success'}
 
         if form.is_valid():
             text = form.cleaned_data.get('text')
@@ -395,19 +419,11 @@ def question_answer(request, question_id=None):
                 question_id=question.id,
                 user_id=user.id
             )
+            response['answer_id'] = answer.id
+        else:
+            response['result'] = 'error'
 
-    return render(
-        request,
-        'askup/question_answer.html',
-        {
-            'form': form,
-            'question_id': question.id,
-            'question_text': question.text,
-            'question_answer_text': question.answer_text,
-            'is_answered': answer is not None,
-            'answer_id': answer.id if answer is not None else None,
-        }
-    )
+        return JsonResponse(response)
 
 
 @redirect_unauthenticated
@@ -415,15 +431,30 @@ def question_create(request, qset_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question creation request for the qset_id: %s', qset_id)
     user = request.user
+    parent_qset_id = qset_id
+
+    if qset_id:
+        qset = get_object_or_404(Qset, pk=qset_id)
+    else:
+        qset = None
 
     if request.method == 'GET':
-        form = QuestionModelForm(initial={'qset': qset_id}, user=user)
+        form = QuestionModelForm(
+            initial={'qset': qset_id},
+            user=user,
+            parent_qset_id=parent_qset_id,
+        )
     else:
-        form = QuestionModelForm(request.POST or None, user=user)
+        form = QuestionModelForm(
+            request.POST or None,
+            user=user,
+            parent_qset_id=parent_qset_id,
+        )
 
         if form.is_valid():
             text = form.cleaned_data.get('text')
             answer_text = form.cleaned_data.get('answer_text')
+            blooms_tag = form.cleaned_data.get('blooms_tag')
             qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
 
             if not user.is_superuser and user not in qset.top_qset.users.all():
@@ -433,7 +464,8 @@ def question_create(request, qset_id=None):
                 text=text,
                 answer_text=answer_text,
                 qset_id=qset.id,
-                user_id=user.id
+                user_id=user.id,
+                blooms_tag=blooms_tag,
             )
             return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
@@ -444,6 +476,7 @@ def question_create(request, qset_id=None):
             'form': form,
             'main_title': 'Create question:',
             'submit_label': 'Create',
+            'breadcrumbs': qset.get_parents(False) if qset else None,
         }
     )
 
@@ -466,12 +499,14 @@ def question_edit(request, pk):
         form = QuestionModelForm(
             user=request.user,
             instance=question,
+            parent_qset_id=question.qset_id,
         )
     else:
         form = QuestionModelForm(
             request.POST or None,
             user=request.user,
-            instance=question
+            instance=question,
+            parent_qset_id=question.qset_id,
         )
 
         if form.is_valid():
@@ -484,6 +519,7 @@ def question_edit(request, pk):
             'form': form,
             'main_title': 'Edit question:',
             'submit_label': 'Save',
+            'current_qset': question.qset,
         }
     )
 
@@ -503,14 +539,21 @@ def question_delete(request, pk):
         return redirect(reverse('askup:organizations'))
 
     if request.method == 'POST':
-        form = QuestionDeleteModelForm(request.POST, instance=question)
+        form = QuestionDeleteModelForm(
+            request.POST,
+            instance=question,
+            parent_qset_id=question.qset_id
+        )
 
         if form.is_valid():  # checks the CSRF
             qset_id = question.qset_id
             question.delete()
             return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
     else:
-        form = QuestionDeleteModelForm(instance=question)
+        form = QuestionDeleteModelForm(
+            instance=question,
+            parent_qset_id=question.qset_id
+        )
 
     return render(
         request,
@@ -534,14 +577,14 @@ def answer_evaluate(request, answer_id, evaluation):
     answer = get_object_or_404(Answer, pk=answer_id)
     evaluation_int = int(evaluation)
 
-    if user not in answer.question.qset.top_qset.users.all():
+    if not user.is_superuser and user not in answer.question.qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
         answer.self_evaluation = evaluation_int
         answer.save()
 
-    return redirect(reverse('askup:question_answer', kwargs={'question_id': answer.question_id}))
+    return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
 
 
 def index_view(request):

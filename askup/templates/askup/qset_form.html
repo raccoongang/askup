@@ -6,15 +6,11 @@
     <div class="box maxwidth-box">
         <h2 class="fixed-title center">{{ main_title }}</h2>
 
-        <form accept-charset="UTF-8" action="" class="center" id="new_qset" method="post">
+        <form accept-charset="UTF-8" action="" class="form" id="new_qset" method="post">
             <div style="display:none">
             {% csrf_token %}
             </div>
-            {{ form|crispy }}
-            <div class="center">
-                <input class="btn btn-theme" type="submit" value="{{ submit_label }}">
-                <a class="btn btn-theme" href="/">Cancel</a>
-            </div>
+            {% crispy form %}
         </form>
     </div>
 </div>

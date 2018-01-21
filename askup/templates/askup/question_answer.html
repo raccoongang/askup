@@ -1,4 +1,5 @@
 {% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
 
 {% block body %}
 <div class="container-fluid">
@@ -7,19 +8,19 @@
             <h2 class="title-no-margin">{{ question_text }}</h2>
             <br>
             <br>
-            <form accept-charset="UTF-8" action="{% url 'askup:question_answer' question_id %}" class="new_answer center" data-remote="true" id="new_answer" method="post">
-                <div style="display:none">
-                    {% csrf_token %}
+            <div class="center" id="your-answer show-on-answered" style="display: none">
+                <h3>Your answer:</h3>
+                <div class="correct-container">
+                    <h4 class="correct">heeee</h4>
                 </div>
-                <textarea autofocus="autofocus" class="form-control answer-text" id="single-answer-text" name="text" placeholder="Type your answer here..."></textarea>
-                <div class="btn-div">
-                    <input class="btn btn-theme btn-lg submit-answer" id="single-submit-answer" type="submit" value="Submit answer">
-                </div>
-            </form>
+                <br />
+            </div>
+            <div class="hide-on-answered">
+            {% crispy form %}
+            </div>
         </div>   
     </div>
-	{% if is_answered %}
-    <div class="prettyform answers">
+    <div class="prettyform answers show-on-answered" style="display:none">
         <div class="box center">
             <h3>Correct answer:</h3>
             <div class="net-votes">
@@ -34,27 +35,26 @@
             </div>
         </div>  
     </div>
-    <div class="prettyform response" style="">
+    <div class="prettyform response self-evaluate show-on-answered" style="display:none">
+        <h3 class="center">Did you know the answer?</h3>
         <br>
-        <h4 class="center"><b>Did you know the answer?</b></h4>
         <div class="row row-no-padding">
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-success" href="{% url 'askup:answer_evaluate' answer_id 2 %}" title="Yes">
+                <a class="btn-feedback btn-success" href="{% url 'askup:answer_evaluate' 1 2 %}" title="Yes">
                     <i class="fa fa-check"></i>
                 </a>
             </div>
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-maybe" href="{% url 'askup:answer_evaluate' answer_id 1 %}" title="Not sure">
+                <a class="btn-feedback btn-maybe" href="{% url 'askup:answer_evaluate' 1 1 %}" title="Not sure">
                     <i class="fa fa-question"></i>
                 </a>
             </div>
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-pink" href="{% url 'askup:answer_evaluate' answer_id 0 %}" title="No">
+                <a class="btn-feedback btn-pink" href="{% url 'askup:answer_evaluate' 1 0 %}" title="No">
                     <i class="fa fa-times"></i>
                 </a>
             </div>
         </div>
     </div>
-	{% endif %}
 </div>
 {% endblock %}

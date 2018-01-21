@@ -2678,6 +2678,8 @@ fieldset[disabled] .form-control {
 }
 textarea.form-control {
     height: auto;
+    margin-right: auto;
+    margin-left: auto;
 }
 input[type="search"] {
     -webkit-appearance: none
@@ -6714,11 +6716,11 @@ a {
     padding: 0;
     margin: 0;
     text-decoration: none;
-    -webkit-transition: background-color .4s linear, color .4s linear;
-    -moz-transition: background-color .4s linear, color .4s linear;
-    -o-transition: background-color .4s linear, color .4s linear;
-    -ms-transition: background-color .4s linear, color .4s linear;
-    transition: background-color .4s linear, color .4s linear;
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear;
+    transition: background-color .2s linear, color .2s linear;
     text-decoration: none;
     color: inherit
 }
@@ -6814,13 +6816,6 @@ a:hover {
     -moz-box-shadow: 0px 1px 10px 0px rgba(50, 50, 50, 0.3);
     box-shadow: 0px 1px 10px 0px rgba(50, 50, 50, 0.3)
 }
-a.btn {
-    color: white;
-    margin-bottom: 5px
-}
-input.btn {
-    margin-bottom: 5px
-}
 .btn-blue {
     background-color: #00b3fe;
     box-shadow: 0 5px 0 0 #3c93d5
@@ -6856,31 +6851,51 @@ input.btn {
     -webkit-transform: translate(0px, 5px)
 }
 .btn-flat {
-    color: #fff;
+    color: #000;
     margin: 0;
     padding: 6px 12px;
     text-decoration: none;
-    transition: background-color .4s linear, color .4s linear;
-    -webkit-transition: background-color .4s linear, color .4s linear;
-    -moz-transition: background-color .4s linear, color .4s linear;
-    -o-transition: background-color .4s linear, color .4s linear;
-    -ms-transition: background-color .4s linear, color .4s linear
+    transition: background-color .2s linear, color .2s linear;
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear
+}
+.btn-flat:hover {
+    color: #fff;
+    background-color: #888;
 }
 .btn-maybe {
     background-color: orange;
-    box-shadow: 0px 3px 0px 0px darkorange;
     text-decoration: none
 }
 .btn-maybe:hover {
-    background-color: darkorange;
+    background-color: #c36b00;
     text-decoration: none
 }
+.btn-pink.bright {
+    background-color: #e0c6ce;
+    color: black;
+}
+
 .btn-pink {
+    background-color: #e0c6ce;
     background-color: #d8266a;
-    box-shadow: 0 3px 0 0 #a61d51;
+    color: white;
     text-decoration: none
+    transition: background-color .2s linear, color .2s linear;
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear
+}
+.btn-pink.bright:hover {
+    color: #fff;
+    background-color: #b66d81;
 }
 .btn-pink:hover {
+    color: #fff;
+    background-color: #b66d81;
     background-color: #a61d51;
     text-decoration: none
 }
@@ -6908,11 +6923,11 @@ input.btn {
     padding: 6px 12px;
     margin: 0;
     text-decoration: none;
-    -webkit-transition: background-color .4s linear, color .4s linear;
-    -moz-transition: background-color .4s linear, color .4s linear;
-    -o-transition: background-color .4s linear, color .4s linear;
-    -ms-transition: background-color .4s linear, color .4s linear;
-    transition: background-color .4s linear, color .4s linear
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear;
+    transition: background-color .2s linear, color .2s linear
 }
 .btn-theme:hover,
 .btn-theme:focus,
@@ -9169,4 +9184,36 @@ ul.qset-list-compressed {
 #new_user .form-group .controls input {
     margin-left: auto;
     margin-right: auto;
+}
+
+select.form-control, input.form-control {
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.buttonHolder a, .buttonHolder input, .buttonHolder button {
+    margin-right: 5px;
+}
+
+.btn-info {
+    background-color: #70b3de;
+    border-color: #60a3ce;
+}
+
+.btn-info:hover,
+.btn-info.active:hover {
+    background-color: #60a3ce;
+    border-color: #5093be;
+}
+
+.btn.btn-info:active,
+.btn.btn-info:active:focus,
+.btn.btn-info.active,
+.btn.btn-info.active:focus,
+.btn.btn-info.active:active,
+.btn.btn-info:focus,
+.btn.btn-info.active.focus,
+.btn.btn-info.active.focus:hover {
+    background-color: #6093be;
+    border-color: #5083ae;
 }

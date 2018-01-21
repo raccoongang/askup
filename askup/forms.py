@@ -5,6 +5,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import ButtonHolder, Div, Fieldset, HTML, Layout, Submit
 from django import forms
 from django.contrib.auth import authenticate
+from django.urls import reverse
 
 from .models import Organization, Qset, Question
 
@@ -67,14 +68,62 @@ class QsetModelForm(forms.ModelForm):
 
         Overriding the same method of the forms.ModelForm
         """
+        qset_id = kwargs.pop('parent_qset_id', None)
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
+
+        if qset_id:
+            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
+        else:
+            cancel_url = reverse('askup:organizations')
 
         self.fields['parent_qset'].required = True
         self.fields['parent_qset'].empty_label = None
         self.fields['parent_qset'].queryset = Qset.get_user_related_qsets(
             user,
             ('top_qset_id', '-is_organization', 'askup_qset.name')
+        )
+        self.fields['for_any_authenticated'].label = 'Questions are visible to all logged-in users'
+        self.fields['for_unauthenticated'].label = 'Questions are visible to unauthenticated users'
+        self.fields['show_authors'].label = 'Questions authors are visible to all users'
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Fieldset(
+                '',
+                Div('name', css_class='row center'),
+                Div('parent_qset', css_class='row center'),
+                Div(
+                    Div(css_class="col-xs-1"),
+                    Div('for_any_authenticated', css_class='col-xs-10'),
+                    Div(css_class="col-xs-1"),
+                    css_class="col-xs-12 row",
+                ),
+                Div(
+                    Div(css_class="col-xs-1"),
+                    Div('for_unauthenticated', css_class='col-xs-10'),
+                    Div(css_class="col-xs-1"),
+                    css_class="col-xs-12 row",
+                ),
+                Div(
+                    Div(css_class="col-xs-1"),
+                    Div('show_authors', css_class='col-xs-10'),
+                    Div(css_class="col-xs-1"),
+                    css_class="col-xs-12 row",
+                ),
+                Div(
+                    InlineRadios('type', template='askup/layout/radioselect_inline.html'),
+                    css_class='row center'
+                ),
+            ),
+            ButtonHolder(
+                HTML(
+                    '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
+                    'Cancel' +
+                    '</a>'
+                ),
+                Submit('submit', 'Save', css_class='btn btn-theme'),
+                css_class="center",
+            )
         )
 
     class Meta:
@@ -106,6 +155,7 @@ class QuestionModelForm(forms.ModelForm):
 
         Overriding the same method of the forms.ModelForm
         """
+        qset_id = kwargs.pop('parent_qset_id', None)
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
 
@@ -122,10 +172,15 @@ class QuestionModelForm(forms.ModelForm):
         self.fields['answer_text'].label = ''
         self.fields['blooms_tag'].choices[0] = ("", "- no tag -")
         self.helper = FormHelper()
+
+        if qset_id:
+            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
+        else:
+            cancel_url = reverse('askup:organizations')
+
         self.helper.layout = Layout(
             Fieldset(
                 '',
-                InlineRadios('blooms_tag', template='askup/layout/radioselect_inline.html'),
                 Div(
                     Div('text', css_class='col-sm-12'),
                     css_class='row'
@@ -134,11 +189,20 @@ class QuestionModelForm(forms.ModelForm):
                     Div('answer_text', css_class='col-sm-12'),
                     css_class='row'
                 ),
+                InlineRadios(
+                    'blooms_tag',
+                    template='askup/layout/radioselect_inline.html',
+                    hide='true'
+                ),
                 Div('qset'),
             ),
             ButtonHolder(
+                HTML(
+                    '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
+                    'Cancel' +
+                    '</a>'
+                ),
                 Submit('submit', 'Save', css_class='btn btn-theme'),
-                HTML('<a class="btn btn-theme" href="/">Cancel</a>')
             )
         )
 
@@ -159,13 +223,72 @@ class QuestionModelForm(forms.ModelForm):
 class QuestionDeleteModelForm(forms.ModelForm):
     """Provides the delete functionality for the Question."""
 
+    def __init__(self, *args, **kwargs):
+        """
+        Init the QuestionDeleteModelForm.
+
+        Overriding the same method of the forms.ModelForm
+        """
+        qset_id = kwargs.pop('parent_qset_id', None)
+        super().__init__(*args, **kwargs)
+
+        if qset_id:
+            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
+        else:
+            cancel_url = reverse('askup:organizations')
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            ButtonHolder(
+                HTML(
+                    '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
+                    'Cancel' +
+                    '</a>'
+                ),
+                Submit('submit', 'Delete', css_class='btn btn-pink'),
+            )
+        )
+
     class Meta:
         model = Question
         fields = []
 
 
-class AnswerCreateModelForm(forms.ModelForm):
+class AnswerModelForm(forms.ModelForm):
     """Provides the create/update functionality for the Answer."""
+
+    def __init__(self, *args, **kwargs):
+        """
+        Init the AnswerModelForm.
+
+        Overriding the same method of the forms.ModelForm
+        """
+        qset_id = kwargs.pop('parent_qset_id', None)
+
+        super().__init__(*args, **kwargs)
+
+        self.fields['text'].required = True
+
+        if qset_id:
+            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
+        else:
+            cancel_url = reverse('askup:organizations')
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Fieldset(
+                '',
+                Div('text'),
+            ),
+            ButtonHolder(
+                HTML(
+                    '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
+                    'Cancel' +
+                    '</a>'
+                ),
+                Submit('submit', 'Submit', css_class='btn btn-theme submit-answer'),
+            )
+        )
 
     class Meta:
         model = Question
@@ -173,5 +296,9 @@ class AnswerCreateModelForm(forms.ModelForm):
             'text',
         ]
         widgets = {
-            'text': forms.Textarea(attrs={'placeholder': 'Type your answer here...'}),
+            'text': forms.Textarea(
+                attrs={
+                    'placeholder': 'Type your answer here...'
+                }
+            ),
         }

@@ -1,8 +1,9 @@
+{% if breadcrumbs %}
 <div class="row">
     <div class="col-xs-12">
         <h5 class="center">
             <span id="breadcrumbs" class="center">
-                {% for url_name, parent_id, parent_name in current_qset.get_parents %}
+                {% for url_name, parent_id, parent_name in breadcrumbs %}
                     <a class="btn-breadcrumb" href="{% url url_name parent_id %}">{{ parent_name }}</a> &gt;
                 {% endfor %}
                 {{main_title}}
@@ -10,3 +11,4 @@
         </h5>
     </div>
 </div>
+{% endif %}

@@ -152,10 +152,14 @@ class Qset(models.Model):
         else:
             return self.parent_qset.top_qset_id
 
-    def get_parents(self):
+    def get_parents(self, exclude_itself=True):
         """Collect parents data for the breadcrumbs composing."""
         parents = []
-        parent = self.parent_qset
+
+        if exclude_itself:
+            parent = self.parent_qset
+        else:
+            parent = self
 
         while parent:
             if parent.parent_qset is None:
