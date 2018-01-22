@@ -508,8 +508,48 @@ class QuestionModelFormTest(TestCase):
         self.delete_and_get_question(2)  # Try to delete Question 1-1-2 (teacher01) by the student01
         self.client.login(username='admin', password='admin')
 
+    def test_parent_questions_count_update_on_create(self):
+        """Test parent question count update on question create."""
+        qsets = {
+            'org_qset': {
+                'id': 1,  # Organization 1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+            'parent_qset': {
+                'id': 4,  # Qset 1-1 from the mockups
+                'orig_count': None,
+                'new_count': None,
+            },
+        }
+        question = Question.objects.create(
+            text='Question count test 1',
+            answer_text='Question count test 1',
+            qset=4,
+            blooms_tag=0,
+        )
+
+        for key in qsets.keys():
+            qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        question.delete()
+
+        for key in qsets.keys():
+            qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
+
+        org_qset = qsets['org_qset']
+        parent_qset = qsets['parent_qset']
+        self.assertEqual(
+            org_qset['new_count'],
+            org_qset['orig_count'] + 1
+        )
+        self.assertEqual(
+            parent_qset['new_count'],
+            parent_qset['orig_count'] + 1
+        )
+
     def test_parent_questions_count_update_on_delete(self):
-        """Test parent question count update on qset delete."""
+        """Test parent question count update on question delete."""
         qsets = {
             'org_qset': {
                 'id': 1,  # Organization 1 from the mockups
