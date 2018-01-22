@@ -615,7 +615,7 @@ def start_quiz_all(request, qset_id):
     question = Question.objects.filter(qset_id=qset_id).order_by('text').first()
     user = request.user
 
-    if not user.is_superuser and not user not in qset.top_qset.users.all():
+    if not user.is_superuser and user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     if not question:
