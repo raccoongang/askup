@@ -3,7 +3,7 @@ import logging
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import generic
@@ -384,6 +384,7 @@ def question_answer(request, question_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question answering request for the question_id: %s', question_id)
     question = get_object_or_404(Question, pk=question_id)
+    is_quiz_all = request.GET.get('is_quiz_all', None)
     user = request.user
     answer = None
 
@@ -398,6 +399,7 @@ def question_answer(request, question_id=None):
                 'question_id': question.id,
                 'question_text': question.text,
                 'question_answer_text': question.answer_text,
+                'is_quiz_all': is_quiz_all,
             }
         )
     else:
@@ -573,6 +575,7 @@ def answer_evaluate(request, answer_id, evaluation):
         evaluation,
         answer_id
     )
+    is_quiz_all = request.GET.get('is_quiz_all', None)
     user = request.user
     answer = get_object_or_404(Answer, pk=answer_id)
     evaluation_int = int(evaluation)
@@ -584,9 +587,45 @@ def answer_evaluate(request, answer_id, evaluation):
         answer.self_evaluation = evaluation_int
         answer.save()
 
+    if is_quiz_all:
+        qset_id = answer.question.qset_id
+        question_text = answer.question.text
+        next_question = Question.objects.filter(qset_id=qset_id, text__gt=question_text).order_by('text').first()
+
+        if next_question:
+            return redirect(
+                '{0}?is_quiz_all=1'.format(
+                    reverse('askup:question_answer', kwargs={'question_id': next_question.id})
+                )
+            )
+
     return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
 
 
 def index_view(request):
     """Provide the index view."""
     return render(request, 'askup/index.html')
+
+
+@redirect_unauthenticated
+def start_quiz_all(request, qset_id):
+    """Provide a start quiz all in qset view for the student/teacher/admin."""
+    log.debug('Got the quiz all request for the qset_id: %s', qset_id)
+    qset = get_object_or_404(Qset, pk=qset_id)
+    question = Question.objects.filter(qset_id=qset_id).order_by('text').first()
+    user = request.user
+
+    if not user.is_superuser and not user not in qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if not question:
+        raise Http404
+
+    if request.method == 'GET':
+        return redirect(
+            '{0}?is_quiz_all=1'.format(
+                reverse('askup:question_answer', kwargs={'question_id': question.id})
+            )
+        )
+    else:
+        return redirect(reverse('askup:organizations'))

@@ -30,7 +30,7 @@
     {% include "askup/qset_breadcrumbs.html" %}
     <div class="row center">
         <div class="col-xs-12">
-            <a data-toggle="modal" href="#" data-target="#question_display_Modal" class="btn btn-primary btn-large quiz-all"> Quiz All </a>
+            <a href="{% url 'askup:start_quiz_all' current_qset_id %}" class="btn btn-primary btn-large quiz-all">Quiz All </a>
         </div>
     </div>
 </div>

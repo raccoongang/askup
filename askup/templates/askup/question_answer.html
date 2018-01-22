@@ -8,10 +8,10 @@
             <h2 class="title-no-margin">{{ question_text }}</h2>
             <br>
             <br>
-            <div class="center" id="your-answer show-on-answered" style="display: none">
+            <div class="center show-on-answered" id="your-answer" style="display: none">
                 <h3>Your answer:</h3>
                 <div class="correct-container">
-                    <h4 class="correct">heeee</h4>
+                    <h4 class="correct your-answer"></h4>
                 </div>
                 <br />
             </div>
@@ -40,17 +40,17 @@
         <br>
         <div class="row row-no-padding">
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-success" href="{% url 'askup:answer_evaluate' 1 2 %}" title="Yes">
+                <a class="btn-feedback btn-success" href="{% url 'askup:answer_evaluate' 1 2 %}{% if is_quiz_all %}?is_quiz_all=1{% endif %}" title="Yes">
                     <i class="fa fa-check"></i>
                 </a>
             </div>
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-maybe" href="{% url 'askup:answer_evaluate' 1 1 %}" title="Not sure">
+                <a class="btn-feedback btn-maybe" href="{% url 'askup:answer_evaluate' 1 1 %}{% if is_quiz_all %}?is_quiz_all=1{% endif %}" title="Not sure">
                     <i class="fa fa-question"></i>
                 </a>
             </div>
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-pink" href="{% url 'askup:answer_evaluate' 1 0 %}" title="No">
+                <a class="btn-feedback btn-pink" href="{% url 'askup:answer_evaluate' 1 0 %}{% if is_quiz_all %}?is_quiz_all=1{% endif %}" title="No">
                     <i class="fa fa-times"></i>
                 </a>
             </div>

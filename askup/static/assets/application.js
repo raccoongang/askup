@@ -28,6 +28,7 @@ $(document).on('submit', '.hide-on-answered>form', function() {
 
 function on_answer_success(data) {
     if (data.result == 'success') {
+        $('h4.your-answer').html($('#id_text').val());
         $('.self-evaluate').find('a').each(function(){
             $(this).attr('href', $(this).attr('href').replace('/evaluate/1', '/evaluate/' + data.answer_id));
         });

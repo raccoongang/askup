@@ -263,6 +263,7 @@ class AnswerModelForm(forms.ModelForm):
 
         Overriding the same method of the forms.ModelForm
         """
+        is_quiz_all = kwargs.get('is_quiz_all', None)
         qset_id = kwargs.pop('parent_qset_id', None)
 
         super().__init__(*args, **kwargs)
@@ -275,6 +276,10 @@ class AnswerModelForm(forms.ModelForm):
             cancel_url = reverse('askup:organizations')
 
         self.helper = FormHelper()
+
+        if is_quiz_all:
+            self.helper.form_action = "?is_quiz_all=1"
+
         self.helper.layout = Layout(
             Fieldset(
                 '',
@@ -298,7 +303,8 @@ class AnswerModelForm(forms.ModelForm):
         widgets = {
             'text': forms.Textarea(
                 attrs={
-                    'placeholder': 'Type your answer here...'
+                    'placeholder': 'Type your answer here...',
+                    'rows': 2,
                 }
             ),
         }

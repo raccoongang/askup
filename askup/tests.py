@@ -522,17 +522,16 @@ class QuestionModelFormTest(TestCase):
                 'new_count': None,
             },
         }
-        question = Question.objects.create(
-            text='Question count test 1',
-            answer_text='Question count test 1',
-            qset=4,
-            blooms_tag=0,
-        )
-
         for key in qsets.keys():
             qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
 
-        question.delete()
+        Question.objects.create(
+            text='Question count test 1',
+            answer_text='Question count test 1',
+            qset_id=4,
+            blooms_tag=0,
+            user_id=1
+        )
 
         for key in qsets.keys():
             qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
