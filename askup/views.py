@@ -2,14 +2,16 @@
 import logging
 
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.views import generic
 
 from .forms import OrganizationModelForm, QsetDeleteModelForm, QsetModelForm, UserLoginForm
 from .models import Organization, Qset, Question
-from .utils import redirect_unauthenticated, user_group_required
+from .utils import check_user_has_groups, user_group_required
 
 
 log = logging.getLogger(__name__)
@@ -51,7 +53,7 @@ class OrganizationView(generic.ListView):
 
     template_name = 'askup/organization.html'
 
-    @redirect_unauthenticated
+    @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
         """
         Check presence of required credentials and parameters.
@@ -114,7 +116,7 @@ class QsetView(generic.ListView):
 
     model = Qset
 
-    @redirect_unauthenticated
+    @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
         """
         Check presence of required credentials and parameters.
@@ -155,36 +157,40 @@ class QsetView(generic.ListView):
         """
         context = super().get_context_data(*args, **kwargs)
 
-        if self._current_qset.type == 2:
-            # Clear the qsets queryset if rendering the "questions only" Qset
-            context['object_list'] = []
-
         if self._current_qset.type == 1:
             # Clear the questions queryset if rendering the "qsets only" Qset
             context['questions_list'] = []
         else:
             context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
 
+        self.fill_user_context(context)
+        self.fill_qset_context(context)
+        return context
+
+    def fill_user_context(self, context):
+        """Fill user related context extra fields."""
+        context['is_admin'] = self.request.user.is_superuser
+        context['is_teacher'] = check_user_has_groups(self.request.user, 'teachers')
+        context['is_student'] = check_user_has_groups(self.request.user, 'students')
+        context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
+        context['is_question_creator'] = self.request.user.is_authenticated()
+
+    def fill_qset_context(self, context):
+        """Fill qset related context extra fields."""
         checked = ' checked="checked"'
-        context['parent_qset_id'] = self._current_qset.parent_qset_id
+        context['is_qset_allowed'] = self._current_qset.type in (0, 1)
         context['main_title'] = self._current_qset.name
+        context['parent_qset_id'] = self._current_qset.parent_qset_id
         context['current_qset'] = self._current_qset
         context['current_qset_name'] = self._current_qset.name
         context['current_qset_id'] = self._current_qset.id
         context['current_qset_show_authors'] = self._current_qset.show_authors
-        context['is_admin'] = self.request.user.is_superuser
-        context['is_teacher'] = 'Teachers' in self.request.user.groups.values_list('name', flat=True)
-        context['is_student'] = 'Students' in self.request.user.groups.values_list('name', flat=True)
-        context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
-        context['is_qset_allowed'] = self._current_qset.type in (0, 1)
-        context['is_question_creator'] = self.request.user.is_authenticated()
         context['mixed_type'] = checked if self._current_qset.type == 0 else ''
         context['subsets_type'] = checked if self._current_qset.type == 1 else ''
         context['questions_type'] = checked if self._current_qset.type == 2 else ''
         context['for_any_authenticated'] = checked if self._current_qset.for_any_authenticated else ''
         context['show_authors'] = checked if self._current_qset.show_authors else ''
         context['for_unauthenticated'] = checked if self._current_qset.for_unauthenticated else ''
-        return context
 
     def get_queryset(self):
         """
@@ -192,7 +198,11 @@ class QsetView(generic.ListView):
 
         Overriding the get_queryset of generic.ListView
         """
-        queryset = Qset.objects.filter(parent_qset_id=self.kwargs.get('pk'))
+        if self._current_qset.type == 2:
+            # Clear the qsets queryset if rendering the "questions only" Qset
+            queryset = []
+        else:
+            queryset = Qset.objects.filter(parent_qset_id=self.kwargs.get('pk'))
 
         return queryset
 
@@ -202,7 +212,7 @@ class QuestionView(generic.DetailView):
 
     model = Question
 
-    @redirect_unauthenticated
+    @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         """
         Check presence of required credentials and parameters.
@@ -218,7 +228,7 @@ class UserProfileView(generic.DetailView):
     model = User
     template_name = 'askup/user_profile.html'
 
-    @redirect_unauthenticated
+    @method_decorator(login_required)
     def dispatch(*args, **kwargs):
         """
         Check presence of required credentials and parameters.
@@ -271,7 +281,7 @@ def organization_update(request, pk):
     return redirect(reverse('askup:organization', kwargs={'pk': organization.id}))
 
 
-@redirect_unauthenticated
+@login_required
 def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
     if request.method == 'GET':
@@ -315,6 +325,7 @@ def qset_update(request, pk):
 def qset_delete(request, pk):
     """Provide the delete qset view for the teacher/admin."""
     qset = get_object_or_404(Qset, pk=pk)
+    redirect_response = None
 
     if qset.parent_qset_id is None:
         return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
@@ -324,23 +335,32 @@ def qset_delete(request, pk):
 
     if request.method == 'POST':
         form = QsetDeleteModelForm(request.POST, instance=qset)
-
-        if form.is_valid():  # checks the CSRF
-            parent = qset.parent_qset
-            qset.delete()
-            redirect_url = 'askup:organization' if parent.parent_qset_id is None else 'askup:qset'
-            return redirect(reverse(redirect_url, kwargs={'pk': parent.id}))
+        redirect_response = do_qset_validate_delete(form, qset)
     else:
         form = QsetDeleteModelForm(instance=qset)
 
-    return render(
-        request,
-        'askup/delete_qset_form.html',
-        {
-            'form': form,
-            'qset_name': qset.name,
-        }
-    )
+    if redirect_response is None:
+        return render(
+            request,
+            'askup/delete_qset_form.html',
+            {
+                'form': form,
+                'qset_name': qset.name,
+            }
+        )
+    else:
+        return redirect_response
+
+
+def do_qset_validate_delete(form, qset):
+    """Perform a form validation and delete qset."""
+    if form.is_valid():  # checks the CSRF
+        parent = qset.parent_qset
+        qset.delete()
+        redirect_url = 'askup:organization' if parent.parent_qset_id is None else 'askup:qset'
+        return redirect(reverse(redirect_url, kwargs={'pk': parent.id}))
+    else:
+        return False
 
 
 def question_answer(request, question_id=None):
@@ -353,7 +373,7 @@ def question_answer(request, question_id=None):
         return redirect(reverse('askup:sign_in'))
 
 
-@redirect_unauthenticated
+@login_required
 def question_create(request, qset_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question creation request for the qset_id: %s', qset_id)

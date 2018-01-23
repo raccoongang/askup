@@ -42,33 +42,38 @@ def user_group_required(*required_groups):
     """
     def wrapper(func):
         def wrapped_function(*args, **kwargs):
-            if isinstance(args[0], WSGIRequest):
-                request = args[0]
-            else:
-                request = args[0].request
-
+            request = args[0] if isinstance(args[0], WSGIRequest) else args[0].request
             user = request.user
             auth_check_result = do_redirect_unauthenticated(user)
 
             if auth_check_result:
                 return auth_check_result
 
-            required_groups_lower = [name.lower() for name in required_groups]
-
-            if 'admins' in required_groups_lower and user.is_superuser:
-                logging.info('User performed an authorized Admin action')
+            if check_user_has_groups(user, required_groups):
                 return func(*args, **kwargs)
 
-            for required_group in required_groups_lower:
-                user_groups = [name.lower() for name in user.groups.values_list('name', flat=True)]
-
-                if required_group in user_groups:
-                    logging.info('User performed an authorized {0} action'.format(required_group))
-                    return func(*args, **kwargs)
-
-            logging.info('User tried to perform unauthorized action')
             return redirect(reverse('askup:organizations'))
 
         return wrapped_function
 
     return wrapper
+
+
+def check_user_has_groups(user, required_groups):
+    """Check if user has required groups."""
+    if type(required_groups) is str:
+        required_groups = [required_groups]
+
+    required_groups_lower = set(name.lower() for name in required_groups)
+    user_groups = set(name.lower() for name in user.groups.values_list('name', flat=True))
+
+    if 'admins' in required_groups_lower and user.is_superuser:
+        return True
+
+    groups_found = required_groups_lower.intersection(user_groups)
+
+    if groups_found:
+        return True
+
+    logging.info('User tried to perform unauthorized action')
+    return False
