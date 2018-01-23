@@ -629,3 +629,32 @@ def start_quiz_all(request, qset_id):
         )
     else:
         return redirect(reverse('askup:organizations'))
+
+
+@redirect_unauthenticated
+def question_upvote(request, question_id):
+    """Provide a question up-vote functionality."""
+    return question_vote(request.user, question_id, 1)
+
+
+@redirect_unauthenticated
+def question_downvote(request, question_id):
+    """Provide a question down-vote functionality."""
+    return question_vote(request.user, question_id, -1)
+
+
+def question_vote(user, question_id, value):
+    """Provide a general question vote functionality."""
+    question = get_object_or_404(Question, pk=question_id)
+
+    if not user.is_superuser and user not in question.qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    vote_result = question.vote(user.id, value)
+
+    if vote_result is False:
+        response = {'result': 'error'}
+    else:
+        response = {'result': 'success', 'value': vote_result}
+
+    return JsonResponse(response)

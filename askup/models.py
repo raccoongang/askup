@@ -250,6 +250,7 @@ class Question(models.Model):
         blank=True,
         default=None
     )
+    vote_value = models.PositiveIntegerField(default=1)
 
     def __init__(self, *args, **kwargs):
         """Initialize the Question model object."""
@@ -264,6 +265,9 @@ class Question(models.Model):
         Overriding the models.Model save method.
         """
         is_new = self.id is None
+
+        if self.vote_value < 0:
+            self.vote_value = 0
 
         super().save(*args, **kwargs)
 
@@ -288,6 +292,37 @@ class Question(models.Model):
         """
         self.qset.iterate_questions_count(-1)
         super().delete(*args, **kwargs)
+
+    def vote(self, user_id, value):
+        """
+        Vote for this question.
+
+        Adds a value to the vote_value of this question as well as creates the vote
+        record for the specific user and question in the askup_vote table.
+        """
+        exists = Vote.objects.filter(question_id=self.id, voter_id=user_id).exists()
+
+        if exists:
+            return False
+
+        Vote.objects.create(
+            value=value,
+            question_id=self.id,
+            voter_id=user_id,
+        )
+
+        vote_value = self.vote_value + value
+
+        if vote_value < 0:
+            vote_value = 0
+
+        return vote_value
+
+    def get_votes_aggregated(self):
+        """Return votes value of this question aggregated from the askup_vote table."""
+        votes = Vote.objects.filter(question_id=self.id).aggregate(models.Sum('value'))
+        value = votes['value__sum'] if votes['value__sum'] else 0
+        return 0 if value < 0 else value
 
     def __str__(self):
         """Return a string representation of a Question object."""
@@ -327,6 +362,20 @@ class Vote(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     voter = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+        """
+        Save the object updates into the DB.
+
+        Overriding the models.Model save method.
+        """
+        is_new = self.id is None
+        super().save(*args, **kwargs)
+
+        if is_new:
+            self.question.vote_value += self.value
+            self.question.save()
 
     class Meta:
         unique_together = ('question', 'voter')

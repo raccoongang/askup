@@ -7,6 +7,26 @@ $(document).ready(function(){
             return false;
         }
     });
+    $('.upvote-button, .downvote-button').click(function(e){
+        if ($(this).attr('data-vote') == 'upvote') {
+            url_base = '/askup/question/upvote/';
+        } else {
+            url_base = '/askup/question/downvote/';
+        }
+
+        question_id = $(this).attr('data-vote-qid');
+
+        $.ajax({
+            url: url_base + question_id + '/',
+            type: 'GET',
+            data: $(this).serialize(),
+            success: on_vote_success,
+            error: function(data) {
+                console.log(data);
+            }
+        });
+        return false;
+    });
 });
 
 $(document).on('shown.bs.modal', function() {
@@ -25,6 +45,14 @@ $(document).on('submit', '.hide-on-answered>form', function() {
     });
     return false;
 });
+
+function on_vote_success(data) {
+    if (data.result == 'error') {
+        return false;
+    }
+
+    $('.question-' + question_id + '-net-votes').html(data.value);
+}
 
 function on_answer_success(data) {
     if (data.result == 'success') {
