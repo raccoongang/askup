@@ -11,13 +11,23 @@ plugins:
       - ".eggs/"
   radon:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
     config:
       python_version: 3
       threshold: "C"
   fixme:
     enabled: true
     exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
       - ".tox/"
+      - ".eggs/"
     config:
       strings:
         - BUG
@@ -37,8 +47,20 @@ plugins:
             python_version: 3
   eslint:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
   markdownlint:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
 
 checks:
   argument-count:

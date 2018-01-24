@@ -47,7 +47,17 @@ class Qset(models.Model):
 
         Overriding the models.Model save method.
         """
-        is_organization = self.parent_qset_id is None
+        is_organization = self._previous_parent_qset_id is None
+
+        if self.process_new_qset_and_organization_save(is_organization, args, kwargs):
+            return
+
+        self.process_parent_qset_changed_save()
+        self._previous_parent_qset_id = self.parent_qset_id
+        super().save(*args, **kwargs)
+
+    def process_new_qset_and_organization_save(self, is_organization, args, kwargs):
+        """Process new qset save."""
         is_new = self.id is None
 
         if is_new:
@@ -58,25 +68,26 @@ class Qset(models.Model):
                 self.top_qset_id = self.parent_qset.top_qset_id
 
             super().save(*args, **kwargs)
-            return
+            return True
 
         if is_organization:
+            self.parent_qset_id = self._previous_parent_qset_id
             super().save(*args, **kwargs)
-            return
+            return True
 
+        return False
+
+    def process_parent_qset_changed_save(self):
+        """Process the parent qset changed save."""
         if self.parent_qset_id != self._previous_parent_qset_id and self.questions_count != 0:
-            try:
-                previous_parent = Qset.objects.get(id=self._previous_parent_qset_id)
+            previous_parent = Qset.objects.filter(id=self._previous_parent_qset_id).first()
+
+            if previous_parent:
                 previous_parent.iterate_questions_count(-self.questions_count)
                 previous_parent.save()
-            except models.Model.DoesNotExist:
-                pass
 
             self.top_qset_id = self.get_parent_organization()
             self.parent_qset.iterate_questions_count(self.questions_count)
-
-        self._previous_parent_qset_id = self.parent_qset_id
-        super().save(*args, **kwargs)
 
     @transaction.atomic
     def delete(self, *args, **kwargs):

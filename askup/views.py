@@ -10,8 +10,9 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 
 from .forms import OrganizationModelForm, QsetDeleteModelForm, QsetModelForm, UserLoginForm
+from .mixins import ListViewUserContextDataMixin, QsetViewMixin
 from .models import Organization, Qset, Question
-from .utils import check_user_has_groups, user_group_required
+from .utils import user_group_required
 
 
 log = logging.getLogger(__name__)
@@ -48,30 +49,10 @@ class OrganizationsView(generic.ListView):
             return []
 
 
-class OrganizationView(generic.ListView):
+class OrganizationView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
     """Handles root qsets of the Organization list view."""
 
     template_name = 'askup/organization.html'
-
-    @method_decorator(login_required)
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Check presence of required credentials and parameters.
-
-        Overriding the dispatch method of generic.ListView
-        """
-        pk = self.kwargs.get('pk')
-
-        if not pk:
-            return redirect(reverse('askup:organizations'))
-
-        self._current_org = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
-        applied_to_organization = self._current_org.top_qset.users.filter(id=request.user.id)
-
-        if not request.user.is_superuser and not applied_to_organization:
-            return redirect(reverse('askup:organizations'))
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         """
@@ -80,15 +61,11 @@ class OrganizationView(generic.ListView):
         Overriding the get_context_data of generic.ListView
         """
         context = super().get_context_data(**kwargs)
-        current_org = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
-        context['main_title'] = current_org.name
-        context['current_qset_name'] = current_org.name
-        context['current_qset_id'] = current_org.id
-        context['is_admin'] = self.request.user.is_superuser
-        context['is_teacher'] = 'Teachers' in self.request.user.groups.values_list('name', flat=True)
-        context['is_student'] = 'Students' in self.request.user.groups.values_list('name', flat=True)
-        context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
+        context['main_title'] = self._current_qset.name
+        context['current_qset_name'] = self._current_qset.name
+        context['current_qset_id'] = self._current_qset.id
         context['is_qset_allowed'] = True
+        self.fill_user_context(context)
         return context
 
     def get_queryset(self):
@@ -111,30 +88,10 @@ class OrganizationView(generic.ListView):
             return []
 
 
-class QsetView(generic.ListView):
+class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
     """Handles the Qset list view (subsets only/questions only/mixed)."""
 
     model = Qset
-
-    @method_decorator(login_required)
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Check presence of required credentials and parameters.
-
-        Overriding the dispatch method of generic.ListView
-        """
-        pk = self.kwargs.get('pk')
-
-        if not pk:
-            return redirect(reverse('askup:organizations'))
-
-        self._current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
-        applied_to_organization = self._current_qset.top_qset.users.filter(id=request.user.id)
-
-        if not request.user.is_superuser and not applied_to_organization:
-            return redirect(reverse('askup:organizations'))
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_template_names(self):
         """
@@ -165,19 +122,11 @@ class QsetView(generic.ListView):
 
         self.fill_user_context(context)
         self.fill_qset_context(context)
+        self.fill_checkboxes_context(context)
         return context
-
-    def fill_user_context(self, context):
-        """Fill user related context extra fields."""
-        context['is_admin'] = self.request.user.is_superuser
-        context['is_teacher'] = check_user_has_groups(self.request.user, 'teachers')
-        context['is_student'] = check_user_has_groups(self.request.user, 'students')
-        context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
-        context['is_question_creator'] = self.request.user.is_authenticated()
 
     def fill_qset_context(self, context):
         """Fill qset related context extra fields."""
-        checked = ' checked="checked"'
         context['is_qset_allowed'] = self._current_qset.type in (0, 1)
         context['main_title'] = self._current_qset.name
         context['parent_qset_id'] = self._current_qset.parent_qset_id
@@ -185,12 +134,16 @@ class QsetView(generic.ListView):
         context['current_qset_name'] = self._current_qset.name
         context['current_qset_id'] = self._current_qset.id
         context['current_qset_show_authors'] = self._current_qset.show_authors
-        context['mixed_type'] = checked if self._current_qset.type == 0 else ''
-        context['subsets_type'] = checked if self._current_qset.type == 1 else ''
-        context['questions_type'] = checked if self._current_qset.type == 2 else ''
-        context['for_any_authenticated'] = checked if self._current_qset.for_any_authenticated else ''
-        context['show_authors'] = checked if self._current_qset.show_authors else ''
-        context['for_unauthenticated'] = checked if self._current_qset.for_unauthenticated else ''
+
+    def fill_checkboxes_context(self, context):
+        """Fill qset checkboxes states context."""
+        checked = ' checked="checked"'
+        context['mixed_type'] = checked * (self._current_qset.type == 0)
+        context['subsets_type'] = checked * (self._current_qset.type == 1)
+        context['questions_type'] = checked * (self._current_qset.type == 2)
+        context['for_any_authenticated'] = checked * self._current_qset.for_any_authenticated
+        context['show_authors'] = checked * self._current_qset.show_authors
+        context['for_unauthenticated'] = checked * self._current_qset.for_unauthenticated
 
     def get_queryset(self):
         """
@@ -334,22 +287,22 @@ def qset_delete(request, pk):
         return redirect(reverse('askup:organizations'))
 
     if request.method == 'POST':
-        form = QsetDeleteModelForm(request.POST, instance=qset)
-        redirect_response = do_qset_validate_delete(form, qset)
-    else:
-        form = QsetDeleteModelForm(instance=qset)
-
-    if redirect_response is None:
-        return render(
-            request,
-            'askup/delete_qset_form.html',
-            {
-                'form': form,
-                'qset_name': qset.name,
-            }
+        redirect_response = do_qset_validate_delete(
+            QsetDeleteModelForm(
+                request.POST,
+                instance=qset,
+            ),
+            qset
         )
-    else:
-        return redirect_response
+
+    return redirect_response or render(
+        request,
+        'askup/delete_qset_form.html',
+        {
+            'form': QsetDeleteModelForm(instance=qset),
+            'qset_name': qset.name,
+        }
+    )
 
 
 def do_qset_validate_delete(form, qset):
@@ -360,7 +313,7 @@ def do_qset_validate_delete(form, qset):
         redirect_url = 'askup:organization' if parent.parent_qset_id is None else 'askup:qset'
         return redirect(reverse(redirect_url, kwargs={'pk': parent.id}))
     else:
-        return False
+        return None
 
 
 def question_answer(request, question_id=None):
