@@ -1,18 +1,45 @@
 # Serves for configuration of CodeClimate (automated code review for test coverage, complexity, duplication, etc.)
-engines:
+version: "2"
+plugins:
+  structure:
+    enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
   radon:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
     config:
       python_version: 3
       threshold: "C"
   fixme:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
     config:
       strings:
         - BUG
         - FIXME
   duplication:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
     config:
       languages:
         - javascript:
@@ -20,8 +47,20 @@ engines:
             python_version: 3
   eslint:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
   markdownlint:
     enabled: true
+    exclude_patterns:
+      - "**/migrations/"
+      - "**/tests/"
+      - "**/tests.py"
+      - ".tox/"
+      - ".eggs/"
 
 checks:
   argument-count:
@@ -36,7 +75,3 @@ ratings:
    - "**.js"
    - "**.py"
    - "**.md"
-
-exclude_paths:
-- "**/migrations/"
-- "**/tests/"
