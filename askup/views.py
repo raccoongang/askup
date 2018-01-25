@@ -249,12 +249,9 @@ def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
     parent_qset_id = request.POST.get('parent_qset')
     parent_qset = get_object_or_404(Qset, pk=parent_qset_id)
+    form = do_make_qset_form(request, parent_qset_id)
 
-    if request.method == 'GET':
-        form = QsetModelForm(user=request.user, parent_qset_id=parent_qset_id)
-    else:
-        form = QsetModelForm(request.POST or None, user=request.user, parent_qset_id=parent_qset_id)
-
+    if request.method == 'POST':
         if form.is_valid():
             name = form.cleaned_data.get('name')
             type = form.cleaned_data.get('type')
@@ -277,6 +274,21 @@ def qset_create(request):
             'breadcrumbs': parent_qset.get_parents()
         }
     )
+
+
+def do_make_qset_form(request, parent_qset_id):
+    """Compose qset form and return it."""
+    if request.method == 'POST':
+        return QsetModelForm(
+            request.POST or None,
+            user=request.user,
+            parent_qset_id=parent_qset_id
+        )
+    else:
+        return QsetModelForm(
+            user=request.user,
+            parent_qset_id=parent_qset_id
+        )
 
 
 @user_group_required('teachers', 'admins')
@@ -354,12 +366,9 @@ def question_answer(request, question_id=None):
     log.debug('Got the question answering request for the question_id: %s', question_id)
     question = get_object_or_404(Question, pk=question_id)
     is_quiz_all = request.GET.get('is_quiz_all', None)
-    user = request.user
-    answer = None
+    form = do_make_answer_form(request, question)
 
     if request.method == 'GET':
-        form = AnswerModelForm(parent_qset_id=question.qset_id)
-
         return render(
             request,
             'askup/question_answer.html',
@@ -372,73 +381,64 @@ def question_answer(request, question_id=None):
             }
         )
     else:
-        form = AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
-        response = {'result': 'success'}
-
-        if form.is_valid():
-            text = form.cleaned_data.get('text')
-
-            if not request.user.is_superuser and user not in question.qset.top_qset.users.all():
-                log.info(
-                    'User %s have tried to answer the question without the permissions.',
-                    user.id
-                )
-                return redirect(reverse('askup:organizations'))
-
-            answer = Answer.objects.create(
-                text=text,
-                question_id=question.id,
-                user_id=user.id
-            )
-            response['answer_id'] = answer.id
-        else:
-            response['result'] = 'error'
+        response = do_validate_answer_form(form)
 
         return JsonResponse(response)
+
+
+def do_make_answer_form(request, question):
+    """Compose and return answer form."""
+    if request.method == 'POST':
+        return AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
+    else:
+        return AnswerModelForm(parent_qset_id=question.qset_id)
+
+
+def do_validate_answer_form(form, request, question):
+    """
+    Validate answer form and create an Answer object on success.
+
+    Returns response dictionary to pass to the JsonResponse after.
+    """
+    response = {'result': 'success'}
+    user = request.user
+
+    if form.is_valid():
+        text = form.cleaned_data.get('text')
+
+        if not request.user.is_superuser and user not in question.qset.top_qset.users.all():
+            log.info(
+                'User %s have tried to answer the question without the permissions.',
+                user.id
+            )
+            return redirect(reverse('askup:organizations'))
+
+        answer = Answer.objects.create(
+            text=text,
+            question_id=question.id,
+            user_id=user.id
+        )
+        response['answer_id'] = answer.id
+    else:
+        response['result'] = 'error'
+
+    return response
 
 
 @login_required
 def question_create(request, qset_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question creation request for the qset_id: %s', qset_id)
-    user = request.user
-    parent_qset_id = qset_id
 
     if qset_id:
         qset = get_object_or_404(Qset, pk=qset_id)
     else:
         qset = None
 
-    if request.method == 'GET':
-        form = QuestionModelForm(
-            initial={'qset': qset_id},
-            user=user,
-            parent_qset_id=parent_qset_id,
-        )
-    else:
-        form = QuestionModelForm(
-            request.POST or None,
-            user=user,
-            parent_qset_id=parent_qset_id,
-        )
+    form, redirect_response = do_make_form_and_create(request, qset_id)
 
-        if form.is_valid():
-            text = form.cleaned_data.get('text')
-            answer_text = form.cleaned_data.get('answer_text')
-            blooms_tag = form.cleaned_data.get('blooms_tag')
-            qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
-
-            if not user.is_superuser and user not in qset.top_qset.users.all():
-                return redirect(reverse('askup:organizations'))
-
-            Question.objects.create(
-                text=text,
-                answer_text=answer_text,
-                qset_id=qset.id,
-                user_id=user.id,
-                blooms_tag=blooms_tag,
-            )
-            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+    if redirect_response:
+        return redirect_response
 
     return render(
         request,
@@ -447,9 +447,60 @@ def question_create(request, qset_id=None):
             'form': form,
             'main_title': 'Create question:',
             'submit_label': 'Create',
-            'breadcrumbs': qset.get_parents(False) if qset else None,
+            'breadcrumbs': qset and qset.get_parents(False),
         }
     )
+
+
+def do_make_form_and_create(request, qset_id):
+    """Compose form and create question on validation success."""
+    user = request.user
+
+    if request.method == 'POST':
+        form = do_compose_question_create_form(request, user, qset_id)
+
+        if form.is_valid():
+            qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
+            text = form.cleaned_data.get('text')
+            answer_text = form.cleaned_data.get('answer_text')
+            blooms_tag = form.cleaned_data.get('blooms_tag')
+
+            return do_check_user_and_create_question(user, qset, text, answer_text, blooms_tag)
+    else:
+        form = do_compose_question_create_form(request, user, qset_id)
+
+    return form, None
+
+
+def do_compose_question_create_form(request, user, qset_id):
+    """Compose create question form."""
+    if request.method == 'POST':
+        return QuestionModelForm(
+            request.POST,
+            user=user,
+            qset_id=qset_id,
+        )
+    else:
+        return QuestionModelForm(
+            initial={'qset': qset_id},
+            user=user,
+            qset_id=qset_id,
+        )
+
+
+def do_check_user_and_create_question(user, qset, text, answer_text, blooms_tag):
+    """Check user permissions and create question in the database."""
+    if not user.is_superuser and user not in qset.top_qset.users.all():
+        return None, redirect(reverse('askup:organizations'))
+
+    Question.objects.create(
+        text=text,
+        answer_text=answer_text,
+        qset_id=qset.id,
+        user_id=user.id,
+        blooms_tag=blooms_tag,
+    )
+    return None, redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
 
 @login_required
@@ -466,22 +517,7 @@ def question_edit(request, pk):
     if not is_admin and not is_teacher and user.id != question.user_id:
         return redirect(reverse('askup:organizations'))
 
-    if request.method == 'GET':
-        form = QuestionModelForm(
-            user=request.user,
-            instance=question,
-            parent_qset_id=question.qset_id,
-        )
-    else:
-        form = QuestionModelForm(
-            request.POST or None,
-            user=request.user,
-            instance=question,
-            parent_qset_id=question.qset_id,
-        )
-
-        if form.is_valid():
-            form.save()
+    form = do_compose_question_form_and_update(request, question)
 
     return render(
         request,
@@ -495,10 +531,33 @@ def question_edit(request, pk):
     )
 
 
+def do_compose_question_form_and_update(request, question):
+    """Compose Question form and update question on validation success."""
+    if request.method == 'POST':
+        form = QuestionModelForm(
+            request.POST,
+            user=request.user,
+            instance=question,
+            parent_qset_id=question.qset_id,
+        )
+
+        if form.is_valid():
+            form.save()
+    else:
+        form = QuestionModelForm(
+            user=request.user,
+            instance=question,
+            parent_qset_id=question.qset_id,
+        )
+
+    return form
+
+
 @login_required
 def question_delete(request, pk):
     """Provide a delete question view for the student/teacher/admin."""
     question = get_object_or_404(Question, pk=pk)
+    qset_id = question.qset_id
     user = request.user
     is_teacher = 'Teachers' in user.groups.values_list('name', flat=True)
     is_admin = user.is_superuser
@@ -509,22 +568,10 @@ def question_delete(request, pk):
     if not is_admin and not is_teacher and user.id != question.user_id:
         return redirect(reverse('askup:organizations'))
 
-    if request.method == 'POST':
-        form = QuestionDeleteModelForm(
-            request.POST,
-            instance=question,
-            parent_qset_id=question.qset_id
-        )
+    form = do_make_form_and_delete(request, question)
 
-        if form.is_valid():  # checks the CSRF
-            qset_id = question.qset_id
-            question.delete()
-            return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
-    else:
-        form = QuestionDeleteModelForm(
-            instance=question,
-            parent_qset_id=question.qset_id
-        )
+    if form is None:
+        return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
 
     return render(
         request,
@@ -536,6 +583,27 @@ def question_delete(request, pk):
     )
 
 
+def do_make_form_and_delete(request, question):
+    """Make form and delete question on validation success."""
+    if request.method == 'POST':
+        form = QuestionDeleteModelForm(
+            request.POST,
+            instance=question,
+            parent_qset_id=question.qset_id,
+        )
+    else:
+        form = QuestionDeleteModelForm(
+            instance=question,
+            parent_qset_id=question.qset_id,
+        )
+
+    if form.is_valid():  # checks the CSRF
+        question.delete()
+        return None
+
+    return form
+
+
 @login_required
 def answer_evaluate(request, answer_id, evaluation):
     """Provide a self-evaluation for the student/teacher/admin."""
@@ -545,21 +613,17 @@ def answer_evaluate(request, answer_id, evaluation):
         answer_id
     )
     is_quiz_all = request.GET.get('is_quiz_all', None)
-    user = request.user
     answer = get_object_or_404(Answer, pk=answer_id)
-    evaluation_int = int(evaluation)
 
-    if not user.is_superuser and user not in answer.question.qset.top_qset.users.all():
+    if not do_user_checks_and_evaluate(request.user, answer, evaluation):
         return redirect(reverse('askup:organizations'))
-
-    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
-        answer.self_evaluation = evaluation_int
-        answer.save()
 
     if is_quiz_all:
         qset_id = answer.question.qset_id
-        question_text = answer.question.text
-        next_question = Question.objects.filter(qset_id=qset_id, text__gt=question_text).order_by('text').first()
+        next_question = Question.objects.filter(
+            qset_id=qset_id,
+            text__gt=answer.question.text
+        ).order_by('text').first()
 
         if next_question:
             return redirect(
@@ -569,6 +633,20 @@ def answer_evaluate(request, answer_id, evaluation):
             )
 
     return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
+
+
+def do_user_checks_and_evaluate(user, answer, evaluation):
+    """Do user checks and evaluate answer for the answer evaluation view."""
+    evaluation_int = int(evaluation)
+
+    if not user.is_superuser and user not in answer.question.qset.top_qset.users.all():
+        return False
+
+    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
+        answer.self_evaluation = evaluation_int
+        answer.save()
+
+    return True
 
 
 def index_view(request):

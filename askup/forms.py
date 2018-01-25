@@ -71,12 +71,11 @@ class QsetModelForm(forms.ModelForm):
         qset_id = kwargs.pop('parent_qset_id', None)
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
+        self._setup_fields(user)
+        self._setup_helper(qset_id)
 
-        if qset_id:
-            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
-        else:
-            cancel_url = reverse('askup:organizations')
-
+    def _setup_fields(self, user):
+        """Set up additional fields rules."""
         self.fields['parent_qset'].required = True
         self.fields['parent_qset'].empty_label = None
         self.fields['parent_qset'].queryset = Qset.get_user_related_qsets(
@@ -86,44 +85,49 @@ class QsetModelForm(forms.ModelForm):
         self.fields['for_any_authenticated'].label = 'Questions are visible to all logged-in users'
         self.fields['for_unauthenticated'].label = 'Questions are visible to unauthenticated users'
         self.fields['show_authors'].label = 'Questions authors are visible to all users'
+
+    def _setup_helper(self, qset_id):
+        """Set up form helper that describes the form html structure."""
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Fieldset(
                 '',
                 Div('name', css_class='row center'),
                 Div('parent_qset', css_class='row center'),
-                Div(
-                    Div(css_class="col-xs-1"),
-                    Div('for_any_authenticated', css_class='col-xs-10'),
-                    Div(css_class="col-xs-1"),
-                    css_class="col-xs-12 row",
-                ),
-                Div(
-                    Div(css_class="col-xs-1"),
-                    Div('for_unauthenticated', css_class='col-xs-10'),
-                    Div(css_class="col-xs-1"),
-                    css_class="col-xs-12 row",
-                ),
-                Div(
-                    Div(css_class="col-xs-1"),
-                    Div('show_authors', css_class='col-xs-10'),
-                    Div(css_class="col-xs-1"),
-                    css_class="col-xs-12 row",
-                ),
+                self._get_checkbox_row('for_any_authenticated'),
+                self._get_checkbox_row('for_unauthenticated'),
+                self._get_checkbox_row('show_authors'),
                 Div(
                     InlineRadios('type', template='askup/layout/radioselect_inline.html'),
                     css_class='row center'
                 ),
             ),
-            ButtonHolder(
-                HTML(
-                    '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
-                    'Cancel' +
-                    '</a>'
-                ),
-                Submit('submit', 'Save', css_class='btn btn-theme'),
-                css_class="center",
-            )
+            self._get_helper_buttons(qset_id)
+        )
+
+    def _get_checkbox_row(self, field_name):
+        return Div(
+            Div(css_class="col-xs-1"),
+            Div(field_name, css_class='col-xs-10'),
+            Div(css_class="col-xs-1"),
+            css_class="col-xs-12 row",
+        )
+
+    def _get_helper_buttons(self, qset_id):
+        """Return helper buttons that will bet presented in the html form later."""
+        if qset_id:
+            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
+        else:
+            cancel_url = reverse('askup:organizations')
+
+        return ButtonHolder(
+            HTML(
+                '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
+                'Cancel' +
+                '</a>'
+            ),
+            Submit('submit', 'Save', css_class='btn btn-theme'),
+            css_class="center",
         )
 
     class Meta:
@@ -155,10 +159,13 @@ class QuestionModelForm(forms.ModelForm):
 
         Overriding the same method of the forms.ModelForm
         """
-        qset_id = kwargs.pop('parent_qset_id', None)
+        qset_id = kwargs.pop('qset_id', None)
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
+        self._setup_fields(user)
+        self._setup_helper(qset_id)
 
+    def _setup_fields(self, user):
         self.fields['qset'].required = True
         self.fields['qset'].empty_label = None
         self.fields['qset'].queryset = Qset.get_user_related_qsets(
@@ -171,13 +178,10 @@ class QuestionModelForm(forms.ModelForm):
         self.fields['answer_text'].placeholder = 'Answer'
         self.fields['answer_text'].label = ''
         self.fields['blooms_tag'].choices[0] = ("", "- no tag -")
+
+    def _setup_helper(self, qset_id):
+        """Set up form helper that describes the form html structure."""
         self.helper = FormHelper()
-
-        if qset_id:
-            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
-        else:
-            cancel_url = reverse('askup:organizations')
-
         self.helper.layout = Layout(
             Fieldset(
                 '',
@@ -196,14 +200,23 @@ class QuestionModelForm(forms.ModelForm):
                 ),
                 Div('qset'),
             ),
-            ButtonHolder(
-                HTML(
-                    '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
-                    'Cancel' +
-                    '</a>'
-                ),
-                Submit('submit', 'Save', css_class='btn btn-theme'),
-            )
+            self._get_helper_buttons(qset_id)
+        )
+
+    def _get_helper_buttons(self, qset_id):
+        """Return helper buttons that will bet presented in the html form later."""
+        if qset_id:
+            cancel_url = reverse('askup:qset', kwargs={'pk': qset_id})
+        else:
+            cancel_url = reverse('askup:organizations')
+
+        return ButtonHolder(
+            HTML(
+                '<a class="btn btn-flat cancel-btn" href="{0}">'.format(cancel_url) +
+                'Cancel' +
+                '</a>'
+            ),
+            Submit('submit', 'Save', css_class='btn btn-theme'),
         )
 
     class Meta:

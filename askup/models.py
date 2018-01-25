@@ -163,14 +163,14 @@ class Qset(models.Model):
         else:
             return self.parent_qset.top_qset_id
 
-    def get_parents(self, exclude_itself=True):
+    def get_parents(self, include_itself=False):
         """Collect parents data for the breadcrumbs composing."""
         parents = []
 
-        if exclude_itself:
-            parent = self.parent_qset
-        else:
-            parent = self
+        if include_itself:
+            parents.append(self)
+
+        parent = self.parent_qset
 
         while parent:
             if parent.parent_qset is None:
@@ -183,14 +183,11 @@ class Qset(models.Model):
         parents.reverse()
         return parents
 
-    @staticmethod
-    def get_user_related_qsets(user, order_by, qsets_only=False):
+    @classmethod
+    def get_user_related_qsets(cls, user, order_by, qsets_only=False):
         """Return queryset of formatted qsets, permitted to the user."""
         if user and user.id:
-            if user.is_superuser:
-                queryset = Qset.objects.all()
-            else:
-                queryset = Qset.objects.filter(top_qset__users=user.id)
+            queryset = cls.get_user_related_qsets_queryset(user)
 
             if qsets_only:
                 queryset = queryset.filter(parent_qset_id__gt=0)
@@ -214,6 +211,13 @@ class Qset(models.Model):
             queryset = []
 
         return queryset
+
+    def get_user_related_qsets_queryset(user):
+        """Return queryset of qset objects for the "user related qsets" request."""
+        if user.is_superuser:
+            return Qset.objects.all()
+        else:
+            return Qset.objects.filter(top_qset__users=user.id)
 
     class Meta:
         unique_together = ('parent_qset', 'name')

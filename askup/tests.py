@@ -500,7 +500,7 @@ class QuestionModelFormTest(TestCase):
     def test_delete_question_success(self):
         """Test successful question deletion."""
         with self.assertRaises(Http404):
-            self.delete_and_get_question(1)  # Try to delete Question 1-1 by the admin
+            self.delete_and_get_question(1)  # Try to delete Question 1-1-1 by the admin
 
     def test_delete_question_failed_by_permissions(self):
         """Test failed by permissions question deletion."""
