@@ -13,7 +13,7 @@ class Qset(models.Model):
         (2, "questions only"),
     )
     name = models.CharField(max_length=255, db_index=True)
-    type = models.PositiveSmallIntegerField(choices=TYPES, default=1)
+    type = models.PositiveSmallIntegerField(choices=TYPES, default=2)
     """top_qset (an organization) is a qset on the top of the tree"""
     top_qset = models.ForeignKey(
         "self",

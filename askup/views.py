@@ -127,7 +127,9 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
             # Clear the questions queryset if rendering the "qsets only" Qset
             context['questions_list'] = []
         else:
-            context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
+            context['questions_list'] = Question.objects.filter(
+                qset_id=self.kwargs.get('pk')
+            ).order_by('-vote_value', 'text')
 
         self.fill_user_context(context)
         self.fill_qset_context(context)
@@ -254,13 +256,11 @@ def qset_create(request):
     if request.method == 'POST':
         if form.is_valid():
             name = form.cleaned_data.get('name')
-            type = form.cleaned_data.get('type')
             parent_qset = form.cleaned_data.get('parent_qset')
             qset = Qset.objects.create(
                 name=name,
                 parent_qset_id=parent_qset.id,
                 top_qset_id=parent_qset.top_qset_id,
-                type=type
             )
             return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 

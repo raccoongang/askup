@@ -108,7 +108,7 @@ class OrganizationListView(TestCase):
 
 
 class QsetListView(TestCase):
-    """Tests the Qset views (all three types subsets/questions/mixed)."""
+    """Tests the Qset views (for questions only type)."""
 
     fixtures = ['groups', 'mockup_data']
 
@@ -117,24 +117,11 @@ class QsetListView(TestCase):
         settings.DEBUG = False
         self.client.login(username='admin', password='admin')
 
-    def test_type_2_has_subsets_and_questions(self):
+    def test_type_2_has_questions(self):
         """Test Qset list view with the subsets."""
         response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
-        self.assertContains(response, 'Qset 1-1-1')
         self.assertContains(response, 'Question 1-1-1')
-        self.assertNotContains(response, 'There are no subsets here.')
         self.assertNotContains(response, 'There are no questions here.')
-
-    def test_type_0_has_no_subsets_and_questions(self):
-        """Test Qset list view w/o the subsets and questions."""
-        response = self.client.get(reverse('askup:qset', kwargs={'pk': 6}))
-        self.assertContains(response, 'There are no subsets here.')
-        self.assertContains(response, 'There are no questions here.')
-
-    def test_type_1_has_no_subsets(self):
-        """Test Qset list view w/o the subsets."""
-        response = self.client.get(reverse('askup:qset', kwargs={'pk': 8}))
-        self.assertContains(response, 'There are no subsets here.')
 
     def test_type_2_has_no_questions(self):
         """Test Qset list view w/o the questions."""
@@ -177,7 +164,6 @@ class QsetListView(TestCase):
         self.client.login(username='teacher01', password='teacher01')
         response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
         self.assertContains(response, 'Generate Question')
-        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
         self.assertContains(
             response,
             'a class="btn shortcut-button-link" href="{0}"'.format(
@@ -196,7 +182,6 @@ class QsetListView(TestCase):
         """Test for an admin features presence."""
         response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
         self.assertContains(response, 'Generate Question')
-        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
         self.assertContains(
             response,
             'a class="btn shortcut-button-link" href="{0}"'.format(
@@ -221,7 +206,7 @@ class QsetModelFormTest(TestCase):
         settings.DEBUG = False
         self.client.login(username='admin', password='admin')
 
-    def create_qset(self, name, type, parent_qset_id):
+    def create_qset(self, name, parent_qset_id):
         """Create qset with the parameters."""
         self.client.post(
             reverse(
@@ -230,28 +215,27 @@ class QsetModelFormTest(TestCase):
             {
                 'name': name,
                 'parent_qset': parent_qset_id,
-                'type': type
             }
         )
 
-    def create_qset_success(self, name, type, parent_qset_id):
+    def create_qset_success(self, name, parent_qset_id):
         """Create qset and look for a success."""
-        self.create_qset(name, type, parent_qset_id)
+        self.create_qset(name, parent_qset_id)
         qset = get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
         self.assertEqual(qset.name, name)
-        self.assertEqual(qset.type, type)
+        self.assertEqual(qset.type, 2)
 
-    def create_qset_fail_forbidden_parent(self, name, type, parent_qset_id):
+    def create_qset_fail_forbidden_parent(self, name, parent_qset_id):
         """Create qset and look for a fail."""
         self.client.login(username='teacher01', password='teacher01')
 
         with self.assertRaises(Http404):
-            self.create_qset(name, type, parent_qset_id)
+            self.create_qset(name, parent_qset_id)
             get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
 
         self.client.login(username='admin', password='admin')
 
-    def update_qset(self, qset_id, new_name, new_type, new_parent_qset_id):
+    def update_qset(self, qset_id, new_name, new_parent_qset_id):
         """Update qset with the parameters."""
         self.client.post(
             reverse(
@@ -261,44 +245,32 @@ class QsetModelFormTest(TestCase):
             {
                 'name': new_name,
                 'parent_qset': new_parent_qset_id,
-                'type': new_type
             }
         )
 
-    def update_qset_success(self, qset_id, new_name, new_type, new_parent_qset_id):
+    def update_qset_success(self, qset_id, new_name, new_parent_qset_id):
         """Update qset and look for a success."""
-        self.update_qset(qset_id, new_name, new_type, new_parent_qset_id)
+        self.update_qset(qset_id, new_name, new_parent_qset_id)
         qset = get_object_or_404(Qset, pk=qset_id)
         self.assertEqual(qset.name, new_name)
-        self.assertEqual(qset.type, new_type)
+        self.assertEqual(qset.type, 2)
 
     def test_create_qset(self):
         """Test qset creation."""
         parent_qset_id = 4
 
-        name = 'test qset mixed'
-        type = 0
-        self.create_qset_success(name, type, parent_qset_id)
-
-        name = 'test qset subsets only'
-        type = 1
-        self.create_qset_success(name, type, parent_qset_id)
-
         name = 'test qset questions only'
-        type = 2
-        self.create_qset_success(name, type, parent_qset_id)
+        self.create_qset_success(name, parent_qset_id)
 
         name = 'test qset mixed forbidden parent'
-        type = 0
-        self.create_qset_fail_forbidden_parent(name, type, 3)
+        self.create_qset_fail_forbidden_parent(name, 3)
 
     def test_update_qset(self):
         """Test qset updating."""
         parent_qset_id = 1
         qset_id = 4
         name = 'Qset 1-1 updated'
-        type = 0
-        self.update_qset_success(qset_id, name, type, parent_qset_id)
+        self.update_qset_success(qset_id, name, parent_qset_id)
 
     def test_update_qset_fail_forbidden_parent(self):
         """Test qset updating with the forbiden parent."""
@@ -307,7 +279,7 @@ class QsetModelFormTest(TestCase):
         with self.assertRaises(Http404):
             name = 'Qset 2-1 updated'
             parent_qset_id = 3
-            self.update_qset(6, name, 1, parent_qset_id)
+            self.update_qset(6, name, parent_qset_id)
             get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
 
         self.client.login(username='admin', password='admin')
@@ -351,77 +323,39 @@ class QsetModelFormTest(TestCase):
         self.delete_and_get_qset(11)
         self.client.login(username='admin', password='admin')
 
-    def test_parent_questions_count_update_on_delete(self):
-        """Test parent question count update on qset delete."""
-        qsets = {
-            'org_qset': {
-                'id': 1,  # Organization 1 from the mockups
-                'orig_count': None,
-                'new_count': None,
-            },
-            'first_qset': {
-                'id': 4,  # Qset 1-1 from the mockups
-                'orig_count': None,
-                'new_count': None,
-            },
+    def test_parent_questions_count_update_on_qset_delete(self):
+        """Test parent questions count update on qset delete."""
+        org_qset = {
+            'id': 1,  # Organization 1 from the mockups
+            'orig_count': None,
+            'new_count': None,
         }
-        delete_qset = get_object_or_404(Qset, pk=7)
+        delete_qset = get_object_or_404(Qset, pk=4)  # Qset 1-1 from the mockups
         delete_qset_count = delete_qset.questions_count
-
-        for key in qsets.keys():
-            qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
-
+        org_qset['orig_count'] = get_object_or_404(Qset, pk=org_qset['id']).questions_count
         delete_qset.delete()
-
-        for key in qsets.keys():
-            qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
-
-        org_qset = qsets['org_qset']
-        first_qset = qsets['first_qset']
+        org_qset['new_count'] = get_object_or_404(Qset, pk=org_qset['id']).questions_count
         self.assertEqual(
             org_qset['new_count'],
-            org_qset['orig_count']
-        )
-        self.assertEqual(
-            first_qset['new_count'],
-            first_qset['orig_count'] + delete_qset_count
+            org_qset['orig_count'] - delete_qset_count
         )
 
     def test_parent_questions_count_update_on_parent_change(self):
         """Test parent questions count update on parent change."""
-        qsets = {
-            'org_qset': {
-                'id': 1,  # Organization 1 from the mockups
-                'orig_count': None,
-                'new_count': None,
-            },
-            'first_qset': {
-                'id': 4,  # Qset 1-1 from the mockups
-                'orig_count': None,
-                'new_count': None,
-            },
+        org_qset = {
+            'id': 1,  # Organization 1 from the mockups
+            'orig_count': None,
+            'new_count': None,
         }
-        move_qset = get_object_or_404(Qset, pk=7)
+        move_qset = get_object_or_404(Qset, pk=4)
         move_qset_count = move_qset.questions_count
-
-        for key in qsets.keys():
-            qsets[key]['orig_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
-
+        org_qset['orig_count'] = get_object_or_404(Qset, pk=org_qset['id']).questions_count
         move_qset.parent_qset_id = 10
         move_qset.save()
-
-        for key in qsets.keys():
-            qsets[key]['new_count'] = get_object_or_404(Qset, pk=qsets[key]['id']).questions_count
-
-        org_qset = qsets['org_qset']
-        first_qset = qsets['first_qset']
+        org_qset['new_count'] = get_object_or_404(Qset, pk=org_qset['id']).questions_count
         self.assertEqual(
             org_qset['new_count'],
             org_qset['orig_count'] - move_qset_count
-        )
-        self.assertEqual(
-            first_qset['new_count'],
-            first_qset['orig_count'] - move_qset_count
         )
 
 

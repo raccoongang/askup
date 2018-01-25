@@ -85,10 +85,6 @@ class QsetModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
                 self._get_checkbox_row('for_any_authenticated'),
                 self._get_checkbox_row('for_unauthenticated'),
                 self._get_checkbox_row('show_authors'),
-                Div(
-                    InlineRadios('type', template='askup/layout/radioselect_inline.html'),
-                    css_class='row center'
-                ),
             ),
             self._get_helper_buttons(qset_id)
         )
@@ -106,7 +102,6 @@ class QsetModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
         fields = (
             'name',
             'parent_qset',
-            'type',
             'for_any_authenticated',
             'show_authors',
             'for_unauthenticated',

@@ -58,14 +58,14 @@
         "pk": 1,
         "fields": {
             "name": "Organization 1",
-            "type": 1,
+            "type": 2,
             "top_qset": 1,
             "parent_qset": null,
             "for_any_authenticated": false,
             "for_unauthenticated": false,
             "show_authors": true,
             "own_questions_only": false,
-            "questions_count": 5,
+            "questions_count": 4,
             "users": [2, 3]
         }
     },
@@ -74,7 +74,7 @@
         "pk": 2,
         "fields": {
             "name": "Organization 2",
-            "type": 1,
+            "type": 2,
             "top_qset": 2,
             "parent_qset": null,
             "for_any_authenticated": false,
@@ -90,7 +90,7 @@
         "pk": 3,
         "fields": {
             "name": "Organization 3",
-            "type": 1,
+            "type": 2,
             "top_qset": 3,
             "parent_qset": null,
             "for_any_authenticated": false,
@@ -106,7 +106,7 @@
         "pk": 10,
         "fields": {
             "name": "Organization 4",
-            "type": 1,
+            "type": 2,
             "top_qset": 10,
             "parent_qset": null,
             "for_any_authenticated": false,
@@ -122,14 +122,14 @@
         "pk": 4,
         "fields": {
             "name": "Qset 1-1",
-            "type": 0,
+            "type": 2,
             "top_qset": 1,
             "parent_qset": 1,
             "for_any_authenticated": false,
             "for_unauthenticated": false,
             "show_authors": true,
             "own_questions_only": false,
-            "questions_count": 4,
+            "questions_count": 3,
             "users": []
         }
     },
@@ -154,7 +154,7 @@
         "pk": 6,
         "fields": {
             "name": "Qset 2-1",
-            "type": 0,
+            "type": 2,
             "top_qset": 2,
             "parent_qset": 2,
             "for_any_authenticated": false,
@@ -167,26 +167,10 @@
     },
     {
         "model": "askup.qset",
-        "pk": 7,
-        "fields": {
-            "name": "Qset 1-1-1",
-            "type": 2,
-            "top_qset": 1,
-            "parent_qset": 4,
-            "for_any_authenticated": false,
-            "for_unauthenticated": false,
-            "show_authors": true,
-            "own_questions_only": false,
-            "questions_count": 1,
-            "users": []
-        }
-    },
-    {
-        "model": "askup.qset",
         "pk": 8,
         "fields": {
             "name": "Qset 1-3",
-            "type": 1,
+            "type": 2,
             "top_qset": 1,
             "parent_qset": 1,
             "for_any_authenticated": false,
@@ -218,7 +202,7 @@
         "pk": 11,
         "fields": {
             "name": "Qset 4-1",
-            "type": 0,
+            "type": 2,
             "top_qset": 10,
             "parent_qset": 10,
             "for_any_authenticated": false,
@@ -279,19 +263,6 @@
             "updated_at": "2017-12-22T12:38:15.646Z",
             "user": 3,
             "blooms_tag": null
-        }
-    },
-    {
-        "model": "askup.question",
-        "pk": 5,
-        "fields": {
-            "text": "Question 1-1-1-1",
-            "answer_text": "Answer 1-1-1-1",
-            "qset": 7,
-            "created_at": "2017-12-30T20:06:08.777Z",
-            "updated_at": "2017-12-30T20:06:14.849Z",
-            "user": 3,
-            "blooms_tag": 1
         }
     },
     {
@@ -374,16 +345,6 @@
         "fields": {
             "value": 1,
             "question": 4,
-            "voter": 3,
-            "created_at": "2018-01-22T00:00:00Z"
-        }
-    },
-    {
-        "model": "askup.vote",
-        "pk": 5,
-        "fields": {
-            "value": 1,
-            "question": 5,
             "voter": 3,
             "created_at": "2018-01-22T00:00:00Z"
         }

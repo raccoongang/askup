@@ -35,7 +35,6 @@ class QsetAdmin(admin.ModelAdmin):
     fields = (
         'parent_qset',
         'name',
-        'type',
         'for_any_authenticated',
         'for_unauthenticated',
         'show_authors',
@@ -66,7 +65,6 @@ class QsetAdmin(admin.ModelAdmin):
             queryset = queryset.exclude(id=obj.id)
 
         form.base_fields['parent_qset'].queryset = queryset.order_by('name', 'parent_qset_id')
-        form.base_fields['type'].initial = 0
         return form
 
 
