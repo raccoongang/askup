@@ -3,8 +3,8 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 
-from .models import Qset
-from .utils import check_user_has_groups
+from askup.models import Qset
+from askup.utils import check_user_has_groups
 
 
 class QsetViewMixin(object):

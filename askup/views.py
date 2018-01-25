@@ -19,7 +19,7 @@ from .forms import (
     QuestionModelForm,
     UserLoginForm,
 )
-from .mixins import ListViewUserContextDataMixin, QsetViewMixin
+from .mixins.views import ListViewUserContextDataMixin, QsetViewMixin
 from .models import Answer, Organization, Qset, Question
 from .utils import user_group_required
 
@@ -282,12 +282,12 @@ def do_make_qset_form(request, parent_qset_id):
         return QsetModelForm(
             request.POST or None,
             user=request.user,
-            parent_qset_id=parent_qset_id
+            qset_id=parent_qset_id
         )
     else:
         return QsetModelForm(
             user=request.user,
-            parent_qset_id=parent_qset_id
+            qset_id=parent_qset_id
         )
 
 
@@ -297,9 +297,9 @@ def qset_update(request, pk):
     qset = get_object_or_404(Qset, pk=pk)
 
     if request.method == 'GET':
-        form = QsetModelForm(user=request.user, instance=qset, parent_qset_id=qset.id)
+        form = QsetModelForm(user=request.user, instance=qset, qset_id=qset.id)
     else:
-        form = QsetModelForm(request.POST or None, user=request.user, instance=qset, parent_qset_id=qset.id)
+        form = QsetModelForm(request.POST or None, user=request.user, instance=qset, qset_id=qset.id)
 
         if form.is_valid():
             form.save()
@@ -381,8 +381,7 @@ def question_answer(request, question_id=None):
             }
         )
     else:
-        response = do_validate_answer_form(form)
-
+        response = do_validate_answer_form(form, request, question)
         return JsonResponse(response)
 
 
@@ -447,7 +446,7 @@ def question_create(request, qset_id=None):
             'form': form,
             'main_title': 'Create question:',
             'submit_label': 'Create',
-            'breadcrumbs': qset and qset.get_parents(False),
+            'breadcrumbs': qset and qset.get_parents(True),
         }
     )
 
@@ -527,6 +526,7 @@ def question_edit(request, pk):
             'main_title': 'Edit question:',
             'submit_label': 'Save',
             'current_qset': question.qset,
+            'breadcrumbs': question.qset.get_parents(True),
         }
     )
 
@@ -538,7 +538,7 @@ def do_compose_question_form_and_update(request, question):
             request.POST,
             user=request.user,
             instance=question,
-            parent_qset_id=question.qset_id,
+            qset_id=question.qset_id,
         )
 
         if form.is_valid():
@@ -547,7 +547,7 @@ def do_compose_question_form_and_update(request, question):
         form = QuestionModelForm(
             user=request.user,
             instance=question,
-            parent_qset_id=question.qset_id,
+            qset_id=question.qset_id,
         )
 
     return form

@@ -168,7 +168,7 @@ class Qset(models.Model):
         parents = []
 
         if include_itself:
-            parents.append(self)
+            parents.append(('askup:qset', self.id, self.name))
 
         parent = self.parent_qset
 
