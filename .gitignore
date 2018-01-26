@@ -109,5 +109,3 @@ ENV/
 
 # Git utility files
 .commit_message 
-AUTHORS
-ChangeLog

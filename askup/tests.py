@@ -437,14 +437,3 @@ class QuestionModelFormTest(TestCase):
         """Test create question with the forbidden parent."""
         self.client.login(username='student01', password='student01')
         self.client.login(username='admin', password='admin')
-
-
-# class CreateQset(TestCase):
-#    def setUp(self):
-#        self.admin = User.objects.create_superuser('test_admin', 'test_admin@example.com', 'test_admin')
-#        self.teacher = User.objects.create_user(
-#            'test_admin',
-#            'test_admin@example.com',
-#            'test_admin',
-#            groups=[1]
-#        )

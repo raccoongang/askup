@@ -14,7 +14,7 @@ class Qset(models.Model):
     )
     name = models.CharField(max_length=255, db_index=True)
     type = models.PositiveSmallIntegerField(choices=TYPES, default=1)
-    """top_qset (an organization) is a qset on the top of the tree"""
+    # top_qset (an organization) is a qset on the top of the tree"""
     top_qset = models.ForeignKey(
         "self",
         related_name="organization_qsets",
@@ -121,7 +121,7 @@ class Qset(models.Model):
         (organization).
         """
         if (self.questions_count + amount) < 0:
-            self.questions_count = amount
+            self.questions_count = 0
         else:
             self.questions_count += amount
 
@@ -148,8 +148,13 @@ class Qset(models.Model):
         super().validate_unique(exclude)
 
     def __str__(self):
-        """Return a string representation of a Qset object."""
-        return self.name
+        """
+        Return a string representation of a Qset object.
+
+        Tries to get the customized_name value first (can be passed by RawSQL)
+        in lack of it gets name field of model.
+        """
+        return getattr(self, 'customized_name', self.name)
 
     def get_parent_organization(self):
         """

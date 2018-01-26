@@ -2,6 +2,7 @@ import logging
 
 from django import forms
 from django.contrib.auth import authenticate
+from django.db.models.expressions import RawSQL
 
 from .models import Organization, Qset
 
@@ -40,14 +41,6 @@ class UserLoginForm(forms.Form):
 class OrganizationModelForm(forms.ModelForm):
     """Provides the create/update functionality for the Organization."""
 
-    def __init__(self, *args, **kwargs):
-        """
-        Init the OrganizationModelForm.
-
-        Overriding the same method of the forms.ModelForm
-        """
-        super().__init__(*args, **kwargs)
-
     class Meta:
         model = Organization
         fields = (
@@ -64,24 +57,22 @@ class QsetModelForm(forms.ModelForm):
 
         Overriding the same method of the forms.ModelForm
         """
-        user = kwargs.pop('user')
+        user = kwargs.pop('user')  # User object is always present
         super().__init__(*args, **kwargs)
 
         self.fields['parent_qset'].required = True
         self.fields['parent_qset'].empty_label = None
 
-        if user and user.id:
+        if user.id:
             if user.is_superuser:
                 queryset = Qset.objects.all()
             else:
                 queryset = Qset.objects.filter(top_qset__users=user.id)
 
-            queryset = queryset.extra(
-                select={
-                    'name': 'case when askup_qset.parent_qset_id is null' +
-                            " then askup_qset.name else concat('— ', askup_qset.name) end",
-                    'is_organization': 'askup_qset.parent_qset_id is null'
-                }
+            queryset = queryset.annotate(
+                customized_name=RawSQL('case when askup_qset.parent_qset_id is null' +
+                    " then askup_qset.name else concat('— ', askup_qset.name) end", tuple()),
+                is_organization=RawSQL('askup_qset.parent_qset_id is null', tuple()),
             )
             queryset = queryset.order_by('top_qset_id', '-is_organization', 'askup_qset.name')
             self.fields['parent_qset'].queryset = queryset

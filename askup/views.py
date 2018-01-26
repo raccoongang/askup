@@ -64,7 +64,6 @@ class OrganizationView(ListViewUserContextDataMixin, QsetViewMixin, generic.List
         context['main_title'] = self._current_qset.name
         context['current_qset_name'] = self._current_qset.name
         context['current_qset_id'] = self._current_qset.id
-        context['is_qset_allowed'] = True
         self.fill_user_context(context)
         return context
 
@@ -127,7 +126,6 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
 
     def fill_qset_context(self, context):
         """Fill qset related context extra fields."""
-        context['is_qset_allowed'] = self._current_qset.type in (0, 1)
         context['main_title'] = self._current_qset.name
         context['parent_qset_id'] = self._current_qset.parent_qset_id
         context['current_qset'] = self._current_qset
@@ -137,13 +135,17 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
 
     def fill_checkboxes_context(self, context):
         """Fill qset checkboxes states context."""
-        checked = ' checked="checked"'
-        context['mixed_type'] = checked * (self._current_qset.type == 0)
-        context['subsets_type'] = checked * (self._current_qset.type == 1)
-        context['questions_type'] = checked * (self._current_qset.type == 2)
-        context['for_any_authenticated'] = checked * self._current_qset.for_any_authenticated
-        context['show_authors'] = checked * self._current_qset.show_authors
-        context['for_unauthenticated'] = checked * self._current_qset.for_unauthenticated
+        qset = self._current_qset
+        context['mixed_type'] = self.get_checkbox_state(qset.type == 0)
+        context['subsets_type'] = self.get_checkbox_state(qset.type == 1)
+        context['questions_type'] = self.get_checkbox_state(qset.type == 2)
+        context['for_any_authenticated'] = self.get_checkbox_state(qset.for_any_authenticated)
+        context['show_authors'] = self.get_checkbox_state(qset.show_authors)
+        context['for_unauthenticated'] = self.get_checkbox_state(qset.for_unauthenticated)
+
+    def get_checkbox_state(self, bool_expression):
+        """Return a string of checked attribute if expression is True and empty string otherwise."""
+        return ' checked="checked"' * bool_expression
 
     def get_queryset(self):
         """
@@ -312,8 +314,8 @@ def do_qset_validate_delete(form, qset):
         qset.delete()
         redirect_url = 'askup:organization' if parent.parent_qset_id is None else 'askup:qset'
         return redirect(reverse(redirect_url, kwargs={'pk': parent.id}))
-    else:
-        return None
+
+    return None
 
 
 def question_answer(request, question_id=None):
