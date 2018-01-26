@@ -134,3 +134,5 @@ INTERNAL_IPS = [
     '127.0.0.1',
     '127.0.1.1',
 ]
+
+LOGIN_URL = '/askup/sign-in'

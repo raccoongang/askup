@@ -44,14 +44,6 @@ class UserLoginForm(forms.Form):
 class OrganizationModelForm(forms.ModelForm):
     """Provides the create/update functionality for the Organization."""
 
-    def __init__(self, *args, **kwargs):
-        """
-        Init the OrganizationModelForm.
-
-        Overriding the same method of the forms.ModelForm
-        """
-        super().__init__(*args, **kwargs)
-
     class Meta:
         model = Organization
         fields = (

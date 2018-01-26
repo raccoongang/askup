@@ -17,7 +17,7 @@ class OrganizationAdmin(admin.ModelAdmin):
     @staticmethod
     def email_patterns(obj):
         """Return email-patters of the organization comma separated."""
-        return ", ".join(tuple(ep.text for ep in obj.emailpattern_set.all()))
+        return ", ".join(tuple(pattern.text for pattern in obj.emailpattern_set.all()))
 
     def get_queryset(self, request):
         """
@@ -25,8 +25,7 @@ class OrganizationAdmin(admin.ModelAdmin):
 
         Overriding the queriset for the admin list view of the Organization
         """
-        queryset = super().get_queryset(request)
-        return queryset.order_by('name')
+        return super().get_queryset(request).order_by('name')
 
 
 class QsetAdmin(admin.ModelAdmin):
@@ -48,8 +47,10 @@ class QsetAdmin(admin.ModelAdmin):
 
         Override the queriset for the admin list view of the Qset.
         """
-        queryset = super().get_queryset(request)
-        return queryset.filter(parent_qset_id__isnull=False).order_by('parent_qset_id', 'name')
+        return super().get_queryset(request).filter(parent_qset_id__isnull=False).order_by(
+            'parent_qset_id',
+            'name',
+        )
 
     def get_form(self, request, obj=None, **kwargs):
         """

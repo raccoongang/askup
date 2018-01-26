@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models.expressions import RawSQL
 
 
 class Qset(models.Model):
@@ -14,7 +15,7 @@ class Qset(models.Model):
     )
     name = models.CharField(max_length=255, db_index=True)
     type = models.PositiveSmallIntegerField(choices=TYPES, default=2)
-    """top_qset (an organization) is a qset on the top of the tree"""
+    # top_qset (an organization) is a qset on the top of the tree"""
     top_qset = models.ForeignKey(
         "self",
         related_name="organization_qsets",
@@ -121,7 +122,7 @@ class Qset(models.Model):
         (organization).
         """
         if (self.questions_count + amount) < 0:
-            self.questions_count = amount
+            self.questions_count = 0
         else:
             self.questions_count += amount
 
@@ -148,8 +149,13 @@ class Qset(models.Model):
         super().validate_unique(exclude)
 
     def __str__(self):
-        """Return a string representation of a Qset object."""
-        return self.name
+        """
+        Return a string representation of a Qset object.
+
+        Tries to get the customized_name value first (can be passed by RawSQL)
+        in lack of it gets name field of model.
+        """
+        return getattr(self, 'customized_name', self.name)
 
     def get_parent_organization(self):
         """
@@ -200,11 +206,9 @@ class Qset(models.Model):
                 "then askup_qset.name ",
                 "else concat('{0}', askup_qset.name) end".format(prefix),
             ))
-            queryset = queryset.extra(
-                select={
-                    'name': name_selector,
-                    'is_organization': 'askup_qset.parent_qset_id is null'
-                }
+            queryset = queryset.annotate(
+                customized_name=RawSQL(name_selector, tuple()),
+                is_organization=RawSQL('askup_qset.parent_qset_id is null', tuple()),
             )
             queryset = queryset.order_by(*order_by)
         else:
