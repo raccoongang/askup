@@ -9217,3 +9217,10 @@ select.form-control, input.form-control {
     background-color: #6093be;
     border-color: #5083ae;
 }
+
+#all-mine-other-container a:hover,
+#all-mine-other-container a:active,
+#all-mine-other-container a:focus {
+    text-decoration: none;
+    color: white;
+}

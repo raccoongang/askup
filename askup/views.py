@@ -121,20 +121,22 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
         Overriding the get_context_data of generic.ListView
         """
         context = super().get_context_data(*args, **kwargs)
-
-        if self._current_qset.type == 1:
-            # Clear the questions queryset if rendering the "qsets only" Qset
-            context['questions_list'] = []
-        else:
-            context['questions_list'] = Question.objects.filter(
-                qset_id=self.kwargs.get('pk')
-            ).order_by('-vote_value', 'text')
-
+        context['questions_list'] = self.get_questions_queryset()
         self.fill_user_context(context)
         self.fill_qset_context(context)
         self.fill_checkboxes_context(context)
         context['breadcrumbs'] = self._current_qset.get_parents()
         return context
+
+    def get_questions_queryset(self):
+        """Get questions queryset corresponding to the filter and qset type."""
+        if self._current_qset.type == 1:
+            # Empty questions queryset if rendering the "qsets only" Qset
+            queryset = []
+        else:
+            queryset = Question.objects.filter(
+                qset_id=self.kwargs.get('pk')
+            ).order_by('-vote_value', 'text')
 
     def fill_qset_context(self, context):
         """Fill qset related context extra fields."""
