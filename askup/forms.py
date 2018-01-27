@@ -70,8 +70,11 @@ class QsetModelForm(forms.ModelForm):
                 queryset = Qset.objects.filter(top_qset__users=user.id)
 
             queryset = queryset.annotate(
-                customized_name=RawSQL('case when askup_qset.parent_qset_id is null' +
-                    " then askup_qset.name else concat('— ', askup_qset.name) end", tuple()),
+                customized_name=RawSQL(
+                    'case when askup_qset.parent_qset_id is null' +
+                    " then askup_qset.name else concat('— ', askup_qset.name) end",
+                    tuple()
+                ),
                 is_organization=RawSQL('askup_qset.parent_qset_id is null', tuple()),
             )
             queryset = queryset.order_by('top_qset_id', '-is_organization', 'askup_qset.name')
