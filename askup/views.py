@@ -19,7 +19,11 @@ from .forms import (
     QuestionModelForm,
     UserLoginForm,
 )
-from .mixins.views import ListViewUserContextDataMixin, QsetViewMixin
+from .mixins.views import (
+    ListViewUserContextDataMixin,
+    QsetViewMixin,
+    UserFilterMixin,
+)
 from .models import Answer, Organization, Qset, Question
 from .utils import user_group_required
 
@@ -372,7 +376,8 @@ def question_answer(request, question_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question answering request for the question_id: %s', question_id)
     question = get_object_or_404(Question, pk=question_id)
-    is_quiz_all = request.GET.get('is_quiz_all', None)
+    is_quiz = request.GET.get('filter') is not None
+    filter = UserFilterMixin.get_clean_filter_parameter(request)
     form = do_make_answer_form(request, question)
 
     if request.method == 'GET':
@@ -384,7 +389,7 @@ def question_answer(request, question_id=None):
                 'question_id': question.id,
                 'question_text': question.text,
                 'question_answer_text': question.answer_text,
-                'is_quiz_all': is_quiz_all,
+                'filter': filter * is_quiz,
             }
         )
     else:
@@ -619,25 +624,25 @@ def answer_evaluate(request, answer_id, evaluation):
         evaluation,
         answer_id
     )
-    is_quiz_all = request.GET.get('is_quiz_all', None)
+    filter = request.GET.get('filter', None)
     answer = get_object_or_404(Answer, pk=answer_id)
 
     if not do_user_checks_and_evaluate(request.user, answer, evaluation):
         return redirect(reverse('askup:organizations'))
 
-    if is_quiz_all:
+    if filter:
+        # If it's a Quiz
+        filter = UserFilterMixin.get_clean_filter_parameter(request)
         qset_id = answer.question.qset_id
-        next_question = Question.objects.filter(
+        queryset = Question.objects.filter(
             qset_id=qset_id,
-            text__gt=answer.question.text
-        ).order_by('text').first()
+            text__gt=answer.question.text,
+        )
+        queryset = UserFilterMixin.apply_filter_to_queryset(request, filter, queryset)
+        next_question = queryset.order_by('-vote_value', 'text').first()
 
         if next_question:
-            return redirect(
-                '{0}?is_quiz_all=1'.format(
-                    reverse('askup:question_answer', kwargs={'question_id': next_question.id})
-                )
-            )
+            return get_quiz_question_redirect(next_question.id, filter)
 
     return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
 
@@ -666,7 +671,10 @@ def start_quiz_all(request, qset_id):
     """Provide a start quiz all in qset view for the student/teacher/admin."""
     log.debug('Got the quiz all request for the qset_id: %s', qset_id)
     qset = get_object_or_404(Qset, pk=qset_id)
-    question = Question.objects.filter(qset_id=qset_id).order_by('text').first()
+    filter = UserFilterMixin.get_clean_filter_parameter(request)
+    queryset = Question.objects.filter(qset_id=qset.id)
+    queryset = UserFilterMixin.apply_filter_to_queryset(request, filter, queryset)
+    question = queryset.order_by('-vote_value', 'text').first()
     user = request.user
 
     if not user.is_superuser and user not in qset.top_qset.users.all():
@@ -676,13 +684,19 @@ def start_quiz_all(request, qset_id):
         raise Http404
 
     if request.method == 'GET':
-        return redirect(
-            '{0}?is_quiz_all=1'.format(
-                reverse('askup:question_answer', kwargs={'question_id': question.id})
-            )
-        )
+        return get_quiz_question_redirect(question.id, filter)
     else:
         return redirect(reverse('askup:organizations'))
+
+
+def get_quiz_question_redirect(next_question_id, filter):
+    """Get quiz question redirect."""
+    return redirect(
+        '{0}?filter={1}'.format(
+            reverse('askup:question_answer', kwargs={'question_id': next_question_id}),
+            filter,
+        )
+    )
 
 
 @login_required

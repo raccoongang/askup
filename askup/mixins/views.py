@@ -31,7 +31,29 @@ class QsetViewMixin(object):
         return super().dispatch(request, *args, **kwargs)
 
 
-class ListViewUserContextDataMixin(object):
+class UserFilterMixin(object):
+    """Provides the user filter related functionality."""
+
+    @staticmethod
+    def get_clean_filter_parameter(request):
+        """Return a clean user filter value."""
+        allowed_filters = ('all', 'mine', 'other')
+        get_parameter = request.GET.get('filter')
+        return 'all' if get_parameter not in allowed_filters else get_parameter
+
+    @staticmethod
+    def apply_filter_to_queryset(request, filter, queryset):
+        """Return a queryset with user filter applied."""
+        if filter == 'mine':
+            return queryset.filter(user_id=request.user.id)
+
+        if filter == 'other':
+            return queryset.exclude(user_id=request.user.id)
+
+        return queryset
+
+
+class ListViewUserContextDataMixin(UserFilterMixin, object):
     """ListView user data mixin."""
 
     def fill_user_context(self, context):
@@ -44,12 +66,7 @@ class ListViewUserContextDataMixin(object):
 
     def fill_user_filter_context(self, context):
         """Fill a filter related context data."""
-        allowed_filters = ('all', 'mine', 'other')
-        context['filter'] = self.request.GET.get('filter')
-
-        if context['filter'] not in allowed_filters:
-            context['filter'] = 'all'
-
+        context['filter'] = self.get_clean_filter_parameter(self.request)
         context['filter_all_active'] = 'active'
         context['filter_mine_active'] = ''
         context['filter_other_active'] = ''
@@ -65,14 +82,4 @@ class ListViewUserContextDataMixin(object):
     def process_user_filter(self, context, queryset):
         """Process user filter and return queryset with the correspondent changes."""
         filter = self.fill_user_filter_context(context)
-
-        if filter == 'all':
-            return queryset
-
-        if filter == 'mine':
-            queryset = queryset.filter(user_id=self.request.user.id)
-
-        if filter == 'other':
-            queryset = queryset.exclude(user_id=self.request.user.id)
-
-        return queryset
+        return self.apply_filter_to_queryset(self.request, filter, queryset)
