@@ -41,3 +41,38 @@ class ListViewUserContextDataMixin(object):
         context['is_student'] = check_user_has_groups(self.request.user, 'students')
         context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
         context['is_question_creator'] = self.request.user.is_authenticated()
+
+    def fill_user_filter_context(self, context):
+        """Fill a filter related context data."""
+        allowed_filters = ('all', 'mine', 'other')
+        context['filter'] = self.request.GET.get('filter')
+
+        if context['filter'] not in allowed_filters:
+            context['filter'] = 'all'
+
+        context['filter_all_active'] = 'active'
+        context['filter_mine_active'] = ''
+        context['filter_other_active'] = ''
+
+        if context['filter'] == 'all':
+            return
+
+        context['filter_all_active'] = ''
+        context['filter_mine_active'] = 'active' * (context['filter'] == 'mine')
+        context['filter_other_active'] = 'active' * (context['filter'] == 'other')
+        return context['filter']
+
+    def process_user_filter(self, context, queryset):
+        """Process user filter and return queryset with the correspondent changes."""
+        filter = self.fill_user_filter_context(context)
+
+        if filter == 'all':
+            return queryset
+
+        if filter == 'mine':
+            queryset = queryset.filter(user_id=self.request.user.id)
+
+        if filter == 'other':
+            queryset = queryset.exclude(user_id=self.request.user.id)
+
+        return queryset
