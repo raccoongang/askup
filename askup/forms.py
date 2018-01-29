@@ -19,6 +19,13 @@ class UserLoginForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = ''
+        self.fields['username'].widget.attrs['placeholder'] = 'Your username...'
+        self.fields['password'].label = ''
+        self.fields['password'].widget.attrs['placeholder'] = 'Your password...'
+
     def clean(self, *args, **kwargs):
         """
         Validate the login form fields.

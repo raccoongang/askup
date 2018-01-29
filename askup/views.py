@@ -222,6 +222,7 @@ def login_view(request):
         return redirect('/')
 
     form = UserLoginForm(request.POST or None)
+    next_page = request.GET.get('next')
 
     if form.is_valid():
         username = form.cleaned_data.get('username')
@@ -230,7 +231,7 @@ def login_view(request):
         login(request, user)
 
         if request.user.is_authenticated():
-            return redirect('/')
+            return redirect(next_page or '/')
 
     return render(request, 'askup/login_form.html', {'form': form})
 

@@ -9224,3 +9224,7 @@ select.form-control, input.form-control {
     text-decoration: none;
     color: white;
 }
+
+.errorlist {
+    color: red;
+}

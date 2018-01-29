@@ -7,7 +7,15 @@ services:
       POSTGRES_PASSWORD: $PGPASSWORD
       POSTGRES_DB: $PGDBNAME
     volumes:
-      - /opt/docker-volumes/askup/postgres/data:/var/lib/postgresql/data
+      - ./.volumes/postgres/data:/var/lib/postgresql/data
+  postfix:
+    image: khaimovmr/postfix
+    restart: always
+    environment:
+      MYHOSTNAME: $MYHOSTNAME
+      myhostname: $MYHOSTNAME
+    volumes:
+      - ./.volumes/postfix/log:/var/log
   django:
     build: 
       context: ..
@@ -21,6 +29,7 @@ services:
       - ../askup/static:/askup/askup/static
     depends_on:
       - postgres
+      - postfix
   nginx:
     image: nginx:1.9.12
     depends_on:
@@ -29,6 +38,6 @@ services:
       - 80:80
     volumes:
       - ../askup/static:/var/www/sites/static
-      - /opt/docker-volumes/askup/nginx/logs:/var/logs
-      - /opt/docker-volumes/askup/nginx/tmp:/tmp
+      - ./.volumes/nginx/logs:/var/logs
+      - ./.volumes/nginx/tmp:/tmp
       - ./nginx/conf.d:/etc/nginx/conf.d
