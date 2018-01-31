@@ -36,6 +36,7 @@ class InitFormWithCancelButtonMixin(object):
         return ButtonHolder(
             self._get_cancel_button(qset_id),
             Submit('submit', submit_name, css_class='btn btn-theme'),
+            css_class='center',
         )
 
     def _get_cancel_button(self, qset_id):

@@ -24,8 +24,9 @@ class QsetViewMixin(object):
 
         self._current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
         applied_to_organization = self._current_qset.top_qset.users.filter(id=request.user.id)
+        is_admin = check_user_has_groups(request.user, 'admins')
 
-        if not request.user.is_superuser and not applied_to_organization:
+        if not is_admin and not applied_to_organization:
             return redirect(reverse('askup:organizations'))
 
         return super().dispatch(request, *args, **kwargs)
@@ -58,11 +59,12 @@ class ListViewUserContextDataMixin(UserFilterMixin, object):
 
     def fill_user_context(self, context):
         """Fill user related context extra fields."""
-        context['is_admin'] = self.request.user.is_superuser
-        context['is_teacher'] = check_user_has_groups(self.request.user, 'teachers')
-        context['is_student'] = check_user_has_groups(self.request.user, 'students')
+        user = self.request.user
+        context['is_admin'] = check_user_has_groups(user, 'admins')
+        context['is_teacher'] = check_user_has_groups(user, 'teachers')
+        context['is_student'] = check_user_has_groups(user, 'students')
         context['is_qset_creator'] = context['is_admin'] or context['is_teacher']
-        context['is_question_creator'] = self.request.user.is_authenticated()
+        context['is_question_creator'] = user.is_authenticated()
 
     def fill_user_filter_context(self, context):
         """Fill a filter related context data."""

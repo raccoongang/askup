@@ -25,7 +25,13 @@ from .mixins.views import (
     UserFilterMixin,
 )
 from .models import Answer, Organization, Qset, Question
-from .utils import user_group_required
+from .utils import (
+    check_user_has_groups,
+    get_user_answers_count,
+    get_user_questions_count,
+    get_user_score_by_id,
+    user_group_required,
+)
 
 
 log = logging.getLogger(__name__)
@@ -54,7 +60,7 @@ class OrganizationsView(generic.ListView):
         """
         user = self.request.user
 
-        if user.is_superuser:
+        if check_user_has_groups(user, 'admins'):
             return Qset.objects.filter(parent_qset=None).order_by('name')
         if user.is_authenticated():
             return Qset.objects.filter(parent_qset=None, top_qset__users=user.id).order_by('name')
@@ -90,7 +96,7 @@ class OrganizationView(ListViewUserContextDataMixin, QsetViewMixin, generic.List
         user = self.request.user
         log.debug("USER in view: %s", self.request)
 
-        if user.is_superuser:
+        if check_user_has_groups(user, 'admins'):
             log.debug('Filtered qsets for the superuser by pk=%s', pk)
             return Qset.objects.filter(parent_qset_id=pk).order_by('name')
         elif user.is_authenticated():
@@ -198,22 +204,19 @@ class QuestionView(generic.DetailView):
         return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
 
 
-class UserProfileView(generic.DetailView):
-    """Handles the Question detailed view."""
-
-    model = User
-    template_name = 'askup/user_profile.html'
-
-    @method_decorator(login_required)
-    def dispatch(*args, **kwargs):
-        """
-        Check presence of required credentials and parameters.
-
-        Overriding the dispatch method of generic.DetailView
-        """
-        # return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
-        # Stub
-        return redirect(reverse('askup:organizations'))
+@login_required
+def user_profile_view(request, user_id):
+    """Provide the user profile view."""
+    user = get_object_or_404(User, pk=user_id)
+    return render(
+        request,
+        'askup/user_profile.html',
+        {
+            'questions_count': get_user_questions_count(user.id),
+            'answers_count': get_user_answers_count(user.id),
+            'own_score': get_user_score_by_id(user.id),
+        },
+    )
 
 
 def login_view(request):
@@ -222,7 +225,7 @@ def login_view(request):
         return redirect('/')
 
     form = UserLoginForm(request.POST or None)
-    next_page = request.GET.get('next')
+    next_page = request.GET.get('next', '/')
 
     if form.is_valid():
         username = form.cleaned_data.get('username')
@@ -231,7 +234,7 @@ def login_view(request):
         login(request, user)
 
         if request.user.is_authenticated():
-            return redirect(next_page or '/')
+            return redirect(next_page)
 
     return render(request, 'askup/login_form.html', {'form': form})
 
@@ -338,7 +341,9 @@ def qset_delete(request, pk):
     if qset.parent_qset_id is None:
         return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
-    if not request.user.is_superuser and request.user not in qset.top_qset.users.all():
+    is_admin = check_user_has_groups(request.user, 'admins')
+
+    if not is_admin and request.user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     if request.method == 'POST':
@@ -417,8 +422,9 @@ def do_validate_answer_form(form, request, question):
 
     if form.is_valid():
         text = form.cleaned_data.get('text')
+        is_admin = check_user_has_groups(request.user, 'admins')
 
-        if not request.user.is_superuser and user not in question.qset.top_qset.users.all():
+        if not is_admin and user not in question.qset.top_qset.users.all():
             log.info(
                 'User %s have tried to answer the question without the permissions.',
                 user.id
@@ -502,7 +508,7 @@ def do_compose_question_create_form(request, user, qset_id):
 
 def do_check_user_and_create_question(user, qset, text, answer_text, blooms_tag):
     """Check user permissions and create question in the database."""
-    if not user.is_superuser and user not in qset.top_qset.users.all():
+    if not check_user_has_groups(user, 'admins') and user not in qset.top_qset.users.all():
         return None, redirect(reverse('askup:organizations'))
 
     Question.objects.create(
@@ -521,7 +527,7 @@ def question_edit(request, pk):
     question = get_object_or_404(Question, pk=pk)
     user = request.user
     is_teacher = 'Teachers' in user.groups.values_list('name', flat=True)
-    is_admin = user.is_superuser
+    is_admin = check_user_has_groups(user, 'admins')
 
     if not is_admin and user not in question.qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
@@ -573,7 +579,7 @@ def question_delete(request, pk):
     qset_id = question.qset_id
     user = request.user
     is_teacher = 'Teachers' in user.groups.values_list('name', flat=True)
-    is_admin = user.is_superuser
+    is_admin = check_user_has_groups(user, 'admins')
 
     if not is_admin and user not in question.qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
@@ -651,8 +657,9 @@ def answer_evaluate(request, answer_id, evaluation):
 def do_user_checks_and_evaluate(user, answer, evaluation):
     """Do user checks and evaluate answer for the answer evaluation view."""
     evaluation_int = int(evaluation)
+    is_admin = check_user_has_groups(user, 'admins')
 
-    if not user.is_superuser and user not in answer.question.qset.top_qset.users.all():
+    if not is_admin and user not in answer.question.qset.top_qset.users.all():
         return False
 
     if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
@@ -678,7 +685,7 @@ def start_quiz_all(request, qset_id):
     question = queryset.order_by('-vote_value', 'text').first()
     user = request.user
 
-    if not user.is_superuser and user not in qset.top_qset.users.all():
+    if not check_user_has_groups(user, 'admins') and user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     if not question:
@@ -715,8 +722,9 @@ def question_downvote(request, question_id):
 def question_vote(user, question_id, value):
     """Provide a general question vote functionality."""
     question = get_object_or_404(Question, pk=question_id)
+    is_admin = check_user_has_groups(user, 'admins')
 
-    if not user.is_superuser and user not in question.qset.top_qset.users.all():
+    if not is_admin and user not in question.qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     vote_result = question.vote(user.id, value)

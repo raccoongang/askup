@@ -1,6 +1,6 @@
 """Admin views."""
-
 from django.contrib import admin
+from django.contrib.auth.models import User
 
 from .models import EmailPattern, Organization, Qset, Question
 
@@ -72,6 +72,13 @@ class QsetAdmin(admin.ModelAdmin):
 class QuestionAdmin(admin.ModelAdmin):
     """Admin list and detailed view for the Question model."""
 
+    fields = (
+        'text',
+        'answer_text',
+        'qset',
+        'blooms_tag',
+        'vote_value',
+    )
     list_display = ('text', 'qset')
 
     def get_form(self, request, obj=None, **kwargs):
@@ -95,14 +102,54 @@ class QuestionAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         return queryset.order_by('text', 'qset')
 
+    def get_readonly_fields(self, request, obj=None):
+        """Return a tuple of field names that should behave as a read only."""
+        return ('vote_value',)
+
 
 class EmailPatternAdmin(admin.ModelAdmin):
     """Admin list and detailed view for the EmailPattern model."""
 
-    list_display = ('text', 'organization')
+    fields = ('organization', 'text')
+    list_display = ('organization', 'text')
+
+
+class UserAdmin(admin.ModelAdmin):
+    """Admin list and detailed view for the Qset model."""
+
+    fields = (
+        'username',
+        'email',
+        'password',
+        'first_name',
+        'last_name',
+        'is_active',
+        'groups',
+    )
+    list_display = ('username', 'email', 'first_name', 'last_name')
+
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Change form fields rules.
+
+        Overriding the form fields for the admin model form of the Users.
+        """
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields['username'].required = True
+        form.base_fields['email'].required = True
+        form.base_fields['password'].required = True
+        form.base_fields['groups'].required = True
+        return form
+
+    def save_model(self, request, obj, form, change, **kwargs):
+        """Process the custom validation for the User admin form."""
+        import ipdb; ipdb.set_trace() 
+        super().save_model(request, obj, form, change, **kwargs)
 
 
 admin.site.register(Organization, OrganizationAdmin)
 admin.site.register(Qset, QsetAdmin)
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(EmailPattern, EmailPatternAdmin)
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)

@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models.expressions import RawSQL
 
+from .utils import check_user_has_groups
+
 
 class Qset(models.Model):
     """Describes the Qset (questions set) and the Organization model and it's behaviour."""
@@ -218,7 +220,7 @@ class Qset(models.Model):
 
     def get_user_related_qsets_queryset(user):
         """Return queryset of qset objects for the "user related qsets" request."""
-        if user.is_superuser:
+        if check_user_has_groups(user, 'admins'):
             return Qset.objects.all()
         else:
             return Qset.objects.filter(top_qset__users=user.id)

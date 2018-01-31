@@ -11,6 +11,7 @@ plugins:
       - "askup/static/debug_toolbar"
       - ".tox/"
       - ".eggs/"
+      - ".dc-*/"
   radon:
     enabled: true
     exclude_patterns:
@@ -21,6 +22,7 @@ plugins:
       - "askup/static/debug_toolbar"
       - ".tox/"
       - ".eggs/"
+      - ".dc-*/"
     config:
       python_version: 3
       threshold: "C"
@@ -34,6 +36,7 @@ plugins:
       - "askup/static/debug_toolbar"
       - ".tox/"
       - ".eggs/"
+      - ".dc-*/"
     config:
       strings:
         - BUG
@@ -48,6 +51,7 @@ plugins:
       - "askup/static/debug_toolbar"
       - ".tox/"
       - ".eggs/"
+      - ".dc-*/"
     config:
       languages:
         - javascript:
@@ -63,6 +67,7 @@ plugins:
       - "askup/static/debug_toolbar"
       - ".tox/"
       - ".eggs/"
+      - ".dc-*/"
   markdownlint:
     enabled: true
     exclude_patterns:
@@ -73,6 +78,7 @@ plugins:
       - "askup/static/debug_toolbar"
       - ".tox/"
       - ".eggs/"
+      - ".dc-*/"
 
 checks:
   argument-count:

@@ -33,9 +33,9 @@
                 <ul class="nav navbar-nav navbar-right"> 
                     {% if request.user.is_authenticated %}
                     <li>
-                        {% with id=request.user.id username=request.user.username email=request.user.email name=request.user.name %}
-                        <a class="float" href="{% url 'askup:user_profile' %}">{{ email }}
-                            <span class="badge">{{ username }}</span>
+                        {% with id=request.user.id user=request.user %}
+                        <a class="float" href="{% url 'askup:user_profile' user.id %}">{{ user.email }}
+                            <span class="badge">{{ user.username }}</span>
                         </a>
                         {% endwith %}
                     </li>

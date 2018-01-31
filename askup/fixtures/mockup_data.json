@@ -13,7 +13,7 @@
             "is_staff": true,
             "is_active": true,
             "date_joined": "2017-12-22T09:21:07Z",
-            "groups": [1],
+            "groups": [2],
             "user_permissions": []
         }
     },
@@ -31,7 +31,7 @@
             "is_staff": false,
             "is_active": true,
             "date_joined": "2017-12-22T11:21:54Z",
-            "groups": [2],
+            "groups": [3],
             "user_permissions": []
         }
     },
@@ -49,7 +49,7 @@
             "is_staff": false,
             "is_active": true,
             "date_joined": "2018-01-11T08:27:49.583Z",
-            "groups": [2],
+            "groups": [3],
             "user_permissions": []
         }
     },

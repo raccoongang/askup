@@ -5,7 +5,7 @@
         <div class="row">
             <h3 class="center">
                 {{main_title}} 
-                {% if user.is_superuser %}
+                {% if is_admin %}
                     {% include 'askup/edit_qset_button.html' %}
                 {% endif %}
             </h3>

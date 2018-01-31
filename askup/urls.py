@@ -41,5 +41,5 @@ urlpatterns = [
         views.answer_evaluate,
         name='answer_evaluate'
     ),
-    url(r'^user_profile/$', views.UserProfileView.as_view(), name='user_profile'),
+    url(r'^user/profile/(?P<user_id>\d+)/$', views.user_profile_view, name='user_profile'),
 ]
