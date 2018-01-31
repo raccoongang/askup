@@ -1,7 +1,9 @@
 """Admin views."""
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django.db import transaction
 
+from .forms import UserForm
 from .models import EmailPattern, Organization, Qset, Question
 
 
@@ -117,6 +119,7 @@ class EmailPatternAdmin(admin.ModelAdmin):
 class UserAdmin(admin.ModelAdmin):
     """Admin list and detailed view for the Qset model."""
 
+    form = UserForm
     fields = (
         'username',
         'email',
@@ -139,12 +142,41 @@ class UserAdmin(admin.ModelAdmin):
         form.base_fields['email'].required = True
         form.base_fields['password'].required = True
         form.base_fields['groups'].required = True
+        self._previous_username = None
+
+        if obj:
+            self._previous_username = obj.username
+
         return form
 
-    def save_model(self, request, obj, form, change, **kwargs):
-        """Process the custom validation for the User admin form."""
-        import ipdb; ipdb.set_trace() 
-        super().save_model(request, obj, form, change, **kwargs)
+    @transaction.atomic
+    def save_related(self, request, form, formsets, change):
+        """
+        Process relations saving.
+
+        Set is_staff to users, who have an 'admins' or a 'teachers' groups.
+        Overriding the ModelAdmin.save_model method.
+        """
+        new_groups = set(str(group).lower() for group in form.cleaned_data['groups'])
+
+        if new_groups.intersection(('admins', 'teachers')) and self.obj.is_staff is False:
+            self.obj.is_staff = True
+            self.obj.save()
+        elif not new_groups.intersection(('admins', 'teachers')) and self.obj.is_staff is True:
+            self.obj.is_staff = False
+            self.obj.save()
+
+        return super().save_related(request, form, formsets, change)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Process model saving.
+
+        Save the obj property available here to the later usage in the save_related method.
+        Overriding the ModelAdmin.save_model method.
+        """
+        self.obj = obj
+        return super().save_model(request, obj, form, change)
 
 
 admin.site.register(Organization, OrganizationAdmin)

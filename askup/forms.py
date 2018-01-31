@@ -5,6 +5,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Div, Fieldset, Layout
 from django import forms
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 
 from .mixins.forms import InitFormWithCancelButtonMixin
 from .models import Organization, Qset, Question
@@ -22,7 +23,7 @@ class UserLoginForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['username'].label = ''
-        self.fields['username'].widget.attrs['placeholder'] = 'Your username...'
+        self.fields['username'].widget.attrs['placeholder'] = 'Your username or email...'
         self.fields['password'].label = ''
         self.fields['password'].widget.attrs['placeholder'] = 'Your password...'
 
@@ -46,6 +47,30 @@ class UserLoginForm(forms.Form):
             raise forms.ValidationError("This user is no longer active")
 
         return super().clean(*args, **kwargs)
+
+
+class UserForm(forms.ModelForm):
+    """Handles the user create/edit form behaviour."""
+
+    def clean_username(self):
+        """Check username for non matching with other user's email."""
+        user = self.instance
+        queryset = User.objects.filter(email=self.cleaned_data['username']).exclude(id=user.id)
+
+        if user and queryset.first():
+            raise forms.ValidationError("This username or email is already exists.")
+
+        return self.cleaned_data['username']
+
+    def clean_email(self):
+        """Check email for non matching with other user's username."""
+        user = self.instance
+        queryset = User.objects.filter(username=self.cleaned_data['email']).exclude(id=user.id)
+
+        if user and queryset.first():
+            raise forms.ValidationError("This username or email is already exists.")
+
+        return self.cleaned_data['email']
 
 
 class OrganizationModelForm(forms.ModelForm):
