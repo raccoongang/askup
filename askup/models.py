@@ -123,10 +123,8 @@ class Qset(models.Model):
         recursively from the self to the top parent
         (organization).
         """
-        if (self.questions_count + amount) < 0:
-            self.questions_count = 0
-        else:
-            self.questions_count += amount
+        # NOTE(KhaimovMR): Make a comprehensive negative amount protection (recalc tree)
+        self.questions_count += amount
 
         if self.parent_qset_id:
             self.parent_qset.iterate_questions_count(amount)
