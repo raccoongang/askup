@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 
 from askup.models import Qset
-from askup.utils import check_user_has_groups
+from askup.utils.general import check_user_has_groups
 
 
 class QsetViewMixin(object):

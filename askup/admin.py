@@ -1,7 +1,6 @@
 """Admin views."""
 from django.contrib import admin
 from django.contrib.auth.models import User
-from django.db import transaction
 
 from .forms import UserForm
 from .models import EmailPattern, Organization, Qset, Question

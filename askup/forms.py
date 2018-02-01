@@ -5,8 +5,8 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Div, Fieldset, Layout
 from django import forms
 from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import User
 
 from .mixins.forms import InitFormWithCancelButtonMixin
 from .models import Organization, Qset, Question
@@ -97,6 +97,7 @@ class UserForm(forms.ModelForm):
         return self.cleaned_data['email']
 
     def clean_password(self, *args, **kwargs):
+        """Clean the password field data received."""
         if self.instance.id and not self.cleaned_data['password']:
             return self.instance.password
 
@@ -302,3 +303,38 @@ class AnswerModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
                 }
             ),
         }
+
+
+class FeedbackForm(InitFormWithCancelButtonMixin, forms.Form):
+    """Provides the create/update functionality for the Qset."""
+
+    email = forms.EmailField()
+    subjecl = forms.CharField(min_length=3, max_length=60)
+    text = forms.Textarea()
+
+    def _set_up_fields(self, user):
+        """Set up the fields properties for the feedback form."""
+        # self.fields['blooms_tag'].choices[0] = ("", "- no tag -")
+        pass
+
+    def _set_up_helper(self, qset_id):
+        """Set up form helper that describes the form html structure."""
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Fieldset(
+                '',
+                Div(
+                    Div('email', css_class='col-sm-12'),
+                    css_class='row'
+                ),
+                Div(
+                    Div('subject', css_class='col-sm-12'),
+                    css_class='row'
+                ),
+                Div(
+                    Div('text', css_class='col-sm-12'),
+                    css_class='row'
+                ),
+            ),
+            self._get_helper_buttons(qset_id)
+        )

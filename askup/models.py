@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models.expressions import RawSQL
 
-from .utils import check_user_has_groups
+from .utils.general import check_user_has_groups
 
 
 class Qset(models.Model):

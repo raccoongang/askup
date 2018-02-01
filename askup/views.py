@@ -12,6 +12,7 @@ from django.views import generic
 
 from .forms import (
     AnswerModelForm,
+    FeedbackForm,
     OrganizationModelForm,
     QsetDeleteModelForm,
     QsetModelForm,
@@ -25,12 +26,20 @@ from .mixins.views import (
     UserFilterMixin,
 )
 from .models import Answer, Organization, Qset, Question
-from .utils import (
+from .utils.general import (
     check_user_has_groups,
     get_user_answers_count,
     get_user_questions_count,
     get_user_score_by_id,
+)
+from .utils.views import (
+    compose_qset_form,
+    compose_question_form_and_create,
+    delete_qset_by_form,
+    question_vote,
     user_group_required,
+    validate_and_send_feedback_form,
+    validate_answer_form_and_create,
 )
 
 
@@ -266,7 +275,7 @@ def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
     parent_qset_id = request.POST.get('parent_qset')
     parent_qset = get_object_or_404(Qset, pk=parent_qset_id)
-    form = do_make_qset_form(request, parent_qset_id)
+    form = compose_qset_form(request, parent_qset_id, QsetModelForm)
 
     if request.method == 'POST':
         if form.is_valid():
@@ -289,21 +298,6 @@ def qset_create(request):
             'breadcrumbs': parent_qset.get_parents()
         }
     )
-
-
-def do_make_qset_form(request, parent_qset_id):
-    """Compose qset form and return it."""
-    if request.method == 'POST':
-        return QsetModelForm(
-            request.POST or None,
-            user=request.user,
-            qset_id=parent_qset_id
-        )
-    else:
-        return QsetModelForm(
-            user=request.user,
-            qset_id=parent_qset_id
-        )
 
 
 @user_group_required('teachers', 'admins')
@@ -347,7 +341,7 @@ def qset_delete(request, pk):
         return redirect(reverse('askup:organizations'))
 
     if request.method == 'POST':
-        redirect_response = do_qset_validate_delete(
+        redirect_response = delete_qset_by_form(
             QsetDeleteModelForm(
                 request.POST,
                 instance=qset,
@@ -364,17 +358,6 @@ def qset_delete(request, pk):
             'breadcrumbs': qset.get_parents(),
         }
     )
-
-
-def do_qset_validate_delete(form, qset):
-    """Perform a form validation and delete qset."""
-    if form.is_valid():  # checks the CSRF
-        parent = qset.parent_qset
-        qset.delete()
-        redirect_url = 'askup:organization' if parent.parent_qset_id is None else 'askup:qset'
-        return redirect(reverse(redirect_url, kwargs={'pk': parent.id}))
-
-    return None
 
 
 @login_required
@@ -399,7 +382,7 @@ def question_answer(request, question_id=None):
             }
         )
     else:
-        response = do_validate_answer_form(form, request, question)
+        response = validate_answer_form_and_create(form, request, question, Answer)
         return JsonResponse(response)
 
 
@@ -409,38 +392,6 @@ def do_make_answer_form(request, question):
         return AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
     else:
         return AnswerModelForm(parent_qset_id=question.qset_id)
-
-
-def do_validate_answer_form(form, request, question):
-    """
-    Validate answer form and create an Answer object on success.
-
-    Returns response dictionary to pass to the JsonResponse after.
-    """
-    response = {'result': 'success'}
-    user = request.user
-
-    if form.is_valid():
-        text = form.cleaned_data.get('text')
-        is_admin = check_user_has_groups(request.user, 'admins')
-
-        if not is_admin and user not in question.qset.top_qset.users.all():
-            log.info(
-                'User %s have tried to answer the question without the permissions.',
-                user.id
-            )
-            return redirect(reverse('askup:organizations'))
-
-        answer = Answer.objects.create(
-            text=text,
-            question_id=question.id,
-            user_id=user.id
-        )
-        response['answer_id'] = answer.id
-    else:
-        response['result'] = 'error'
-
-    return response
 
 
 @login_required
@@ -453,7 +404,9 @@ def question_create(request, qset_id=None):
     else:
         qset = None
 
-    form, redirect_response = do_make_form_and_create(request, qset_id)
+    form, redirect_response = compose_question_form_and_create(
+        request, qset_id, QuestionModelForm, Question, Qset
+    )
 
     if redirect_response:
         return redirect_response
@@ -468,57 +421,6 @@ def question_create(request, qset_id=None):
             'breadcrumbs': qset and qset.get_parents(True),
         }
     )
-
-
-def do_make_form_and_create(request, qset_id):
-    """Compose form and create question on validation success."""
-    user = request.user
-
-    if request.method == 'POST':
-        form = do_compose_question_create_form(request, user, qset_id)
-
-        if form.is_valid():
-            qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
-            text = form.cleaned_data.get('text')
-            answer_text = form.cleaned_data.get('answer_text')
-            blooms_tag = form.cleaned_data.get('blooms_tag')
-
-            return do_check_user_and_create_question(user, qset, text, answer_text, blooms_tag)
-    else:
-        form = do_compose_question_create_form(request, user, qset_id)
-
-    return form, None
-
-
-def do_compose_question_create_form(request, user, qset_id):
-    """Compose create question form."""
-    if request.method == 'POST':
-        return QuestionModelForm(
-            request.POST,
-            user=user,
-            qset_id=qset_id,
-        )
-    else:
-        return QuestionModelForm(
-            initial={'qset': qset_id},
-            user=user,
-            qset_id=qset_id,
-        )
-
-
-def do_check_user_and_create_question(user, qset, text, answer_text, blooms_tag):
-    """Check user permissions and create question in the database."""
-    if not check_user_has_groups(user, 'admins') and user not in qset.top_qset.users.all():
-        return None, redirect(reverse('askup:organizations'))
-
-    Question.objects.create(
-        text=text,
-        answer_text=answer_text,
-        qset_id=qset.id,
-        user_id=user.id,
-        blooms_tag=blooms_tag,
-    )
-    return None, redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
 
 @login_required
@@ -643,6 +545,7 @@ def answer_evaluate(request, answer_id, evaluation):
         qset_id = answer.question.qset_id
         queryset = Question.objects.filter(
             qset_id=qset_id,
+            vote_value__lt=answer.question.vote_value,
             text__gt=answer.question.text,
         )
         queryset = UserFilterMixin.apply_filter_to_queryset(request, filter, queryset)
@@ -719,19 +622,9 @@ def question_downvote(request, question_id):
     return question_vote(request.user, question_id, -1)
 
 
-def question_vote(user, question_id, value):
-    """Provide a general question vote functionality."""
-    question = get_object_or_404(Question, pk=question_id)
-    is_admin = check_user_has_groups(user, 'admins')
+def feedback_form_view(request):
+    """Provide a feedback form view."""
+    form, redirect = validate_and_send_feedback_form(request, FeedbackForm)
 
-    if not is_admin and user not in question.qset.top_qset.users.all():
-        return redirect(reverse('askup:organizations'))
-
-    vote_result = question.vote(user.id, value)
-
-    if vote_result is False:
-        response = {'result': 'error'}
-    else:
-        response = {'result': 'success', 'value': vote_result}
-
-    return JsonResponse(response)
+    if redirect:
+        return redirect
