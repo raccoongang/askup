@@ -6,6 +6,7 @@ from crispy_forms.layout import Div, Fieldset, Layout
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
 
 from .mixins.forms import InitFormWithCancelButtonMixin
 from .models import Organization, Qset, Question
@@ -52,6 +53,29 @@ class UserLoginForm(forms.Form):
 class UserForm(forms.ModelForm):
     """Handles the user create/edit form behaviour."""
 
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    class Meta:
+        model = User
+        fields = (
+            'username',
+            'email',
+            'password',
+            'first_name',
+            'last_name',
+            'is_active',
+            'groups',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['username'].required = True
+        self.fields['email'].required = True
+        self.fields['password'].required = self.instance.id is None  # Required on user creation
+        self.fields['groups'].required = True
+        self.fields['groups'].error_messages['required'] = "At least one group should be selected."
+
     def clean_username(self):
         """Check username for non matching with other user's email."""
         user = self.instance
@@ -71,6 +95,29 @@ class UserForm(forms.ModelForm):
             raise forms.ValidationError("This username or email is already exists.")
 
         return self.cleaned_data['email']
+
+    def clean_password(self, *args, **kwargs):
+        if self.instance.id and not self.cleaned_data['password']:
+            return self.instance.password
+
+        return make_password(self.cleaned_data['password'])
+
+    def clean_groups(self, *args, **kwargs):
+        """
+        Process Groups field changes.
+
+        Set is_staff to users, who have an 'admins' or a 'teachers' groups.
+        Overriding the Form.clean_<field_name> method.
+        """
+        new_groups = set(str(group).lower() for group in self.cleaned_data['groups'])
+        has_staff_groups = new_groups.intersection(('admins', 'teachers'))
+
+        if has_staff_groups and self.instance.is_staff is False:
+            self.instance.is_staff = True
+        elif not has_staff_groups and self.instance.is_staff is True:
+            self.instance.is_staff = False
+
+        return self.cleaned_data['groups']
 
 
 class OrganizationModelForm(forms.ModelForm):

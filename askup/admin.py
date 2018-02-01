@@ -120,67 +120,7 @@ class UserAdmin(admin.ModelAdmin):
     """Admin list and detailed view for the Qset model."""
 
     form = UserForm
-    fields = (
-        'username',
-        'email',
-        'password',
-        'first_name',
-        'last_name',
-        'is_active',
-        'groups',
-    )
     list_display = ('username', 'email', 'first_name', 'last_name')
-
-    def get_form(self, request, obj=None, **kwargs):
-        """
-        Change form fields rules.
-
-        Overriding the form fields for the admin model form of the Users.
-        """
-        form = super().get_form(request, obj, **kwargs)
-        form.base_fields['username'].required = True
-        form.base_fields['email'].required = True
-        form.base_fields['password'].required = True
-        form.base_fields['groups'].required = True
-        self._previous_username = None
-
-        if obj:
-            self._previous_username = obj.username
-
-        return form
-
-    @transaction.atomic
-    def save_related(self, request, form, formsets, change):
-        """
-        Process relations saving.
-
-        Set is_staff to users, who have an 'admins' or a 'teachers' groups.
-        Overriding the ModelAdmin.save_model method.
-        """
-        new_groups = set(str(group).lower() for group in form.cleaned_data['groups'])
-
-        if new_groups.intersection(('admins', 'teachers')) and self.obj.is_staff is False:
-            self.obj.is_staff = True
-            self.obj.save()
-        elif not new_groups.intersection(('admins', 'teachers')) and self.obj.is_staff is True:
-            self.obj.is_staff = False
-            self.obj.save()
-
-        return super().save_related(request, form, formsets, change)
-
-    def save_model(self, request, obj, form, change):
-        """
-        Process model saving.
-
-        Save the obj property available here to the later usage in the save_related method.
-        Overriding the ModelAdmin.save_model method.
-        """
-        self.obj = obj
-
-        if obj.id is None:
-            obj.set_password(obj.password)
-
-        return super().save_model(request, obj, form, change)
 
 
 admin.site.register(Organization, OrganizationAdmin)
