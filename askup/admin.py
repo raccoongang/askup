@@ -176,6 +176,10 @@ class UserAdmin(admin.ModelAdmin):
         Overriding the ModelAdmin.save_model method.
         """
         self.obj = obj
+
+        if obj.id is None:
+            obj.set_password(obj.password)
+
         return super().save_model(request, obj, form, change)
 
 
