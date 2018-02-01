@@ -8,8 +8,8 @@ from django.shortcuts import get_object_or_404
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from .models import Qset, Question
-from .views import login_view, OrganizationsView
+from askup.models import Qset, Question
+from askup.views import login_view, OrganizationsView
 
 
 log = logging.getLogger(__name__)
