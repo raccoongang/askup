@@ -163,9 +163,9 @@ def send_feedback(from_email, subject, message):
                 send_mail(
                     "Feedback from the web-site",
                     body,
-                    'mailer@askup.net',
+                    'AskupMailer <mailer@askup.net>',
                     (to_email,),
-                    reply_to=(from_email,)
+                    reply_to=('AskUp mailer {0}'.format(from_email),)
                 )
             except Exception:
                 log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
