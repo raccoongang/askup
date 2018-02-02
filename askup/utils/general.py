@@ -1,7 +1,10 @@
+import base64
+import json
 import logging
 
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
+from django.core.mail import get_connection
+from django.core.mail.message import EmailMessage
 from django.db import connection
 from django.shortcuts import get_object_or_404
 
@@ -155,13 +158,61 @@ def send_feedback(from_email, subject, message):
     if admins:
         body = "Subject:\n{0}\n\nMessage:\n{1}".format(subject, message)
 
-        try:
-            for to_email in admins:
-                send_mail("Feedback from the web-site", body, from_email, (to_email,))
-        except Exception:
-            log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
+        for to_email in admins:
+            try:
+                send_mail(
+                    "Feedback from the web-site",
+                    body,
+                    'mailer@askup.net',
+                    (to_email,),
+                    reply_to=(from_email,)
+                )
+            except Exception:
+                log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
 
         return True
 
     logging.warning("The system didn't find any of admins to send a feedback form to.")
     return False
+
+
+def send_mail(subject, message, from_email, recipient_list, reply_to=None):
+    """
+    Send mail with the specific parameters.
+
+    Easy wrapper for sending a single message to a recipient list. All members
+    of the recipient list will see the other recipients in the 'To' field.
+
+    If auth_user is None, the EMAIL_HOST_USER setting is used.
+    If auth_password is None, the EMAIL_HOST_PASSWORD setting is used.
+
+    Note: The API for this method is frozen. New code wanting to extend the
+    functionality should use the EmailMessage class directly.
+    """
+    mail = EmailMessage(subject, message, from_email, recipient_list, reply_to=reply_to)
+    return mail.send()
+
+
+def add_notification_to_url(url, notification):
+    """Add a base64-encoded notification parameter to the url."""
+    prefix = '&' if url.find('?') > -1 else '?'
+    return '{0}{1}notification={2}'.format(
+        url,
+        prefix,
+        base64.b64encode(json.dumps(notification).encode())
+    )
+
+
+def extract_notification_from_request(request):
+    """Extract and return a base64-encoded notification parameter from the request."""
+    encoded = request.GET.get('notification') or request.POST.get('notification')
+
+    if not encoded:
+        return ('', '')
+
+    try:
+        notification = json.loads(base64.b64decode(encoded))
+    except Exception:
+        notification = ('', '')
+
+    return notification

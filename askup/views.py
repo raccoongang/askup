@@ -27,6 +27,7 @@ from .mixins.views import (
 )
 from .models import Answer, Organization, Qset, Question
 from .utils.general import (
+    add_notification_to_url,
     check_user_has_groups,
     get_user_answers_count,
     get_user_questions_count,
@@ -243,7 +244,7 @@ def login_view(request):
         login(request, user)
 
         if request.user.is_authenticated():
-            return redirect(next_page)
+            return redirect(add_notification_to_url(next_page, ['success', 'message']))
 
     return render(request, 'askup/login_form.html', {'form': form})
 
@@ -545,7 +546,7 @@ def answer_evaluate(request, answer_id, evaluation):
         qset_id = answer.question.qset_id
         queryset = Question.objects.filter(
             qset_id=qset_id,
-            vote_value__lt=answer.question.vote_value,
+            vote_value__lte=answer.question.vote_value,
             text__gt=answer.question.text,
         )
         queryset = UserFilterMixin.apply_filter_to_queryset(request, filter, queryset)
@@ -613,13 +614,13 @@ def get_quiz_question_redirect(next_question_id, filter):
 @login_required
 def question_upvote(request, question_id):
     """Provide a question up-vote functionality."""
-    return question_vote(request.user, question_id, 1)
+    return question_vote(request.user, question_id, 1, Question)
 
 
 @login_required
 def question_downvote(request, question_id):
     """Provide a question down-vote functionality."""
-    return question_vote(request.user, question_id, -1)
+    return question_vote(request.user, question_id, -1, Question)
 
 
 def feedback_form_view(request):
