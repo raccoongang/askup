@@ -3,6 +3,7 @@ import logging
 from crispy_forms.bootstrap import InlineRadios
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Div, Fieldset, Layout
+from crispy_forms.layout import HTML
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
@@ -309,8 +310,23 @@ class FeedbackForm(InitFormWithCancelButtonMixin, forms.Form):
     """Provides the create/update functionality for the Qset."""
 
     email = forms.EmailField()
-    subjecl = forms.CharField(min_length=3, max_length=60)
-    text = forms.Textarea()
+    subject = forms.CharField(min_length=3, max_length=60)
+    message = forms.CharField(min_length=10, max_length=2000, widget=forms.Textarea)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        user = kwargs.pop('user', None)
+        self.fields['email'].label = ''
+        self.fields['email'].widget.attrs['placeholder'] = 'Your email...'
+
+        if user and user.id:
+            self.fields['email'].initial = user.email
+            self.fields['email'].widget.attrs['readonly'] = True
+
+        self.fields['subject'].label = ''
+        self.fields['subject'].widget.attrs['placeholder'] = 'Feadback subject...'
+        self.fields['message'].label = ''
+        self.fields['message'].widget.attrs['placeholder'] = 'Feadback message...'
 
     def _set_up_fields(self, user):
         """Set up the fields properties for the feedback form."""
@@ -332,9 +348,17 @@ class FeedbackForm(InitFormWithCancelButtonMixin, forms.Form):
                     css_class='row'
                 ),
                 Div(
-                    Div('text', css_class='col-sm-12'),
+                    Div('message', css_class='col-sm-12'),
                     css_class='row'
                 ),
             ),
-            self._get_helper_buttons(qset_id)
+            self._get_helper_buttons(None)
+        )
+
+    def _get_cancel_button(self, qset_id):
+        """Return cancel button element of the form layout."""
+        return HTML(
+            '<a class="btn btn-flat cancel-btn" href="/">' +
+            'Cancel' +
+            '</a>'
         )

@@ -148,12 +148,19 @@ def get_admin_answers_count():
     return 0
 
 
-def send_feedback(email, subject, message):
-    """Send a feedback from the <email> sender to all the admin users in the system."""
+def send_feedback(from_email, subject, message):
+    """Send a feedback from the <from_email> sender to all the admin users in the system."""
     admins = tuple(user.email for user in User.objects.filter(groups__name='Admins'))
 
     if admins:
-        send_mail(subject, message, email, admins)
+        body = "Subject:\n{0}\n\nMessage:\n{1}".format(subject, message)
+
+        try:
+            for to_email in admins:
+                send_mail("Feedback from the web-site", body, from_email, (to_email,))
+        except Exception:
+            log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
+
         return True
 
     logging.warning("The system didn't find any of admins to send a feedback form to.")

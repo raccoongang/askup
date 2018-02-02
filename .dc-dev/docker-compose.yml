@@ -12,8 +12,8 @@ services:
     image: khaimovmr/postfix
     restart: unless-stopped
     ports:
-      - 25:25
+      - 20025:20025
     environment:
-      MYHOSTNAME: askup.net
+      MYHOSTNAME: localhost
     volumes:
       - ./.volumes/postfix/log:/var/log

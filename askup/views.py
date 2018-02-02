@@ -628,3 +628,11 @@ def feedback_form_view(request):
 
     if redirect:
         return redirect
+
+    return render(
+        request,
+        'askup/feedback_form.html',
+        {
+            'form': form,
+        }
+    )
