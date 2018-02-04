@@ -15,7 +15,26 @@ from askup.views import login_view, OrganizationsView
 log = logging.getLogger(__name__)
 
 
-class UserAuthenticationCase(TestCase):
+class LoginAdminByDefaultMixin(object):
+    def default_login(self):
+        self.client.login(username='admin', password='admin')
+
+
+def client_user(username, password):
+    """Pass the arguments of username and password to the decorator."""
+    def client_wrapper(func):
+        def wrapping_function(*args, **kwargs):
+            args[0].client.login(username=username, password=password)
+            result = func(*args, **kwargs)
+            args[0].default_login()
+            return result
+
+        return wrapping_function
+
+    return client_wrapper
+
+
+class UserAuthenticationCase(LoginAdminByDefaultMixin, TestCase):
     """Tests the user authentication."""
 
     def setUp(self):
@@ -31,6 +50,7 @@ class UserAuthenticationCase(TestCase):
             "password": "test_admin",
         }
         request = self.factory.post(reverse('askup:sign_in'), data=login_form_data)
+        self.client
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
@@ -39,7 +59,7 @@ class UserAuthenticationCase(TestCase):
         self.assertIs(isinstance(response, HttpResponseRedirect), True)
 
 
-class OrganizationsListView(TestCase):
+class OrganizationsListView(LoginAdminByDefaultMixin, TestCase):
     """Tests the Organizations view."""
 
     fixtures = ['groups', 'mockup_data']
@@ -47,31 +67,31 @@ class OrganizationsListView(TestCase):
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
-        self.factory = RequestFactory()
+        self.default_login()
 
-    def test_has_organizations(self):
-        """Test an Organizations view with the organizations."""
-        request = self.factory.get(reverse('askup:organizations'))
-        middleware = SessionMiddleware()
-        middleware.process_request(request)
-        request.session.save()
-        request.user = User.objects.get(id=2)  # teacher02 from the mockup_data
-        response = OrganizationsView.as_view()(request)
+    @client_user('teacher01', 'teacher01')
+    def test_has_many_organizations(self):
+        """Test an Organizations view with more than one organizations."""
+        response = self.client.get(reverse('askup:organizations'))
         self.assertContains(response, 'Organization 1')
         self.assertNotContains(response, 'You didn\'t apply to any organization')
 
+    @client_user('student01', 'student01')
+    def test_has_one_organization(self):
+        """Test an Organizations view with redirect because of only one organization."""
+
+        response = self.client.get(reverse('askup:organizations'))
+        self.assertRedirects(response, reverse('askup:organization', kwargs={'pk': 1}))
+
+    @client_user('student02_no_orgs', 'student02_no_orgs')
     def test_has_no_organizations(self):
         """Test an Organizations view w/o the organizations."""
-        request = self.factory.get(reverse('askup:organizations'))
-        middleware = SessionMiddleware()
-        middleware.process_request(request)
-        request.session.save()
-        request.user = User.objects.get(id=4)  # student02_no_orgs from the mockup_data
-        response = OrganizationsView.as_view()(request)
+        response = self.client.get(reverse('askup:organizations'))
         self.assertContains(response, 'You didn\'t apply to any organization')
+        self.client.login(username='admin', password='admin')
 
 
-class OrganizationListView(TestCase):
+class OrganizationListView(LoginAdminByDefaultMixin, TestCase):
     """Tests the Organization view."""
 
     fixtures = ['groups', 'mockup_data']
@@ -79,7 +99,7 @@ class OrganizationListView(TestCase):
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
-        self.client.login(username='admin', password='admin')
+        self.default_login()
 
     def test_has_subsets(self):
         """Test an Organization view with the subsets."""
@@ -98,16 +118,15 @@ class OrganizationListView(TestCase):
         self.assertContains(response, 'data-target="#modal-edit-qset"')
         self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
 
+    @client_user('teacher01', 'teacher01')
     def test_teacher_features_presence(self):
         """Test for a teacher features presence."""
-        self.client.login(username='teacher01', password='teacher01')
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
         self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
         self.assertNotContains(response, 'data-target="#modal-edit-qset"')
-        self.client.login(username='admin', password='admin')
 
 
-class QsetListView(TestCase):
+class QsetListView(LoginAdminByDefaultMixin, TestCase):
     """Tests the Qset views (for questions only type)."""
 
     fixtures = ['groups', 'mockup_data']
@@ -115,7 +134,7 @@ class QsetListView(TestCase):
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
-        self.client.login(username='admin', password='admin')
+        self.default_login()
 
     def test_type_2_has_questions(self):
         """Test Qset list view with the subsets."""
@@ -128,9 +147,9 @@ class QsetListView(TestCase):
         response = self.client.get(reverse('askup:qset', kwargs={'pk': 9}))
         self.assertContains(response, 'There are no questions here.')
 
+    @client_user('student01', 'student01')
     def test_student_features_presence(self):
         """Test for a student features presence."""
-        self.client.login(username='student01', password='student01')
         response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
         self.assertContains(response, 'Generate Question')
         self.assertContains(
@@ -157,11 +176,10 @@ class QsetListView(TestCase):
                 reverse('askup:question_delete', kwargs={'pk': 2})
             )
         )
-        self.client.login(username='admin', password='admin')
 
+    @client_user('teacher01', 'teacher01')
     def test_teacher_features_presence(self):
         """Test for a teacher features presence."""
-        self.client.login(username='teacher01', password='teacher01')
         response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
         self.assertContains(response, 'Generate Question')
         self.assertContains(
@@ -176,7 +194,6 @@ class QsetListView(TestCase):
                 reverse('askup:question_delete', kwargs={'pk': 1})
             )
         )
-        self.client.login(username='admin', password='admin')
 
     def test_admin_features_presence(self):
         """Test for an admin features presence."""
@@ -196,7 +213,7 @@ class QsetListView(TestCase):
         )
 
 
-class QsetModelFormTest(TestCase):
+class QsetModelFormTest(LoginAdminByDefaultMixin, TestCase):
     """Tests the Qset model form (CRUD etc.)."""
 
     fixtures = ['groups', 'mockup_data']
@@ -204,7 +221,7 @@ class QsetModelFormTest(TestCase):
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
-        self.client.login(username='admin', password='admin')
+        self.default_login()
 
     def create_qset(self, name, parent_qset_id):
         """Create qset with the parameters."""
@@ -225,15 +242,12 @@ class QsetModelFormTest(TestCase):
         self.assertEqual(qset.name, name)
         self.assertEqual(qset.type, 2)
 
+    @client_user('teacher01', 'teacher01')
     def create_qset_fail_forbidden_parent(self, name, parent_qset_id):
         """Create qset and look for a fail."""
-        self.client.login(username='teacher01', password='teacher01')
-
         with self.assertRaises(Http404):
             self.create_qset(name, parent_qset_id)
             get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
-
-        self.client.login(username='admin', password='admin')
 
     def update_qset(self, qset_id, new_name, new_parent_qset_id):
         """Update qset with the parameters."""
@@ -272,17 +286,14 @@ class QsetModelFormTest(TestCase):
         name = 'Qset 1-1 updated'
         self.update_qset_success(qset_id, name, parent_qset_id)
 
+    @client_user('teacher01', 'teacher01')
     def test_update_qset_fail_forbidden_parent(self):
         """Test qset updating with the forbiden parent."""
-        self.client.login(username='teacher01', password='teacher01')
-
         with self.assertRaises(Http404):
             name = 'Qset 2-1 updated'
             parent_qset_id = 3
             self.update_qset(6, name, parent_qset_id)
             get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
-
-        self.client.login(username='admin', password='admin')
 
     def delete_qset(self, qset_id):
         """Do delete particular qset through the client."""
@@ -299,16 +310,14 @@ class QsetModelFormTest(TestCase):
             # Try to delete Qset 1-1 by the admin
             self.delete_and_get_qset(4)
 
+    @client_user('teacher01', 'teacher01')
     def test_delete_qset_as_teacher_success(self):
         """Test successful qset deletion by the teacher."""
         # Try to delete Qset 1-2 by the teacher01
-        self.client.login(username='teacher01', password='teacher01')
-
         with self.assertRaises(Http404):
             self.delete_and_get_qset(5)
 
-        self.client.login(username='admin', password='admin')
-
+    @client_user('student01', 'student01')
     def test_delete_qset_as_student_fail(self):
         """Test failed by permissions student qset deletion."""
         # Try to delete Qset 1-1 by the student01
@@ -316,12 +325,11 @@ class QsetModelFormTest(TestCase):
         self.delete_and_get_qset(4)
         self.client.login(username='admin', password='admin')
 
+    @client_user('teacher01', 'teacher01')
     def test_delete_qset_as_teacher_fail(self):
         """Test failed by permissions teacher qset deletion."""
         # Try to delete Qset 4-1 by the teacher01
-        self.client.login(username='teacher01', password='teacher01')
         self.delete_and_get_qset(11)
-        self.client.login(username='admin', password='admin')
 
     def test_parent_questions_count_update_on_qset_delete(self):
         """Test parent questions count update on qset delete."""
@@ -359,7 +367,7 @@ class QsetModelFormTest(TestCase):
         )
 
 
-class QuestionModelFormTest(TestCase):
+class QuestionModelFormTest(LoginAdminByDefaultMixin, TestCase):
     """Tests the Question model form (CRUD etc.)."""
 
     fixtures = ['groups', 'mockup_data']
@@ -367,7 +375,7 @@ class QuestionModelFormTest(TestCase):
     def setUp(self):
         """Set up the test assets."""
         settings.DEBUG = False
-        self.client.login(username='admin', password='admin')
+        self.default_login()
 
     def create_question(self, text, answer_text, qset_id):
         """Create question with the parameters."""
@@ -393,9 +401,9 @@ class QuestionModelFormTest(TestCase):
             self.create_question(text, answer_text, qset_id)
             get_object_or_404(Question, text=text, answer_text=answer_text, qset_id=qset_id)
 
+    @client_user('teacher01', 'teacher01')
     def test_question_fail_forbidden_parent(self):
         """Create question and look for a fail because on forbidden qset."""
-        self.client.login(username='teacher01', password='teacher01')
         text = 'Test question that failed 2'
         answer_text = 'Test question answer that failed 2'
         qset_id = 11  # Organization 3 -> Qset 4-1 (forbidden for the teacher01)
@@ -403,8 +411,6 @@ class QuestionModelFormTest(TestCase):
         with self.assertRaises(Http404):
             self.create_question(text, answer_text, qset_id)
             get_object_or_404(Question, text=text, qset_id=qset_id)
-
-        self.client.login(username='admin', password='admin')
 
     def test_create_question_success(self):
         """Test question creation."""
@@ -436,11 +442,10 @@ class QuestionModelFormTest(TestCase):
         with self.assertRaises(Http404):
             self.delete_and_get_question(1)  # Try to delete Question 1-1-1 by the admin
 
+    @client_user('student01', 'student01')
     def test_delete_question_failed_by_permissions(self):
         """Test failed by permissions question deletion."""
-        self.client.login(username='student01', password='student01')
         self.delete_and_get_question(2)  # Try to delete Question 1-1-2 (teacher01) by the student01
-        self.client.login(username='admin', password='admin')
 
     def test_parent_questions_count_update_on_create(self):
         """Test parent question count update on question create."""
