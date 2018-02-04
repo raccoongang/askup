@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'^sign-in$', views.login_view, name='sign_in'),
     url(r'^sign-out$', views.logout_view, name='sign_out'),
     url(r'^organization/(?P<pk>\d+)/$', views.OrganizationView.as_view(), name='organization'),
+    url(r'^public-qsets/$', views.public_qsets_view, name='public_qsets'),
     url(r'^organizations$', views.OrganizationsView.as_view(), name='organizations'),
     url(
         r'^organization/update/(?P<pk>\d+)/$',

@@ -79,6 +79,12 @@ class OrganizationsView(CheckSelfForRedirectMixin, generic.ListView):
                 top_qset__users=user.id
             )
         else:
+            self._redirect = redirect(
+                '{0}?next={1}'.format(
+                    reverse('askup:sign_in'),
+                    reverse('askup:organizations')
+                )
+            )
             return []
 
         if queryset.count() == 1:
@@ -636,5 +642,20 @@ def feedback_form_view(request):
         'askup/feedback_form.html',
         {
             'form': form,
+        }
+    )
+
+
+def public_qsets_view(request):
+    """Provide a public qsets view."""
+    queryset = Qset.objects.filter(
+        parent_qset_id__gt=0,
+        for_unauthenticated=True
+    )
+    return render(
+        request,
+        'askup/public_qsets.html',
+        {
+            'object_list': queryset,
         }
     )
