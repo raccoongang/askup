@@ -22,7 +22,6 @@ urlpatterns = [
     url(r'^qset/delete/(?P<pk>\d+)/$', views.qset_delete, name='qset_delete'),
     url(r'^qset/quiz/all/(?P<qset_id>\d+)/$', views.start_quiz_all, name='start_quiz_all'),
     url(r'^question/answer/(?P<question_id>\d+)/$', views.question_answer, name='question_answer'),
-    url(r'^question/(?P<pk>\d+)/$', views.QuestionView.as_view(), name='question'),
     url(r'^question/new/(?P<qset_id>\d+)/$', views.question_create, name='qset_question_create'),
     url(r'^question/new/$', views.question_create, name='question_create'),
     url(r'^question/edit/(?P<pk>\d+)/$', views.question_edit, name='question_edit'),

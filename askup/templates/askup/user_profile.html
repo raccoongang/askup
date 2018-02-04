@@ -7,19 +7,10 @@
             <div class="box center dash-profile">
                 <img alt="Person" src="/static/assets/default-avatar.png">
                 <br><br>
-                <h3 class="center">{{ user.first_name }} {{ user.last_name }}</h3>
+                <h3 class="center">{{ first_name }} {{ last_name }}</h3>
                 <br/>
-                <div class="row h4">
-                    <div class="col-xs-1 right"></div>
-                    <div class="col-xs-1 right">Login:</div>
-                    <div class="col-xs-8 center">{{ user.username }}</div>
-                    <div class="col-xs-2 right"></div>
-                </div>
-                <div class="row h4">
-                    <div class="col-xs-1 right"></div>
-                    <div class="col-xs-1 right">Email:</div>
-                    <div class="col-xs-8 center">{{ user.email }}</div>
-                    <div class="col-xs-2 right"></div>
+                <div class="row h4 center">
+                    <div class="center">{{ email }}</div>
                 </div>
                 <br/><br/>
                 <div class="total-points col-centered" data-toggle="tooltip" data-placement="bottom"

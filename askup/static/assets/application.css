@@ -9228,3 +9228,7 @@ select.form-control, input.form-control {
 .errorlist {
     color: red;
 }
+
+.prettyform i.self-evaluation-symbol {
+    line-height: 85px;
+}

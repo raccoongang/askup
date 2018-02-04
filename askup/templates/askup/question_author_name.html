@@ -1,5 +1,5 @@
 {% if current_qset_show_authors or author_id == user_id %}
 <span class="actions center">
-    <a href="/askup/users/{{ author_id }}">{{ author_name }}</a>
+    <a href="{% url 'askup:user_profile' author_id %}">{{ author_name }}</a>
 </span>
 {% endif %}

@@ -4,7 +4,7 @@ import logging
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -21,6 +21,7 @@ from .forms import (
     UserLoginForm,
 )
 from .mixins.views import (
+    CheckSelfForRedirectMixin,
     ListViewUserContextDataMixin,
     QsetViewMixin,
     UserFilterMixin,
@@ -47,7 +48,7 @@ from .utils.views import (
 log = logging.getLogger(__name__)
 
 
-class OrganizationsView(generic.ListView):
+class OrganizationsView(CheckSelfForRedirectMixin, generic.ListView):
     """Handles the User Organizations list view."""
 
     template_name = 'askup/organizations.html'
@@ -71,14 +72,29 @@ class OrganizationsView(generic.ListView):
         user = self.request.user
 
         if check_user_has_groups(user, 'admins'):
-            return Qset.objects.filter(parent_qset=None).order_by('name')
-        if user.is_authenticated():
-            return Qset.objects.filter(parent_qset=None, top_qset__users=user.id).order_by('name')
+            queryset = Qset.objects.filter(parent_qset=None)
+        elif user.is_authenticated():
+            queryset = Qset.objects.filter(
+                parent_qset=None,
+                top_qset__users=user.id
+            )
         else:
             return []
 
+        if queryset.count() == 1:
+            self._redirect = redirect(
+                reverse(
+                    'askup:organization',
+                    kwargs={'pk': queryset.first().id}
+                )
+            )
+            return []
 
-class OrganizationView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
+        queryset = queryset.order_by('name')
+        return queryset
+
+
+class OrganizationView(CheckSelfForRedirectMixin, ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
     """Handles root qsets of the Organization list view."""
 
     template_name = 'askup/organization.html'
@@ -199,21 +215,6 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
         return queryset
 
 
-class QuestionView(generic.DetailView):
-    """Handles the Question detailed view."""
-
-    model = Question
-
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        """
-        Check presence of required credentials and parameters.
-
-        Overriding the dispatch method of generic.DetailView
-        """
-        return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
-
-
 @login_required
 def user_profile_view(request, user_id):
     """Provide the user profile view."""
@@ -222,9 +223,14 @@ def user_profile_view(request, user_id):
         request,
         'askup/user_profile.html',
         {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
             'questions_count': get_user_questions_count(user.id),
             'answers_count': get_user_answers_count(user.id),
             'own_score': get_user_score_by_id(user.id),
+            'is_owner': user.id == request.user.id,
+            'is_student': check_user_has_groups(request.user, 'students')
         },
     )
 
@@ -234,15 +240,10 @@ def login_view(request):
     if request.user.is_authenticated():
         return redirect('/')
 
-    form = UserLoginForm(request.POST or None)
+    form = UserLoginForm(request.POST or None, request=request)
     next_page = request.GET.get('next', '/')
 
     if form.is_valid():
-        username = form.cleaned_data.get('username')
-        password = form.cleaned_data.get('password')
-        user = authenticate(username=username, password=password)
-        login(request, user)
-
         if request.user.is_authenticated():
             return redirect(add_notification_to_url(next_page, ['success', 'message']))
 

@@ -38,6 +38,30 @@ def redirect_unauthenticated(func):
     return wrapper
 
 
+def check_self_for_redirect_decorator(func):
+    """
+    Redirect on self._redirect presence.
+
+    Can decorate a dispatch() view class method to redirect request if self._redirect is present.
+    """
+    def wrapper(*args, **kwargs):
+        func_result = func(*args, **kwargs)
+        redirect = check_self_for_redirect(args[0])
+        return redirect or func_result
+
+    return wrapper
+
+
+def check_self_for_redirect(obj):
+    """Check if object has a _redirect property and return it if found."""
+    redirect = getattr(obj, '_redirect', None)
+
+    if redirect:
+        return redirect
+    else:
+        return False
+
+
 def user_group_required(*required_groups):
     """
     Decorate a view function to check if user belongs to one of the groups passed as an arguments.

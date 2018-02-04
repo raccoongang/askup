@@ -5,7 +5,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Div, Fieldset, Layout
 from crispy_forms.layout import HTML
 from django import forms
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 
@@ -23,6 +23,7 @@ class UserLoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
 
     def __init__(self, *args, **kwargs):
+        self._request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
         self.fields['username'].label = ''
         self.fields['username'].widget.attrs['placeholder'] = 'Your username or email...'
@@ -40,6 +41,10 @@ class UserLoginForm(forms.Form):
         user = authenticate(username=username, password=password)
 
         if not user:
+            email_user = User.objects.filter(email=username).first()
+            user = email_user and authenticate(username=email_user.username, password=password)
+
+        if not user:
             raise forms.ValidationError("This user doesn't exist")
 
         if not user.check_password(password):
@@ -48,6 +53,7 @@ class UserLoginForm(forms.Form):
         if not user.is_active:
             raise forms.ValidationError("This user is no longer active")
 
+        login(self._request, user)
         return super().clean(*args, **kwargs)
 
 

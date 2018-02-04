@@ -5,6 +5,20 @@ from django.utils.decorators import method_decorator
 
 from askup.models import Qset
 from askup.utils.general import check_user_has_groups
+from askup.utils.views import check_self_for_redirect_decorator
+
+
+class CheckSelfForRedirectMixin(object):
+    """Provides a redirect, requested from within view object."""
+
+    @check_self_for_redirect_decorator
+    def dispatch(self, *args, **kwargs):
+        """
+        Check presence of required credentials and parameters.
+
+        Overriding the dispatch method of generic.ListView
+        """
+        return super().dispatch(*args, **kwargs)
 
 
 class QsetViewMixin(object):
