@@ -3,7 +3,6 @@ import json
 import logging
 
 from django.contrib.auth.models import User
-from django.core.mail import get_connection
 from django.core.mail.message import EmailMessage
 from django.db import connection
 from django.shortcuts import get_object_or_404
@@ -157,23 +156,26 @@ def send_feedback(from_email, subject, message):
 
     if admins:
         body = "Subject:\n{0}\n\nMessage:\n{1}".format(subject, message)
-
-        for to_email in admins:
-            try:
-                send_mail(
-                    "Feedback from the web-site",
-                    body,
-                    'AskupMailer <mailer@askup.net>',
-                    (to_email,),
-                    reply_to=('AskUp mailer {0}'.format(from_email),)
-                )
-            except Exception:
-                log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
-
+        send_feedback_to_recipient(admins, body, from_email)
         return True
 
     logging.warning("The system didn't find any of admins to send a feedback form to.")
     return False
+
+
+def send_feedback_to_recipient(admins, body, from_email):
+    """Actually send a feedback email to recipients list serially."""
+    for to_email in admins:
+        try:
+            send_mail(
+                "Feedback from the web-site",
+                body,
+                'AskupMailer <mailer@askup.net>',
+                (to_email,),
+                reply_to=('AskUp mailer {0}'.format(from_email),)
+            )
+        except Exception:
+            log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
 
 
 def send_mail(subject, message, from_email, recipient_list, reply_to=None):

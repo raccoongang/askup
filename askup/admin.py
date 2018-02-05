@@ -37,6 +37,7 @@ class OrganizationFilter(admin.SimpleListFilter):
         if self.value():
             return queryset.filter(top_qset_id=self.value())
 
+
 class OrganizationAdmin(admin.ModelAdmin):
     """Admin view for the Organization model."""
 

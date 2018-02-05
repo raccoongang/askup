@@ -7,7 +7,7 @@ from crispy_forms.layout import HTML
 from django import forms
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group, User
 
 from .mixins.forms import InitFormWithCancelButtonMixin
 from .models import Organization, Qset, Question

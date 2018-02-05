@@ -9,14 +9,17 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from askup.models import Qset, Question
-from askup.views import login_view, OrganizationsView
+from askup.views import login_view
 
 
 log = logging.getLogger(__name__)
 
 
 class LoginAdminByDefaultMixin(object):
+    """Provides a default user login procedure."""
+
     def default_login(self):
+        """Perform a default user login procedure."""
         self.client.login(username='admin', password='admin')
 
 
@@ -79,7 +82,6 @@ class OrganizationsListView(LoginAdminByDefaultMixin, TestCase):
     @client_user('student01', 'student01')
     def test_has_one_organization(self):
         """Test an Organizations view with redirect because of only one organization."""
-
         response = self.client.get(reverse('askup:organizations'))
         self.assertRedirects(response, reverse('askup:organization', kwargs={'pk': 1}))
 

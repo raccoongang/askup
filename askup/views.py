@@ -1,13 +1,12 @@
 """Askup django views."""
 import logging
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import Http404, JsonResponse, HttpResponseRedirect
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils.decorators import method_decorator
 from django.views import generic
 
 from .forms import (
@@ -74,10 +73,7 @@ class OrganizationsView(CheckSelfForRedirectMixin, generic.ListView):
         if check_user_has_groups(user, 'admins'):
             queryset = Qset.objects.filter(parent_qset=None)
         elif user.is_authenticated():
-            queryset = Qset.objects.filter(
-                parent_qset=None,
-                top_qset__users=user.id
-            )
+            queryset = Qset.objects.filter(parent_qset=None, top_qset__users=user.id)
         else:
             self._redirect = redirect(
                 '{0}?next={1}'.format(
