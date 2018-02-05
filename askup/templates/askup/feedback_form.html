@@ -2,19 +2,21 @@
 {% load crispy_forms_tags %}
 
 {% block body %}
-<div class="prettyform">
-    <div class="container">
-        <div class="box minwidth-box">
-            <h2 class="fixed-title center">Feedback form</h2>
-
-            <form accept-charset="UTF-8" action="" class="center" id="new_user" method="post">
-                <div style="display:none">
-                {% csrf_token %}
+<div class="container-fluid">
+    <h3 class="center">Feedback form</h3>
+    <div class="prettyform">
+        <div class="row">
+            <div class="col-xs-12 col-md-6 col-md-offset-3">
+                <div class="box">
+                    <form accept-charset="UTF-8" action="" class="center" id="new_user" method="post">
+                        <div style="display:none">
+                        {% csrf_token %}
+                        </div>
+                        {% crispy form %}
+                    </form>
                 </div>
-                {% crispy form %}
-            </form>
+            </div>
         </div>
     </div>
-    <br/>
 </div>
 {% endblock %}
