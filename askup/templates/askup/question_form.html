@@ -2,20 +2,15 @@
 {% load crispy_forms_tags %}
 
 {% block body %}
-<div class="prettyform">
-    <div class="full-width-container">
-        <div class="row">
-        {% include "askup/qset_breadcrumbs.html" %}
-        </div>
+<br/>
+{% include "askup/qset_breadcrumbs.html" %}
+<h3 class="center">{{ main_title }}</h3>
+<div class="container-fluid">
+    <div class="prettyform">
         <div class="row">
             <div class="col-sm-7">
                 <div class="box">
-                    <h2 class="title-no-margin center">{{ main_title }}</h2>
-
                     <form accept-charset="UTF-8" action="" class="center" id="question_form" method="post">
-                        <div style="display:none">
-                        {% csrf_token %}
-                        </div>
                         {% crispy form %}
                     </form>
                 </div>

@@ -7,7 +7,7 @@ from crispy_forms.layout import HTML
 from django import forms
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 from .mixins.forms import InitFormWithCancelButtonMixin
 from .models import Organization, Qset, Question
@@ -25,9 +25,7 @@ class UserLoginForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self._request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
-        self.fields['username'].label = ''
         self.fields['username'].widget.attrs['placeholder'] = 'Your username or email...'
-        self.fields['password'].label = ''
         self.fields['password'].widget.attrs['placeholder'] = 'Your password...'
 
     def clean(self, *args, **kwargs):
@@ -61,6 +59,10 @@ class UserForm(forms.ModelForm):
     """Handles the user create/edit form behaviour."""
 
     password = forms.CharField(widget=forms.PasswordInput)
+    groups = forms.ModelChoiceField(
+        queryset=Group.objects.all(),
+        widget=forms.Select,
+    )
 
     class Meta:
         model = User
@@ -80,6 +82,13 @@ class UserForm(forms.ModelForm):
         self.fields['username'].required = True
         self.fields['email'].required = True
         self.fields['password'].required = self.instance.id is None  # Required on user creation
+
+        if self.instance.id:
+            group = self.instance.groups.all().first()
+            self.initial['groups'] = group.id
+
+        self.fields['groups'].empty_label = 'select a role...'
+        self.fields['groups'].label = 'Role'
         self.fields['groups'].required = True
         self.fields['groups'].error_messages['required'] = "At least one group should be selected."
 
@@ -117,15 +126,15 @@ class UserForm(forms.ModelForm):
         Set is_staff to users, who have an 'admins' or a 'teachers' groups.
         Overriding the Form.clean_<field_name> method.
         """
-        new_groups = set(str(group).lower() for group in self.cleaned_data['groups'])
-        has_staff_groups = new_groups.intersection(('admins', 'teachers'))
+        new_group = str(self.cleaned_data['groups']).lower()
+        has_staff_groups = new_group in ('admins', 'teachers')
 
         if has_staff_groups and self.instance.is_staff is False:
             self.instance.is_staff = True
         elif not has_staff_groups and self.instance.is_staff is True:
             self.instance.is_staff = False
 
-        return self.cleaned_data['groups']
+        return [self.cleaned_data['groups']]
 
 
 class OrganizationModelForm(forms.ModelForm):
@@ -207,10 +216,12 @@ class QuestionModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
             qsets_only=True
         )
         self.fields['text'].placeholder = 'Question'
-        self.fields['text'].label = ''
+        self.fields['text'].label = 'Question'
         self.fields['answer_text'].placeholder = 'Answer'
-        self.fields['answer_text'].label = ''
+        self.fields['answer_text'].label = 'Answer'
         self.fields['blooms_tag'].choices[0] = ("", "- no tag -")
+        self.fields['blooms_tag'].label = 'Bloom\'s category'
+        self.fields['qset'].label = 'Subject'
 
     def _set_up_helper(self, qset_id):
         """Set up form helper that describes the form html structure."""
@@ -284,6 +295,8 @@ class AnswerModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
         qset_id = kwargs.pop('parent_qset_id', None)
         super().__init__(*args, **kwargs)
         self.fields['text'].required = True
+        self.fields['text'].label = 'Answer'
+        self.fields['text'].error_messages['required'] = 'Please answer the question'
         self.helper = FormHelper()
 
         if is_quiz_all:
@@ -292,7 +305,7 @@ class AnswerModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
         self.helper.layout = Layout(
             Fieldset(
                 '',
-                Div('text'),
+                Div('text', custom_valid_message="Please answer the question"),
             ),
             self._get_helper_buttons(qset_id, 'Submit')
         )
@@ -322,16 +335,13 @@ class FeedbackForm(InitFormWithCancelButtonMixin, forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         user = kwargs.pop('user', None)
-        self.fields['email'].label = ''
         self.fields['email'].widget.attrs['placeholder'] = 'Your email...'
 
         if user and user.id:
             self.fields['email'].initial = user.email
             self.fields['email'].widget.attrs['readonly'] = True
 
-        self.fields['subject'].label = ''
         self.fields['subject'].widget.attrs['placeholder'] = 'Feadback subject...'
-        self.fields['message'].label = ''
         self.fields['message'].widget.attrs['placeholder'] = 'Feadback message...'
 
     def _set_up_fields(self, user):

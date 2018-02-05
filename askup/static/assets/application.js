@@ -1,4 +1,19 @@
 $(document).ready(function(){
+    $('[custom-valid-message]').each(function() {
+		var custom_valid_message = $(this).attr('custom-valid-message');
+		$(this).find('input, textarea').each(function() {
+			$(this)[0].oninvalid = function(e) {
+				e.target.setCustomValidity("");
+				if (!e.target.validity.valid) {
+					e.target.setCustomValidity(custom_valid_message);
+				}
+			};
+			$(this)[0].oninput = function(e) {
+				e.target.setCustomValidity("");
+			};
+		});
+	});
+
     $('.btn-toggleable').find('label').click(function(e){
         if ($(this).hasClass('active')) {
             $(this).find('input').removeAttr('checked');

@@ -387,6 +387,7 @@ def question_answer(request, question_id=None):
                 'question_text': question.text,
                 'question_answer_text': question.answer_text,
                 'filter': filter * is_quiz,
+                'breadcrumbs': question.qset.get_parents(True),
             }
         )
     else:

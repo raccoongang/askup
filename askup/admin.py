@@ -6,6 +6,37 @@ from .forms import UserForm
 from .models import EmailPattern, Organization, Qset, Question
 
 
+class OrganizationFilter(admin.SimpleListFilter):
+    """Provides an organization filter for the Qsets and Questions lists."""
+
+    title = 'Organization'
+    parameter_name = 'org'
+    template = 'askup/filters/dropdown_filter.html'
+
+    def lookups(self, request, model_admin):
+        """Return a set of filter elements."""
+        items = [(org.id, org.name) for org in Organization.objects.all()]
+        return items
+
+    def queryset(self, request, queryset):
+        """Return a queryset modified correspondingly to a filter."""
+        if queryset.model is Question:
+            return self.apply_question_queryset(queryset)
+        elif queryset.model is Qset:
+            return self.apply_qset_queryset(queryset)
+
+        return queryset
+
+    def apply_question_queryset(self, queryset):
+        """Apply question queryset."""
+        if self.value():
+            return queryset.filter(qset__top_qset_id=self.value())
+
+    def apply_qset_queryset(self, queryset):
+        """Apply qset queryset."""
+        if self.value():
+            return queryset.filter(top_qset_id=self.value())
+
 class OrganizationAdmin(admin.ModelAdmin):
     """Admin view for the Organization model."""
 
@@ -41,6 +72,7 @@ class QsetAdmin(admin.ModelAdmin):
         'own_questions_only',
     )
     list_display = ('name', 'parent_qset', 'type')
+    list_filter = (OrganizationFilter,)
 
     def get_queryset(self, request):
         """
@@ -60,11 +92,12 @@ class QsetAdmin(admin.ModelAdmin):
         Overriding the form fields for the admin model form of the Qset.
         """
         form = super().get_form(request, obj, **kwargs)
+        form.base_fields['parent_qset'].label = 'Organization'
         form.base_fields['parent_qset'].required = True
         queryset = Qset.objects
 
         if obj and obj.id:
-            queryset = queryset.exclude(id=obj.id)
+            queryset = queryset.filter(parent_qset_id=None).exclude(id=obj.id)
 
         form.base_fields['parent_qset'].queryset = queryset.order_by('name', 'parent_qset_id')
         return form
@@ -81,6 +114,7 @@ class QuestionAdmin(admin.ModelAdmin):
         'vote_value',
     )
     list_display = ('text', 'qset')
+    list_filter = (OrganizationFilter,)
 
     def get_form(self, request, obj=None, **kwargs):
         """
