@@ -28,7 +28,7 @@
                 <ul class="nav navbar-nav navbar-left">
                     <li><a class="float" href="{% url 'askup:organizations' %}">Review Questions</a></li>
                     <li><a class="float" id="generate-question-link" href="{% url 'askup:question_create' %}">Generate Question</a></li>
-                    <li><a class="float offset" href="{% url 'askup:feedback' %}">Feedback</a></li>
+                    <li><a class="float offset" href="{% url 'askup:feedback' %}?next={{ request.get_full_path }}">Feedback</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right"> 
                     {% if request.user.is_authenticated %}

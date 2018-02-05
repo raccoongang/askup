@@ -629,7 +629,8 @@ def question_downvote(request, question_id):
 
 def feedback_form_view(request):
     """Provide a feedback form view."""
-    form, redirect = validate_and_send_feedback_form(request, FeedbackForm)
+    next_page = request.GET.get('next', None)
+    form, redirect = validate_and_send_feedback_form(request, FeedbackForm, next_page)
 
     if redirect:
         return redirect

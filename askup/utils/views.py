@@ -201,7 +201,7 @@ def validate_answer_form_and_create(form, request, question, answer_class):
     return response
 
 
-def validate_and_send_feedback_form(request, form_class):
+def validate_and_send_feedback_form(request, form_class, next_page):
     """Compose form and create question on validation success."""
     user = request.user
     form = form_class(
@@ -215,6 +215,6 @@ def validate_and_send_feedback_form(request, form_class):
             subject = form.cleaned_data.get('subject')
             text = form.cleaned_data.get('text')
             send_feedback(email, subject, text)
-            return None, redirect('/')
+            return None, redirect(next_page or '/')
 
     return form, None

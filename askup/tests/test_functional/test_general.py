@@ -118,13 +118,13 @@ class OrganizationListView(LoginAdminByDefaultMixin, TestCase):
         """Test for an admin features presence."""
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
         self.assertContains(response, 'data-target="#modal-edit-qset"')
-        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
+        self.assertContains(response, 'data-target="#modal-new-qset">New subject</a>')
 
     @client_user('teacher01', 'teacher01')
     def test_teacher_features_presence(self):
         """Test for a teacher features presence."""
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
-        self.assertContains(response, 'data-target="#modal-new-qset">New subset</a>')
+        self.assertContains(response, 'data-target="#modal-new-qset">New subject</a>')
         self.assertNotContains(response, 'data-target="#modal-edit-qset"')
 
 

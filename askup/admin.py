@@ -75,6 +75,9 @@ class QsetAdmin(admin.ModelAdmin):
     list_display = ('name', 'parent_qset', 'type')
     list_filter = (OrganizationFilter,)
 
+    class Media:
+        js = ('assets/hide_add_edit_icons.js',)
+
     def get_queryset(self, request):
         """
         Get queryset for the list view.
