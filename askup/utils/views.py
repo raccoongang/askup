@@ -12,11 +12,11 @@ from .models import check_user_and_create_question
 log = logging.getLogger(__name__)
 
 
-def do_redirect_unauthenticated(user):
+def do_redirect_unauthenticated(user, back_url):
     """Return redirect in case of unauthenticated user and return False otherwise."""
     if not user.is_authenticated():
         logging.info('Unauthenticated user tried to perform unauthorized action')
-        return redirect(reverse('askup:sign_in'))
+        return redirect('{0}?next={1}'.format(reverse('askup:sign_in'), back_url))
     else:
         return False
 
@@ -72,7 +72,7 @@ def user_group_required(*required_groups):
         def wrapped_function(*args, **kwargs):
             request = args[0] if isinstance(args[0], WSGIRequest) else args[0].request
             user = request.user
-            auth_check_result = do_redirect_unauthenticated(user)
+            auth_check_result = do_redirect_unauthenticated(user, request.get_full_path())
 
             if auth_check_result:
                 return auth_check_result
