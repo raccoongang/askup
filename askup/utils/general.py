@@ -195,13 +195,16 @@ def send_mail(subject, message, from_email, recipient_list, reply_to=None):
     return mail.send()
 
 
-def add_notification_to_url(url, notification):
+def add_notification_to_url(notification, url):
     """Add a base64-encoded notification parameter to the url."""
+    if notification is None:
+        return url
+
     prefix = '&' if url.find('?') > -1 else '?'
     return '{0}{1}notification={2}'.format(
         url,
         prefix,
-        base64.b64encode(json.dumps(notification).encode())
+        base64.encodestring(json.dumps(notification).encode()).decode("utf-8")
     )
 
 

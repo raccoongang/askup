@@ -2,7 +2,7 @@ from crispy_forms.layout import ButtonHolder, HTML, Submit
 from django.urls import reverse
 
 
-class InitFormWithCancelButtonMixin(object):
+class InitFormWithCancelButtonMixIn(object):
     """Provides the methods to implement into some ModelForm successors."""
 
     def __init__(self, *args, **kwargs):

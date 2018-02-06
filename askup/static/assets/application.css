@@ -8835,7 +8835,6 @@ a:hover {
     color: white;
     margin: 0;
     font-size: 20px;
-    opacity: 0.6
 }
 .alert i {
     cursor: pointer
@@ -8848,16 +8847,16 @@ a:hover {
     text-decoration: underline
 }
 .alert-success {
-    background-color: #00d73f;
-    border: 1px solid #27ad60
+    background-color: #2ede83;
+    border: 1px solid #2ede83
+}
+.alert-warning {
+    background-color: #fcbb45;
+    border: 1px solid #fcbb45
 }
 .alert-danger {
-    background-color: #df4781;
-    border: 1px solid #a61d51
-}
-.alert-maybe {
-    background-color: goldenrod;
-    border: 1px solid darkorange
+    background-color: #ef6781;
+    border: 1px solid #ef6781
 }
 #all-mine-other-container {
     padding: 20px 25px 10px 0px

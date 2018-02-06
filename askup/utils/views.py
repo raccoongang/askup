@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
-from .general import check_user_has_groups, send_feedback
+from .general import add_notification_to_url, check_user_has_groups, send_feedback
 from .models import check_user_and_create_question
 
 
@@ -215,6 +215,11 @@ def validate_and_send_feedback_form(request, form_class, next_page):
             subject = form.cleaned_data.get('subject')
             text = form.cleaned_data.get('text')
             send_feedback(email, subject, text)
-            return None, redirect(next_page or '/')
+            return None, redirect(
+                add_notification_to_url(
+                    ('success', 'Your feedback was successfuly sent'),
+                    next_page or '/',
+                )
+            )
 
     return form, None

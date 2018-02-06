@@ -15,7 +15,7 @@ from askup.views import login_view
 log = logging.getLogger(__name__)
 
 
-class LoginAdminByDefaultMixin(object):
+class LoginAdminByDefaultMixIn(object):
     """Provides a default user login procedure."""
 
     def default_login(self):
@@ -37,7 +37,7 @@ def client_user(username, password):
     return client_wrapper
 
 
-class UserAuthenticationCase(LoginAdminByDefaultMixin, TestCase):
+class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
     """Tests the user authentication."""
 
     def setUp(self):
@@ -62,7 +62,7 @@ class UserAuthenticationCase(LoginAdminByDefaultMixin, TestCase):
         self.assertIs(isinstance(response, HttpResponseRedirect), True)
 
 
-class OrganizationsListView(LoginAdminByDefaultMixin, TestCase):
+class OrganizationsListView(LoginAdminByDefaultMixIn, TestCase):
     """Tests the Organizations view."""
 
     fixtures = ['groups', 'mockup_data']
@@ -93,7 +93,7 @@ class OrganizationsListView(LoginAdminByDefaultMixin, TestCase):
         self.client.login(username='admin', password='admin')
 
 
-class OrganizationListView(LoginAdminByDefaultMixin, TestCase):
+class OrganizationListView(LoginAdminByDefaultMixIn, TestCase):
     """Tests the Organization view."""
 
     fixtures = ['groups', 'mockup_data']
@@ -128,7 +128,7 @@ class OrganizationListView(LoginAdminByDefaultMixin, TestCase):
         self.assertNotContains(response, 'data-target="#modal-edit-qset"')
 
 
-class QsetListView(LoginAdminByDefaultMixin, TestCase):
+class QsetListView(LoginAdminByDefaultMixIn, TestCase):
     """Tests the Qset views (for questions only type)."""
 
     fixtures = ['groups', 'mockup_data']
@@ -215,7 +215,7 @@ class QsetListView(LoginAdminByDefaultMixin, TestCase):
         )
 
 
-class QsetModelFormTest(LoginAdminByDefaultMixin, TestCase):
+class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
     """Tests the Qset model form (CRUD etc.)."""
 
     fixtures = ['groups', 'mockup_data']
@@ -369,7 +369,7 @@ class QsetModelFormTest(LoginAdminByDefaultMixin, TestCase):
         )
 
 
-class QuestionModelFormTest(LoginAdminByDefaultMixin, TestCase):
+class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
     """Tests the Question model form (CRUD etc.)."""
 
     fixtures = ['groups', 'mockup_data']

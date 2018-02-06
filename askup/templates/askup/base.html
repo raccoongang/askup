@@ -28,7 +28,7 @@
                 <ul class="nav navbar-nav navbar-left">
                     <li><a class="float" href="{% url 'askup:organizations' %}">Review Questions</a></li>
                     <li><a class="float" id="generate-question-link" href="{% url 'askup:question_create' %}">Generate Question</a></li>
-                    <li><a class="float offset" href="{% url 'askup:feedback' %}?next={{ request.get_full_path }}">Feedback</a></li>
+                    <li><a class="float offset" href="{% url 'askup:feedback' %}?next={{ request.path }}">Feedback</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right"> 
                     {% if request.user.is_authenticated %}
@@ -54,9 +54,9 @@
 
     <div class="spacer_nav"></div>
 
-    <div class="alert {{alert_type}} alert-success center" style="display: none;">
-            Qset 'ABP General Pediatrics Board Examination' saved. &nbsp;
-            <a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>
+    <div class="alert alert-{{notification_class}} center" style="display: none;">
+        {{ notification_text }} &nbsp;
+        <a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>
     </div>
 
     {% block body %}

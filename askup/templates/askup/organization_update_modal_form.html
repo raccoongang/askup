@@ -8,12 +8,11 @@
             <input name="utf8" type="hidden" value="✓">
             {% csrf_token %}
         </div>
-        <div class="form-group">
+        <div class="form-group" custom-valid-message="Organization name is required">
             <label for="qset_name">Change the name of this organization</label>
-            <input id="qset_name" name="name" type="text" value="{{ current_qset_name }}">
+            <input id="organization_name" name="name" type="text" value="{{ current_qset_name }}" required>
         </div>
         <button class="btn btn-flat" data-dismiss="modal" id="edit-qset-delete" name="button" type="button">Cancel</button>
-        <button class="btn btn-pink bright" id="edit-qset-delete" name="button" type="button">Delete</button>
         <input class="btn btn-theme" data-disable-with="Saving..." id="edit-qset-save" name="commit" type="submit" value="Save">
     </form>
 </div>

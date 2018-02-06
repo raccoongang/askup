@@ -1,4 +1,8 @@
 $(document).ready(function(){
+    alert_init();
+
+    $('.btn-feedback').on('click', show_evaluated_and_go_next);
+
     $('[custom-valid-message]').each(function() {
 		var custom_valid_message = $(this).attr('custom-valid-message');
 		$(this).find('input, textarea').each(function() {
@@ -42,10 +46,60 @@ $(document).ready(function(){
         });
         return false;
     });
+
     $(document).ready(function(){
         $('[data-toggle="tooltip"]').tooltip(); 
     });
 });
+
+function alert_init() {
+    window.setTimeout(alert_open_animation, 400);
+}
+
+function alert_open_animation(close_timeout, callback) {
+    var alert_selector = '.alert-success, .alert-warning, .alert-danger';
+
+    if (typeof(close_timeout) === 'undefined') {
+        close_timeout = 0;
+    }
+
+    if (typeof(callback) === 'undefined') {
+        callback = function () {};
+    }
+
+    $('.close-alert').on('click', function() {
+        $(alert_selector).slideUp(400, callback);
+    });
+    $(alert_selector).slideDown();
+
+    if (close_timeout) {
+        window.setTimeout(function() {$(alert_selector).slideUp(400, callback);}, close_timeout);
+    }
+}
+
+function show_evaluated_and_go_next(event) {
+    var self = this;
+    $('.btn-feedback').unbind();
+    $('.btn-feedback').on('click', function() {return false;});
+
+    if ($(this).hasClass('btn-success')) {
+        $('.alert').prepend('Got it!');
+        $('.alert').addClass('alert-success');
+    } else if  ($(this).hasClass('btn-maybe')) {
+        $('.alert').prepend('Sort-of');
+        $('.alert').addClass('alert-warning');
+    } else {
+        $('.alert').prepend('Missed it!');
+        $('.alert').addClass('alert-danger');
+    }
+
+    alert_open_animation(2400, function() {window.location.href = $(self).attr('href');});
+    return false;
+}
+
+function after_evaluation_notification_hide() {
+    
+}
 
 $(document).on('shown.bs.modal', function() {
     $(this).find('input[name=name]').focus();

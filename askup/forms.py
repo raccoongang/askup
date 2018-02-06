@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group, User
 
-from .mixins.forms import InitFormWithCancelButtonMixin
+from .mixins.forms import InitFormWithCancelButtonMixIn
 from .models import Organization, Qset, Question
 
 
@@ -147,7 +147,7 @@ class OrganizationModelForm(forms.ModelForm):
         )
 
 
-class QsetModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
+class QsetModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
     """Provides the create/update functionality for the Qset."""
 
     def _set_up_fields(self, user):
@@ -204,7 +204,7 @@ class QsetDeleteModelForm(forms.ModelForm):
         fields = []
 
 
-class QuestionModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
+class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
     """Provides the create/update functionality for the Qset."""
 
     def _set_up_fields(self, user):
@@ -261,7 +261,7 @@ class QuestionModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
         }
 
 
-class QuestionDeleteModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
+class QuestionDeleteModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
     """Provides the delete functionality for the Question."""
 
     def __init__(self, *args, **kwargs):
@@ -282,7 +282,7 @@ class QuestionDeleteModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
         fields = []
 
 
-class AnswerModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
+class AnswerModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
     """Provides the create/update functionality for the Answer."""
 
     def __init__(self, *args, **kwargs):
@@ -325,7 +325,7 @@ class AnswerModelForm(InitFormWithCancelButtonMixin, forms.ModelForm):
         }
 
 
-class FeedbackForm(InitFormWithCancelButtonMixin, forms.Form):
+class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
     """Provides the create/update functionality for the Qset."""
 
     email = forms.EmailField()

@@ -50,7 +50,7 @@ class Qset(models.Model):
 
         Overriding the models.Model save method.
         """
-        is_organization = self._previous_parent_qset_id is None
+        is_organization = self.parent_qset_id is None
 
         if self.process_new_qset_and_organization_save(is_organization, args, kwargs):
             return

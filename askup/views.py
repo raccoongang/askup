@@ -20,10 +20,10 @@ from .forms import (
     UserLoginForm,
 )
 from .mixins.views import (
-    CheckSelfForRedirectMixin,
-    ListViewUserContextDataMixin,
-    QsetViewMixin,
-    UserFilterMixin,
+    CheckSelfForRedirectMixIn,
+    ListViewUserContextDataMixIn,
+    QsetViewMixIn,
+    UserFilterMixIn,
 )
 from .models import Answer, Organization, Qset, Question
 from .utils.general import (
@@ -47,7 +47,7 @@ from .utils.views import (
 log = logging.getLogger(__name__)
 
 
-class OrganizationsView(CheckSelfForRedirectMixin, generic.ListView):
+class OrganizationsView(CheckSelfForRedirectMixIn, generic.ListView):
     """Handles the User Organizations list view."""
 
     template_name = 'askup/organizations.html'
@@ -96,7 +96,7 @@ class OrganizationsView(CheckSelfForRedirectMixin, generic.ListView):
         return queryset
 
 
-class OrganizationView(CheckSelfForRedirectMixin, ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
+class OrganizationView(CheckSelfForRedirectMixIn, ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
     """Handles root qsets of the Organization list view."""
 
     template_name = 'askup/organization.html'
@@ -134,7 +134,7 @@ class OrganizationView(CheckSelfForRedirectMixin, ListViewUserContextDataMixin, 
             return []
 
 
-class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
+class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
     """Handles the Qset list view (subsets only/questions only/mixed)."""
 
     model = Qset
@@ -247,7 +247,12 @@ def login_view(request):
 
     if form.is_valid():
         if request.user.is_authenticated():
-            return redirect(add_notification_to_url(next_page, ['success', 'message']))
+            return redirect(
+                add_notification_to_url(
+                    ('success', 'You\'ve successfuly signed in'),
+                    next_page,
+                )
+            )
 
     return render(request, 'askup/login_form.html', {'form': form})
 
@@ -255,23 +260,33 @@ def login_view(request):
 def logout_view(request):
     """Provide the logout view and functionality."""
     logout(request)
-    return redirect('/')
+    return redirect(
+        add_notification_to_url(
+            ('danger', 'You was signed out'),
+            '/',
+        ),
+    )
 
 
 @user_group_required('admins')
 def organization_update(request, pk):
     """Provide the update qset view for the teacher/admin."""
     organization = get_object_or_404(Organization, pk=pk)
+    notification = None
 
-    if request.method == 'GET':
-        form = OrganizationModelForm(instance=organization)
-    else:
+    if request.method == 'POST':
         form = OrganizationModelForm(request.POST or None, instance=organization)
 
         if form.is_valid():
             form.save()
+            notification = ('success', 'Organization was successfuly edited')
 
-    return redirect(reverse('askup:organization', kwargs={'pk': organization.id}))
+    url = add_notification_to_url(
+        notification,
+        reverse('askup:organization', kwargs={'pk': organization.id}),
+    )
+
+    return redirect(url)
 
 
 @login_required
@@ -316,7 +331,13 @@ def qset_update(request, pk):
 
         if form.is_valid():
             form.save()
-            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+            notification = ('success', 'Qset was successfuly edited')
+            return redirect(
+                add_notification_to_url(
+                    notification,
+                    reverse('askup:qset', kwargs={'pk': qset.id}),
+                )
+            )
 
     return render(
         request,
@@ -370,7 +391,7 @@ def question_answer(request, question_id=None):
     log.debug('Got the question answering request for the question_id: %s', question_id)
     question = get_object_or_404(Question, pk=question_id)
     is_quiz = request.GET.get('filter') is not None
-    filter = UserFilterMixin.get_clean_filter_parameter(request)
+    filter = UserFilterMixIn.get_clean_filter_parameter(request)
     form = do_make_answer_form(request, question)
 
     if request.method == 'GET':
@@ -546,14 +567,14 @@ def answer_evaluate(request, answer_id, evaluation):
 
     if filter:
         # If it's a Quiz
-        filter = UserFilterMixin.get_clean_filter_parameter(request)
+        filter = UserFilterMixIn.get_clean_filter_parameter(request)
         qset_id = answer.question.qset_id
         queryset = Question.objects.filter(
             qset_id=qset_id,
             vote_value__lte=answer.question.vote_value,
             text__gt=answer.question.text,
         )
-        queryset = UserFilterMixin.apply_filter_to_queryset(request, filter, queryset)
+        queryset = UserFilterMixIn.apply_filter_to_queryset(request, filter, queryset)
         next_question = queryset.order_by('-vote_value', 'text').first()
 
         if next_question:
@@ -587,9 +608,9 @@ def start_quiz_all(request, qset_id):
     """Provide a start quiz all in qset view for the student/teacher/admin."""
     log.debug('Got the quiz all request for the qset_id: %s', qset_id)
     qset = get_object_or_404(Qset, pk=qset_id)
-    filter = UserFilterMixin.get_clean_filter_parameter(request)
+    filter = UserFilterMixIn.get_clean_filter_parameter(request)
     queryset = Question.objects.filter(qset_id=qset.id)
-    queryset = UserFilterMixin.apply_filter_to_queryset(request, filter, queryset)
+    queryset = UserFilterMixIn.apply_filter_to_queryset(request, filter, queryset)
     question = queryset.order_by('-vote_value', 'text').first()
     user = request.user
 

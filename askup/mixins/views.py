@@ -8,7 +8,7 @@ from askup.utils.general import check_user_has_groups
 from askup.utils.views import check_self_for_redirect_decorator
 
 
-class CheckSelfForRedirectMixin(object):
+class CheckSelfForRedirectMixIn(object):
     """Provides a redirect, requested from within view object."""
 
     @check_self_for_redirect_decorator
@@ -21,7 +21,7 @@ class CheckSelfForRedirectMixin(object):
         return super().dispatch(*args, **kwargs)
 
 
-class QsetViewMixin(object):
+class QsetViewMixIn(object):
     """Qset/Organization view dispatch mixin."""
 
     @method_decorator(login_required)
@@ -46,7 +46,7 @@ class QsetViewMixin(object):
         return super().dispatch(request, *args, **kwargs)
 
 
-class UserFilterMixin(object):
+class UserFilterMixIn(object):
     """Provides the user filter related functionality."""
 
     @staticmethod
@@ -68,7 +68,7 @@ class UserFilterMixin(object):
         return queryset
 
 
-class ListViewUserContextDataMixin(UserFilterMixin, object):
+class ListViewUserContextDataMixIn(UserFilterMixIn, object):
     """ListView user data mixin."""
 
     def fill_user_context(self, context):
