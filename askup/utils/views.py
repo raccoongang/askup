@@ -217,7 +217,7 @@ def validate_and_send_feedback_form(request, form_class, next_page):
             send_feedback(email, subject, text)
             return None, redirect(
                 add_notification_to_url(
-                    ('success', 'Your feedback was successfuly sent'),
+                    ('success', 'Thank you for your feedback'),
                     next_page or '/',
                 )
             )
