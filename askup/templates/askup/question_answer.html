@@ -26,11 +26,11 @@
         <div class="box center">
             <h3>Correct answer:</h3>
             <div class="net-votes">
-                <p id="question-{{ question_id }}-net-votes">1</p><br>
+                <p class="question-{{ question_id }}-net-votes">{{ question_vote_value }}</p><br>
             </div>
             <div class="question-voting">
-                <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="65"></div>
-                <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="65"></div>
+                <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
+                <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="{{ question_id }}"></div>
             </div>
             <div class="correct-container">
                 <h4 class="correct">{{ question_answer_text }}</h4>

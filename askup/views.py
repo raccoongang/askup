@@ -402,6 +402,7 @@ def question_answer(request, question_id=None):
                 'form': form,
                 'question_id': question.id,
                 'question_text': question.text,
+                'question_vote_value': question.vote_value,
                 'question_answer_text': question.answer_text,
                 'filter': filter * is_quiz,
                 'breadcrumbs': question.qset.get_parents(True),

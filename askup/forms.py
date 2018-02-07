@@ -5,6 +5,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Div, Fieldset, Layout
 from crispy_forms.layout import HTML
 from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group, User
@@ -63,6 +64,14 @@ class UserForm(forms.ModelForm):
         queryset=Group.objects.all(),
         widget=forms.Select,
     )
+    organizations = forms.ModelMultipleChoiceField(
+        queryset=Qset.objects.filter(parent_qset_id__isnull=True).order_by('name'),
+        required=False,
+        widget=FilteredSelectMultiple(
+            verbose_name='Organizations',
+            is_stacked=False
+        )
+    )
 
     class Meta:
         model = User
@@ -74,6 +83,7 @@ class UserForm(forms.ModelForm):
             'last_name',
             'is_active',
             'groups',
+            'organizations',
         )
 
     def __init__(self, *args, **kwargs):
@@ -91,6 +101,7 @@ class UserForm(forms.ModelForm):
         self.fields['groups'].label = 'Role'
         self.fields['groups'].required = True
         self.fields['groups'].error_messages['required'] = "At least one group should be selected."
+        self.fields['organizations'].initial = self.instance.qset_set.all()
 
     def clean_username(self):
         """Check username for non matching with other user's email."""
@@ -135,6 +146,12 @@ class UserForm(forms.ModelForm):
             self.instance.is_staff = False
 
         return [self.cleaned_data['groups']]
+
+    def save(self, commit=True):
+        """Save the Organization fields to the user related model."""
+        user = super().save(commit=False)
+        user.qset_set = self.cleaned_data['organizations']
+        return user
 
 
 class OrganizationModelForm(forms.ModelForm):
