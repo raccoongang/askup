@@ -165,6 +165,9 @@ class OrganizationModelForm(forms.ModelForm):
         fields = (
             'name',
         )
+        widgets = {
+            'users': FilteredSelectMultiple(verbose_name='Users', is_stacked=False)
+        }
 
 
 class QsetModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):

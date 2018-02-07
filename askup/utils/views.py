@@ -154,6 +154,10 @@ def compose_question_create_form(request, user, qset_id, question_model_form_cla
 def question_vote(user, question_id, value, question_class):
     """Provide a general question vote functionality."""
     question = get_object_or_404(question_class, pk=question_id)
+
+    if user.id == question.user_id:
+        return redirect(reverse('askup:organizations'))
+
     is_admin = check_user_has_groups(user, 'admin')
 
     if not is_admin and user not in question.qset.top_qset.users.all():
