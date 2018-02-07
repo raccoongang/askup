@@ -6,9 +6,13 @@ from .general import check_user_has_groups
 
 
 def check_user_and_create_question(user, qset, text, answer_text, blooms_tag):
-    """Check user permissions and create question in the database."""
+    """
+    Check user permissions create question.
+
+    Returns True if operation was successfuly executed otherwise returns redirect object.
+    """
     if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
-        return None, redirect(reverse('askup:organizations'))
+        return redirect(reverse('askup:organizations'))
 
     Question.objects.create(
         text=text,
@@ -17,4 +21,5 @@ def check_user_and_create_question(user, qset, text, answer_text, blooms_tag):
         user_id=user.id,
         blooms_tag=blooms_tag,
     )
-    return None, redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+
+    return True

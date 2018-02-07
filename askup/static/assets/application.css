@@ -9231,3 +9231,8 @@ select.form-control, input.form-control {
 .prettyform i.self-evaluation-symbol {
     line-height: 85px;
 }
+
+.alert a {
+    font-weight: bold;
+    text-decoration: underline;
+}

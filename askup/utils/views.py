@@ -118,26 +118,46 @@ def compose_question_form_and_create(
 ):
     """Compose form and create question on validation success."""
     user = request.user
+    form = None
+    notification = ('', '')
 
     if request.method == 'POST':
         form = compose_question_create_form(request, user, qset_id, question_model_form_class)
+        result = question_form_validate(form, user, qset_class)
 
-        if form.is_valid():
-            qset = get_object_or_404(qset_class, pk=form.cleaned_data.get('qset').id)
-            text = form.cleaned_data.get('text')
-            answer_text = form.cleaned_data.get('answer_text')
-            blooms_tag = form.cleaned_data.get('blooms_tag')
+        if result is not True:
+            return result
 
-            return check_user_and_create_question(user, qset, text, answer_text, blooms_tag)
-    else:
-        form = compose_question_create_form(request, user, qset_id, question_model_form_class)
+        form = None
+        url = reverse('askup:qset', kwargs={'pk': qset_id})
+        message = 'Your question has been submitted! View it <a href="{0}" class="bu">here</a>'
+        notification = ('success', message.format(url))
 
-    return form, None
+    if form is None:
+        form = compose_question_create_form(
+            request, user, qset_id, question_model_form_class, clean_form=True
+        )
+
+    return form, notification
 
 
-def compose_question_create_form(request, user, qset_id, question_model_form_class):
+def question_form_validate(form, user, qset_class):
+    """Validate the form and return three parameters."""
+    if form.is_valid():
+        qset = get_object_or_404(qset_class, pk=form.cleaned_data.get('qset').id)
+        text = form.cleaned_data.get('text')
+        answer_text = form.cleaned_data.get('answer_text')
+        blooms_tag = form.cleaned_data.get('blooms_tag')
+        return check_user_and_create_question(user, qset, text, answer_text, blooms_tag)
+
+    return False
+
+
+def compose_question_create_form(
+    request, user, qset_id, question_model_form_class, clean_form=False
+):
     """Compose create question form."""
-    if request.method == 'POST':
+    if request.method == 'POST' and clean_form is False:
         return question_model_form_class(
             request.POST,
             user=user,

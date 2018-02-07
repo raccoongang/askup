@@ -55,7 +55,7 @@
     <div class="spacer_nav"></div>
 
     <div class="alert alert-{{notification_class}} center" style="display: none;">
-        {{ notification_text }} &nbsp;
+        {{ notification_text|safe }} &nbsp;
         <a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>
     </div>
 

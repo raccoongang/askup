@@ -431,12 +431,9 @@ def question_create(request, qset_id=None):
     else:
         qset = None
 
-    form, redirect_response = compose_question_form_and_create(
+    form, notification = compose_question_form_and_create(
         request, qset_id, QuestionModelForm, Question, Qset
     )
-
-    if redirect_response:
-        return redirect_response
 
     return render(
         request,
@@ -446,6 +443,8 @@ def question_create(request, qset_id=None):
             'main_title': 'Create question:',
             'submit_label': 'Create',
             'breadcrumbs': qset and qset.get_parents(True),
+            'notification_class': notification[0],
+            'notification_text': notification[1],
         }
     )
 
@@ -464,9 +463,9 @@ def question_edit(request, pk):
     if not is_admin and not is_teacher and user.id != question.user_id:
         return redirect(reverse('askup:organizations'))
 
-    form = do_compose_question_form_and_update(request, question)
+    form, redirect_response = do_compose_question_form_and_update(request, question)
 
-    return render(
+    return redirect_response or render(
         request,
         'askup/question_form.html',
         {
@@ -481,6 +480,8 @@ def question_edit(request, pk):
 
 def do_compose_question_form_and_update(request, question):
     """Compose Question form and update question on validation success."""
+    redirect_response = None
+
     if request.method == 'POST':
         form = QuestionModelForm(
             request.POST,
@@ -491,6 +492,11 @@ def do_compose_question_form_and_update(request, question):
 
         if form.is_valid():
             form.save()
+            url = add_notification_to_url(
+                ('success', 'The question is saved successfuly'),
+                reverse('askup:qset', kwargs={'pk': question.qset_id}),
+            )
+            redirect_response = redirect(url)
     else:
         form = QuestionModelForm(
             user=request.user,
@@ -498,7 +504,7 @@ def do_compose_question_form_and_update(request, question):
             qset_id=question.qset_id,
         )
 
-    return form
+    return form, redirect_response
 
 
 @login_required
