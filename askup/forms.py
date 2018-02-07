@@ -101,7 +101,9 @@ class UserForm(forms.ModelForm):
         self.fields['groups'].label = 'Role'
         self.fields['groups'].required = True
         self.fields['groups'].error_messages['required'] = "At least one group should be selected."
-        self.fields['organizations'].initial = self.instance.qset_set.all()
+
+        if self.instance.id:
+            self.fields['organizations'].initial = self.instance.qset_set.all()
 
     def clean_username(self):
         """Check username for non matching with other user's email."""
@@ -150,6 +152,7 @@ class UserForm(forms.ModelForm):
     def save(self, commit=True):
         """Save the Organization fields to the user related model."""
         user = super().save(commit=False)
+        user.save()
         user.qset_set = self.cleaned_data['organizations']
         return user
 
