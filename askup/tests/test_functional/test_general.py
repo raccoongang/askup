@@ -10,21 +10,14 @@ from django.urls import reverse
 
 from askup.models import Qset, Question
 from askup.views import login_view
+from askup.mixins.tests import LoginAdminByDefaultMixIn
 
 
 log = logging.getLogger(__name__)
 
 
-class LoginAdminByDefaultMixIn(object):
-    """Provides a default user login procedure."""
-
-    def default_login(self):
-        """Perform a default user login procedure."""
-        self.client.login(username='admin', password='admin')
-
-
 def client_user(username, password):
-    """Pass the arguments of username and password to the decorator."""
+    """Decorate a TestCase class method to login client by username and password provided."""
     def client_wrapper(func):
         def wrapping_function(*args, **kwargs):
             args[0].client.login(username=username, password=password)
