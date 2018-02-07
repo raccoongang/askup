@@ -154,7 +154,7 @@ def compose_question_create_form(request, user, qset_id, question_model_form_cla
 def question_vote(user, question_id, value, question_class):
     """Provide a general question vote functionality."""
     question = get_object_or_404(question_class, pk=question_id)
-    is_admin = check_user_has_groups(user, 'admins')
+    is_admin = check_user_has_groups(user, 'admin')
 
     if not is_admin and user not in question.qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
@@ -180,7 +180,7 @@ def validate_answer_form_and_create(form, request, question, answer_class):
 
     if form.is_valid():
         text = form.cleaned_data.get('text')
-        is_admin = check_user_has_groups(request.user, 'admins')
+        is_admin = check_user_has_groups(request.user, 'admin')
 
         if not is_admin and user not in question.qset.top_qset.users.all():
             log.info(

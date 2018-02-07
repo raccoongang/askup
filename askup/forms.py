@@ -134,11 +134,11 @@ class UserForm(forms.ModelForm):
         """
         Process Groups field changes.
 
-        Set is_staff to users, who have an 'admins' or a 'teachers' groups.
+        Set is_staff to users, who have an 'admin' or a 'teacher' groups.
         Overriding the Form.clean_<field_name> method.
         """
         new_group = str(self.cleaned_data['groups']).lower()
-        has_staff_groups = new_group in ('admins', 'teachers')
+        has_staff_groups = new_group in ('admin', 'teacher')
 
         if has_staff_groups and self.instance.is_staff is False:
             self.instance.is_staff = True

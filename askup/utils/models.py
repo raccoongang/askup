@@ -7,7 +7,7 @@ from .general import check_user_has_groups
 
 def check_user_and_create_question(user, qset, text, answer_text, blooms_tag):
     """Check user permissions and create question in the database."""
-    if not check_user_has_groups(user, 'admins') and user not in qset.top_qset.users.all():
+    if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
         return None, redirect(reverse('askup:organizations'))
 
     Question.objects.create(

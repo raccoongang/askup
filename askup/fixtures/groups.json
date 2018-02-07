@@ -16,12 +16,12 @@
             "groups": [1],
             "user_permissions": []
         }
-    }
-    ,{
+    },
+    {
         "model": "auth.group",
         "pk": 1,
         "fields": {
-            "name": "Admins",
+            "name": "Admin",
             "permissions": [
                 10, 11, 12,
                 19, 20, 21,
@@ -32,12 +32,11 @@
             ]
         }
     },
-
     {
         "model": "auth.group",
         "pk": 2,
         "fields": {
-            "name": "Teachers",
+            "name": "Teacher",
             "permissions": [
                 19, 20, 21,
                 25, 26, 27,
@@ -49,7 +48,7 @@
         "model": "auth.group",
         "pk": 3,
         "fields": {
-            "name": "Students",
+            "name": "Student",
             "permissions": [
                 19, 20, 21,
                 29, 29, 30

@@ -218,7 +218,7 @@ class Qset(models.Model):
 
     def get_user_related_qsets_queryset(user):
         """Return queryset of qset objects for the "user related qsets" request."""
-        if check_user_has_groups(user, 'admins'):
+        if check_user_has_groups(user, 'admin'):
             return Qset.objects.all()
         else:
             return Qset.objects.filter(top_qset__users=user.id)

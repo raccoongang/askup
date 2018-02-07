@@ -70,7 +70,7 @@ class OrganizationsView(CheckSelfForRedirectMixIn, generic.ListView):
         """
         user = self.request.user
 
-        if check_user_has_groups(user, 'admins'):
+        if check_user_has_groups(user, 'admin'):
             queryset = Qset.objects.filter(parent_qset=None)
         elif user.is_authenticated():
             queryset = Qset.objects.filter(parent_qset=None, top_qset__users=user.id)
@@ -124,7 +124,7 @@ class OrganizationView(CheckSelfForRedirectMixIn, ListViewUserContextDataMixIn, 
         user = self.request.user
         log.debug("USER in view: %s", self.request)
 
-        if check_user_has_groups(user, 'admins'):
+        if check_user_has_groups(user, 'admin'):
             log.debug('Filtered qsets for the superuser by pk=%s', pk)
             return Qset.objects.filter(parent_qset_id=pk).order_by('name')
         elif user.is_authenticated():
@@ -232,7 +232,7 @@ def user_profile_view(request, user_id):
             'answers_count': get_user_answers_count(user.id),
             'own_score': get_user_score_by_id(user.id),
             'is_owner': user.id == request.user.id,
-            'is_student': check_user_has_groups(request.user, 'students')
+            'is_student': check_user_has_groups(request.user, 'student')
         },
     )
 
@@ -268,7 +268,7 @@ def logout_view(request):
     )
 
 
-@user_group_required('admins')
+@user_group_required('admin')
 def organization_update(request, pk):
     """Provide the update qset view for the teacher/admin."""
     organization = get_object_or_404(Organization, pk=pk)
@@ -319,7 +319,7 @@ def qset_create(request):
     )
 
 
-@user_group_required('teachers', 'admins')
+@user_group_required('teacher', 'admin')
 def qset_update(request, pk):
     """Provide the update qset view for the student/teacher/admin."""
     qset = get_object_or_404(Qset, pk=pk)
@@ -351,7 +351,7 @@ def qset_update(request, pk):
     )
 
 
-@user_group_required('teachers', 'admins')
+@user_group_required('teacher', 'admin')
 def qset_delete(request, pk):
     """Provide the delete qset view for the teacher/admin."""
     qset = get_object_or_404(Qset, pk=pk)
@@ -360,7 +360,7 @@ def qset_delete(request, pk):
     if qset.parent_qset_id is None:
         return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
-    is_admin = check_user_has_groups(request.user, 'admins')
+    is_admin = check_user_has_groups(request.user, 'admin')
 
     if not is_admin and request.user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
@@ -455,8 +455,8 @@ def question_edit(request, pk):
     """Provide an edit question view for the student/teacher/admin."""
     question = get_object_or_404(Question, pk=pk)
     user = request.user
-    is_teacher = 'Teachers' in user.groups.values_list('name', flat=True)
-    is_admin = check_user_has_groups(user, 'admins')
+    is_teacher = check_user_has_groups(user, 'teacher')
+    is_admin = check_user_has_groups(user, 'admin')
 
     if not is_admin and user not in question.qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
@@ -507,8 +507,8 @@ def question_delete(request, pk):
     question = get_object_or_404(Question, pk=pk)
     qset_id = question.qset_id
     user = request.user
-    is_teacher = 'Teachers' in user.groups.values_list('name', flat=True)
-    is_admin = check_user_has_groups(user, 'admins')
+    is_teacher = check_user_has_groups(user, 'teacher')
+    is_admin = check_user_has_groups(user, 'admin')
 
     if not is_admin and user not in question.qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
@@ -587,7 +587,7 @@ def answer_evaluate(request, answer_id, evaluation):
 def do_user_checks_and_evaluate(user, answer, evaluation):
     """Do user checks and evaluate answer for the answer evaluation view."""
     evaluation_int = int(evaluation)
-    is_admin = check_user_has_groups(user, 'admins')
+    is_admin = check_user_has_groups(user, 'admin')
 
     if not is_admin and user not in answer.question.qset.top_qset.users.all():
         return False
@@ -615,7 +615,7 @@ def start_quiz_all(request, qset_id):
     question = queryset.order_by('-vote_value', 'text').first()
     user = request.user
 
-    if not check_user_has_groups(user, 'admins') and user not in qset.top_qset.users.all():
+    if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     if not question:

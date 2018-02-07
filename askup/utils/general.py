@@ -43,10 +43,10 @@ def get_user_questions_count(user_id):
     """Return total questions number for the user."""
     user = get_object_or_404(User, pk=user_id)
 
-    if check_user_has_groups(user, 'admins'):
+    if check_user_has_groups(user, 'admin'):
         return get_admin_questions_count()
 
-    if check_user_has_groups(user, 'teachers'):
+    if check_user_has_groups(user, 'teacher'):
         return get_teacher_questions_count(user_id)
 
     return get_student_questions_count(user_id)
@@ -99,10 +99,10 @@ def get_user_answers_count(user_id):
     """Return total answers number for the user."""
     user = get_object_or_404(User, pk=user_id)
 
-    if check_user_has_groups(user, 'admins'):
+    if check_user_has_groups(user, 'admin'):
         return get_admin_answers_count()
 
-    if check_user_has_groups(user, 'teachers'):
+    if check_user_has_groups(user, 'teacher'):
         return get_teacher_answers_count(user_id)
 
     return get_student_answers_count(user_id)
@@ -152,7 +152,7 @@ def get_admin_answers_count():
 
 def send_feedback(from_email, subject, message):
     """Send a feedback from the <from_email> sender to all the admin users in the system."""
-    admins = tuple(user.email for user in User.objects.filter(groups__name='Admins'))
+    admins = tuple(user.email for user in User.objects.filter(groups__name='Admin'))
 
     if admins:
         body = "Subject:\n{0}\n\nMessage:\n{1}".format(subject, message)
