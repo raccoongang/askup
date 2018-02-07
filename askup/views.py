@@ -11,7 +11,6 @@ from django.views import generic
 
 from .forms import (
     AnswerModelForm,
-    FeedbackForm,
     OrganizationModelForm,
     QsetDeleteModelForm,
     QsetModelForm,
@@ -294,7 +293,7 @@ def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
     parent_qset_id = request.POST.get('parent_qset')
     parent_qset = get_object_or_404(Qset, pk=parent_qset_id)
-    form = compose_qset_form(request, parent_qset_id, QsetModelForm)
+    form = compose_qset_form(request, parent_qset_id)
 
     if request.method == 'POST':
         if form.is_valid():
@@ -409,7 +408,7 @@ def question_answer(request, question_id=None):
             }
         )
     else:
-        response = validate_answer_form_and_create(form, request, question, Answer)
+        response = validate_answer_form_and_create(form, request, question)
         return JsonResponse(response)
 
 
@@ -431,9 +430,7 @@ def question_create(request, qset_id=None):
     else:
         qset = None
 
-    form, notification = compose_question_form_and_create(
-        request, qset_id, QuestionModelForm, Question, Qset
-    )
+    form, notification = compose_question_form_and_create(request, qset_id)
 
     return render(
         request,
@@ -646,19 +643,19 @@ def get_quiz_question_redirect(next_question_id, filter):
 @login_required
 def question_upvote(request, question_id):
     """Provide a question up-vote functionality."""
-    return question_vote(request.user, question_id, 1, Question)
+    return question_vote(request.user, question_id, 1)
 
 
 @login_required
 def question_downvote(request, question_id):
     """Provide a question down-vote functionality."""
-    return question_vote(request.user, question_id, -1, Question)
+    return question_vote(request.user, question_id, -1)
 
 
 def feedback_form_view(request):
     """Provide a feedback form view."""
     next_page = request.GET.get('next', None)
-    form, redirect = validate_and_send_feedback_form(request, FeedbackForm, next_page)
+    form, redirect = validate_and_send_feedback_form(request, next_page)
 
     if redirect:
         return redirect

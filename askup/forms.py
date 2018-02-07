@@ -10,8 +10,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group, User
 
-from .mixins.forms import InitFormWithCancelButtonMixIn
-from .models import Organization, Qset, Question
+from askup.mixins.forms import InitFormWithCancelButtonMixIn
+from askup.models import Organization, Qset, Question
 
 
 log = logging.getLogger(__name__)
@@ -230,6 +230,19 @@ class QsetDeleteModelForm(forms.ModelForm):
 class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
     """Provides the create/update functionality for the Qset."""
 
+    class Meta:
+        model = Question
+        fields = (
+            'qset',
+            'text',
+            'answer_text',
+            'blooms_tag',
+        )
+        widgets = {
+            'text': forms.TextInput(attrs={'placeholder': 'Type a question here...'}),
+            'answer_text': forms.Textarea(attrs={'placeholder': 'Type an answer here...'}),
+        }
+
     def _set_up_fields(self, user):
         self.fields['qset'].required = True
         self.fields['qset'].empty_label = None
@@ -267,21 +280,8 @@ class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
                 ),
                 Div('qset'),
             ),
-            self._get_helper_buttons(qset_id)
+            self._get_helper_buttons(qset_id, 'Create' if self.instance.id is None else 'Save')
         )
-
-    class Meta:
-        model = Question
-        fields = (
-            'qset',
-            'text',
-            'answer_text',
-            'blooms_tag',
-        )
-        widgets = {
-            'text': forms.TextInput(attrs={'placeholder': 'Type a question here...'}),
-            'answer_text': forms.Textarea(attrs={'placeholder': 'Type an answer here...'}),
-        }
 
 
 class QuestionDeleteModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):

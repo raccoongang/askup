@@ -5,8 +5,10 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
-from .general import add_notification_to_url, check_user_has_groups, send_feedback
-from .models import check_user_and_create_question
+from askup.forms import FeedbackForm, QsetModelForm, QuestionModelForm
+from askup.models import Answer, Qset, Question
+from askup.utils.general import add_notification_to_url, check_user_has_groups, send_feedback
+from askup.utils.models import check_user_and_create_question
 
 
 log = logging.getLogger(__name__)
@@ -98,82 +100,86 @@ def delete_qset_by_form(form, qset):
     return None
 
 
-def compose_qset_form(request, parent_qset_id, qset_model_form_class):
+def compose_qset_form(request, parent_qset_id):
     """Compose qset form and return it."""
     if request.method == 'POST':
-        return qset_model_form_class(
+        return QsetModelForm(
             request.POST or None,
             user=request.user,
             qset_id=parent_qset_id
         )
     else:
-        return qset_model_form_class(
+        return QsetModelForm(
             user=request.user,
             qset_id=parent_qset_id
         )
 
 
-def compose_question_form_and_create(
-    request, qset_id, question_model_form_class, question_class, qset_class
-):
+def compose_question_form_and_create(request, qset_id):
     """Compose form and create question on validation success."""
     user = request.user
     form = None
     notification = ('', '')
 
     if request.method == 'POST':
-        form = compose_question_create_form(request, user, qset_id, question_model_form_class)
-        result = question_form_validate(form, user, qset_class)
-
-        if result is not True:
-            return result
-
-        form = None
-        url = reverse('askup:qset', kwargs={'pk': qset_id})
-        message = 'Your question has been submitted! View it <a href="{0}" class="bu">here</a>'
-        notification = ('success', message.format(url))
+        form = compose_question_create_form(request, user, qset_id)
+        obj = question_create_form_validate(form, user)
+        form, notification = compose_question_creation_notification(obj, form)
 
     if form is None:
-        form = compose_question_create_form(
-            request, user, qset_id, question_model_form_class, clean_form=True
-        )
+        form = compose_question_create_form(request, user, qset_id, clean_form=True)
 
     return form, notification
 
 
-def question_form_validate(form, user, qset_class):
-    """Validate the form and return three parameters."""
+def compose_question_creation_notification(obj, form):
+    """Compose question creation notification."""
+    if obj:
+        form = None
+        url = reverse('askup:qset', kwargs={'pk': obj.qset_id})
+        message = (
+            'Your question has been submitted! ' +
+            'View it <a href="{0}" class="bu">here</a> ' +
+            'or create a next one'
+        )
+        notification = ('success', message.format(url))
+    else:
+        notification = ('danger', 'Question wasn\'t created')
+
+    return form, notification
+
+
+def question_create_form_validate(form, user):
+    """Validate the form and return question on success or None on failure."""
     if form.is_valid():
-        qset = get_object_or_404(qset_class, pk=form.cleaned_data.get('qset').id)
+        qset = get_object_or_404(Qset, pk=form.cleaned_data.get('qset').id)
         text = form.cleaned_data.get('text')
         answer_text = form.cleaned_data.get('answer_text')
         blooms_tag = form.cleaned_data.get('blooms_tag')
         return check_user_and_create_question(user, qset, text, answer_text, blooms_tag)
 
-    return False
+    return None
 
 
-def compose_question_create_form(
-    request, user, qset_id, question_model_form_class, clean_form=False
-):
+def compose_question_create_form(request, user, qset_id, clean_form=False):
     """Compose create question form."""
     if request.method == 'POST' and clean_form is False:
-        return question_model_form_class(
+        return QuestionModelForm(
             request.POST,
             user=user,
             qset_id=qset_id,
         )
     else:
-        return question_model_form_class(
+        return QuestionModelForm(
             initial={'qset': qset_id},
             user=user,
             qset_id=qset_id,
         )
 
 
-def question_vote(user, question_id, value, question_class):
+def question_vote(user, question_id, value):
     """Provide a general question vote functionality."""
-    question = get_object_or_404(question_class, pk=question_id)
+    question = get_object_or_404(Question, pk=question_id)
 
     if user.id == question.user_id:
         return redirect(reverse('askup:organizations'))
@@ -193,7 +199,7 @@ def question_vote(user, question_id, value, question_class):
     return JsonResponse(response)
 
 
-def validate_answer_form_and_create(form, request, question, answer_class):
+def validate_answer_form_and_create(form, request, question):
     """
     Validate answer form and create an Answer object on success.
 
@@ -213,7 +219,7 @@ def validate_answer_form_and_create(form, request, question, answer_class):
             )
             return redirect(reverse('askup:organizations'))
 
-        answer = answer_class.objects.create(
+        answer = Answer.objects.create(
             text=text,
             question_id=question.id,
             user_id=user.id
@@ -225,10 +231,10 @@ def validate_answer_form_and_create(form, request, question, answer_class):
     return response
 
 
-def validate_and_send_feedback_form(request, form_class, next_page):
+def validate_and_send_feedback_form(request, next_page):
     """Compose form and create question on validation success."""
     user = request.user
-    form = form_class(
+    form = FeedbackForm(
         request.POST or None,
         user=user,
     )
