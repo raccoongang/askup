@@ -8,9 +8,9 @@ from django.shortcuts import get_object_or_404
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from askup.models import Qset, Question
-from askup.views import login_view
 from askup.mixins.tests import LoginAdminByDefaultMixIn
+from askup.models import Answer, Qset, Question
+from askup.views import login_view
 
 
 log = logging.getLogger(__name__)
@@ -372,12 +372,26 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         settings.DEBUG = False
         self.default_login()
 
-    def create_question(self, text, answer_text, qset_id):
-        """Create question with the parameters."""
+    def qset_create_question(self, text, answer_text, qset_id, form_qset_id=None):
+        """Create question by qset's "Generate question" form."""
+        form_qset_id = qset_id if form_qset_id is None else form_qset_id
         self.client.post(
             reverse(
                 'askup:qset_question_create',
                 kwargs={'qset_id': qset_id},
+            ),
+            {
+                'text': text,
+                'answer_text': answer_text,
+                'qset': form_qset_id,
+            }
+        )
+
+    def create_question(self, text, answer_text, qset_id):
+        """Create question by general "Generate question" form."""
+        self.client.post(
+            reverse(
+                'askup:question_create',
             ),
             {
                 'text': text,
@@ -393,7 +407,27 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         qset_id = 4  # Organization 1 -> Qset 1-1
 
         with self.assertRaises(Http404):
-            self.create_question(text, answer_text, qset_id)
+            self.qset_create_question(text, answer_text, qset_id)
+            get_object_or_404(Question, text=text, answer_text=answer_text, qset_id=qset_id)
+
+    def test_question_fail_no_qset_qset_form(self):
+        """Create question and look for a fail because of no qset specified (qset question)."""
+        text = 'Question 1-1-1-no-qset'
+        answer_text = 'Different answer 1-1-1-no-qset'
+        qset_id = None
+
+        with self.assertRaises(Http404):
+            self.qset_create_question(text, answer_text, 4, form_qset_id=None)
+            get_object_or_404(Question, text=text, answer_text=answer_text, qset_id=qset_id)
+
+    def test_question_fail_no_qset_general_form(self):
+        """Create question and look for a fail because of no qset specified (general question)."""
+        text = 'Question 1-1-1-no-qset'
+        answer_text = 'Different answer 1-1-1-no-qset'
+        qset_id = None
+
+        with self.assertRaises(Http404):
+            self.create_question(text, answer_text, None)
             get_object_or_404(Question, text=text, answer_text=answer_text, qset_id=qset_id)
 
     @client_user('teacher01', 'teacher01')
@@ -404,24 +438,51 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         qset_id = 11  # Organization 3 -> Qset 4-1 (forbidden for the teacher01)
 
         with self.assertRaises(Http404):
-            self.create_question(text, answer_text, qset_id)
+            self.qset_create_question(text, answer_text, qset_id)
             get_object_or_404(Question, text=text, qset_id=qset_id)
 
-    def test_create_question_success(self):
+    def test_qset_create_question_success(self):
         """Test question creation."""
         qset_id = 4
         text = 'Test question 1'
         answer_text = 'Test answer 1'
 
-        self.create_question(text, answer_text, qset_id)
+        self.qset_create_question(text, answer_text, qset_id)
         question = get_object_or_404(Question, text=text, qset_id=qset_id)
         self.assertEqual(question.text, text)
         self.assertEqual(question.answer_text, answer_text)
         self.assertEqual(question.qset_id, qset_id)
 
-    def test_update_question(self):
+    def question_edit(self, question_id, text, answer_text, qset_id):
+        """Send question edit request."""
+        self.client.post(
+            reverse('askup:question_edit', kwargs={'pk': question_id}),
+            {
+                'text': text,
+                'answer_text': answer_text,
+                'qset': qset_id,
+            }
+        )
+
+    def test_edit_question_success(self):
         """Test question updating."""
-        pass
+        self.question_edit(1, 'Question 1-1-1 updated', 'Answer 1-1-1 updated', 5)
+        question_exists = Question.objects.filter(id=1, text='Question 1-1-1 updated').exists()
+        self.assertEqual(question_exists, True)
+
+    def test_edit_question_fail_no_qset(self):
+        """Test question updating."""
+        self.question_edit(1, 'Question 1-1-1 updated', 'Answer 1-1-1 updated', None)
+        question_exists = Question.objects.filter(id=1, text='Question 1-1-1 updated').exists()
+        self.assertEqual(question_exists, False)
+
+    @client_user('student01', 'student01')
+    def test_edit_question_fail_no_permission(self):
+        """Test question updating."""
+        question_text = 'Question 1-1-2 updated'
+        self.question_edit(2, question_text, 'Answer 1-1-2 updated', 4)
+        question_exists = Question.objects.filter(id=2, text=question_text).exists()
+        self.assertEqual(question_exists, False)
 
     def delete_question(self, question_id):
         """Do delete particular question through the client."""
@@ -571,3 +632,75 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
             new_parent_qset['new_count'],
             new_parent_qset['orig_count'] + 1
         )
+
+
+class AnswerModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+    """Tests the Answer model related forms."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """Set up the test assets."""
+        settings.DEBUG = False
+        self.default_login()
+
+    def create_answer(self, question_id, answer_text):
+        return self.client.post(
+            reverse('askup:question_answer', kwargs={'question_id': question_id}),
+            {'text': answer_text}
+        )
+
+    def evaluate_answer(self, answer_id, self_evaluation):
+        return self.client.get(
+            reverse(
+                'askup:answer_evaluate', 
+                kwargs={
+                    'answer_id': answer_id,
+                    'evaluation': self_evaluation,
+                }
+            )
+        )
+
+    def test_answer_the_question_success(self):
+        answer_text = 'Test answer'
+        response = self.create_answer(1, answer_text).json()
+        answer = get_object_or_404(Answer, pk=response['answer_id'])
+        self.assertEqual(response['result'], 'success')
+        self.assertEqual(answer.text, answer_text)
+
+    def test_answer_the_question_fail_inexistent_question(self):
+        answer_text = 'Test answer'
+        inexistant_question_id = 111
+
+        with self.assertRaises(ValueError):
+            response = self.create_answer(inexistant_question_id, answer_text).json()
+
+    def test_answer_the_question_fail_empty_answer(self):
+        answer_text = ''
+        inexistant_question_id = 1
+        response = self.create_answer(inexistant_question_id, answer_text).json()
+        self.assertEqual(response['result'], 'error')
+
+    def test_answer_evaluation_success(self):
+        answer_text = 'Test answer'
+        answer_response = self.create_answer(1, answer_text).json()
+        self.evaluate_answer(answer_response['answer_id'], 0)
+        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.assertEqual(answer.self_evaluation, 0)
+
+        answer_response = self.create_answer(1, answer_text).json()
+        self.evaluate_answer(answer_response['answer_id'], 1)
+        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.assertEqual(answer.self_evaluation, 1)
+
+        answer_response = self.create_answer(1, answer_text).json()
+        self.evaluate_answer(answer_response['answer_id'], 2)
+        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.assertEqual(answer.self_evaluation, 2)
+
+    def test_answer_evaluation_fail_wrong_evaluation_value(self):
+        answer_text = 'Test answer'
+        answer_response = self.create_answer(1, answer_text).json()
+        self.evaluate_answer(answer_response['answer_id'], 3)
+        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.assertEqual(answer.self_evaluation, None)
