@@ -1,4 +1,5 @@
 $(document).ready(function(){
+    var alert_timeout = null;
     alert_init();
 
     $('.btn-feedback').on('click', show_evaluated_and_go_next);
@@ -53,7 +54,7 @@ $(document).ready(function(){
 });
 
 function alert_init() {
-    window.setTimeout(alert_open_animation, 400);
+    alert_timeout = window.setTimeout(alert_open_animation, 400);
 }
 
 function alert_open_animation(close_timeout, callback) {
@@ -67,13 +68,14 @@ function alert_open_animation(close_timeout, callback) {
         callback = function () {};
     }
 
-    $('.close-alert').on('click', function() {
+    $('.alert, .close-alert').on('click', function() {
         $(alert_selector).slideUp(400, callback);
     });
     $(alert_selector).slideDown();
 
     if (close_timeout) {
-        window.setTimeout(function() {$(alert_selector).slideUp(400, callback);}, close_timeout);
+        window.clearTimeout(alert_timeout);
+        alert_timeout = window.setTimeout(function() {$(alert_selector).slideUp(400, callback);}, close_timeout);
     }
 }
 
@@ -81,24 +83,35 @@ function show_evaluated_and_go_next(event) {
     var self = this;
     $('.btn-feedback').unbind();
     $('.btn-feedback').on('click', function() {return false;});
+    var callback = function() {window.location.href = $(self).attr('href');};
 
     if ($(this).hasClass('btn-success')) {
-        $('.alert').prepend('Got it!');
-        $('.alert').addClass('alert-success');
+        show_alert('success', 'Got it!', 2000, callback);
     } else if  ($(this).hasClass('btn-maybe')) {
-        $('.alert').prepend('Sort-of');
-        $('.alert').addClass('alert-warning');
+        show_alert('warning', 'Sort-of', 2000, callback);
     } else {
-        $('.alert').prepend('Missed it!');
-        $('.alert').addClass('alert-danger');
+        show_alert('danger', 'Missed it!', 2000, callback);
     }
 
-    alert_open_animation(2400, function() {window.location.href = $(self).attr('href');});
     return false;
 }
 
-function after_evaluation_notification_hide() {
-    
+function show_alert(cls, message, timeout, callback) {
+    if (typeof(timeout) === 'undefined') {
+        timeout = 5000;
+    }
+
+    if (typeof(callback) === 'undefined') {
+        callback = function() {};
+    }
+
+    var close_alert = '<a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>';
+    $('.alert').hide();
+    $('.alert').html(message + close_alert);
+    $('.alert').attr('class', 'alert center alert-' + cls);
+
+    window.clearTimeout(alert_timeout);
+    alert_timeout = alert_open_animation(timeout, callback);
 }
 
 $(document).on('shown.bs.modal', function() {
@@ -120,9 +133,11 @@ $(document).on('submit', '.hide-on-answered>form', function() {
 
 function on_vote_success(data) {
     if (data.result == 'error') {
+        show_alert('danger', data.message);
         return false;
     }
 
+    show_alert('success', data.message);
     $('.question-' + question_id + '-net-votes').html(data.value);
 }
 

@@ -26,9 +26,11 @@
 
         </div>
     </div>
+    {% if questions_list %}
     <div class="row center">
         <div class="col-xs-12" id="quizAll-smallscreen-buttonpadding">
             <a href="{% url 'askup:start_quiz_all' current_qset_id %}?filter={{ filter }}" class="btn btn-primary btn-large quiz-all">Quiz {{ filter }}</a>
         </div>
     </div>
+    {% endif %}
 </div>

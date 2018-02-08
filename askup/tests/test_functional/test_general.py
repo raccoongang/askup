@@ -96,16 +96,16 @@ class OrganizationListView(LoginAdminByDefaultMixIn, TestCase):
         settings.DEBUG = False
         self.default_login()
 
-    def test_has_subsets(self):
-        """Test an Organization view with the subsets."""
+    def test_has_subjects(self):
+        """Test an Organization view with the subjects."""
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 1}))
         self.assertContains(response, 'Qset 1-1')
-        self.assertNotContains(response, 'There are no subsets here.')
+        self.assertNotContains(response, 'There are no subjects here.')
 
-    def test_has_no_subsets(self):
-        """Test an Organization view w/o the subsets."""
+    def test_has_no_subjects(self):
+        """Test an Organization view w/o the subjects."""
         response = self.client.get(reverse('askup:organization', kwargs={'pk': 3}))
-        self.assertContains(response, 'There are no subsets here.')
+        self.assertContains(response, 'There are no subjects here.')
 
     def test_admin_features_presence(self):
         """Test for an admin features presence."""
@@ -132,7 +132,7 @@ class QsetListView(LoginAdminByDefaultMixIn, TestCase):
         self.default_login()
 
     def test_type_2_has_questions(self):
-        """Test Qset list view with the subsets."""
+        """Test Qset list view with the subjects."""
         response = self.client.get(reverse('askup:qset', kwargs={'pk': 4}))
         self.assertContains(response, 'Question 1-1-1')
         self.assertNotContains(response, 'There are no questions here.')
@@ -237,16 +237,9 @@ class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(qset.name, name)
         self.assertEqual(qset.type, 2)
 
-    @client_user('teacher01', 'teacher01')
-    def create_qset_fail_forbidden_parent(self, name, parent_qset_id):
-        """Create qset and look for a fail."""
-        with self.assertRaises(Http404):
-            self.create_qset(name, parent_qset_id)
-            get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
-
     def update_qset(self, qset_id, new_name, new_parent_qset_id):
         """Update qset with the parameters."""
-        self.client.post(
+        return self.client.post(
             reverse(
                 'askup:qset_update',
                 kwargs={'pk': qset_id}
@@ -257,29 +250,35 @@ class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
             }
         )
 
-    def update_qset_success(self, qset_id, new_name, new_parent_qset_id):
-        """Update qset and look for a success."""
-        self.update_qset(qset_id, new_name, new_parent_qset_id)
-        qset = get_object_or_404(Qset, pk=qset_id)
-        self.assertEqual(qset.name, new_name)
-        self.assertEqual(qset.type, 2)
-
-    def test_create_qset(self):
+    def test_create_qset_success(self):
         """Test qset creation."""
-        parent_qset_id = 4
-
+        parent_qset_id = 1
         name = 'test qset questions only'
         self.create_qset_success(name, parent_qset_id)
 
-        name = 'test qset mixed forbidden parent'
-        self.create_qset_fail_forbidden_parent(name, 3)
+    def test_create_qset_fail_only_organization_parents(self):
+        """Test qset creation failure because of simple qset as a parent."""
+        self.create_qset('test qset questions only fail', 4)
 
-    def test_update_qset(self):
-        """Test qset updating."""
+    @client_user('teacher01', 'teacher01')
+    def test_create_qset_fail_forbidden_parent(self):
+        """Create qset and look for a fail."""
+        parent_qset_id = 3
+        name = 'test qset mixed forbidden parent'
+
+        with self.assertRaises(Http404):
+            self.create_qset(name, parent_qset_id)
+            get_object_or_404(Qset, name=name, parent_qset_id=parent_qset_id)
+
+    def test_update_qset_success(self):
+        """Update qset and look for a success."""
         parent_qset_id = 1
         qset_id = 4
         name = 'Qset 1-1 updated'
-        self.update_qset_success(qset_id, name, parent_qset_id)
+        self.update_qset(qset_id, name, parent_qset_id)
+        qset = get_object_or_404(Qset, pk=qset_id)
+        self.assertEqual(qset.name, name)
+        self.assertEqual(qset.type, 2)
 
     @client_user('teacher01', 'teacher01')
     def test_update_qset_fail_forbidden_parent(self):
@@ -645,15 +644,17 @@ class AnswerModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.default_login()
 
     def create_answer(self, question_id, answer_text):
+        """create_answer."""
         return self.client.post(
             reverse('askup:question_answer', kwargs={'question_id': question_id}),
             {'text': answer_text}
         )
 
     def evaluate_answer(self, answer_id, self_evaluation):
+        """evaluate_answer."""
         return self.client.get(
             reverse(
-                'askup:answer_evaluate', 
+                'askup:answer_evaluate',
                 kwargs={
                     'answer_id': answer_id,
                     'evaluation': self_evaluation,
@@ -662,6 +663,7 @@ class AnswerModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         )
 
     def test_answer_the_question_success(self):
+        """test_answer_the_question_success."""
         answer_text = 'Test answer'
         response = self.create_answer(1, answer_text).json()
         answer = get_object_or_404(Answer, pk=response['answer_id'])
@@ -669,19 +671,22 @@ class AnswerModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(answer.text, answer_text)
 
     def test_answer_the_question_fail_inexistent_question(self):
+        """test_answer_the_question_fail_inexistent_question."""
         answer_text = 'Test answer'
         inexistant_question_id = 111
 
         with self.assertRaises(ValueError):
-            response = self.create_answer(inexistant_question_id, answer_text).json()
+            self.create_answer(inexistant_question_id, answer_text).json()
 
     def test_answer_the_question_fail_empty_answer(self):
+        """test_answer_the_question_fail_empty_answer."""
         answer_text = ''
         inexistant_question_id = 1
         response = self.create_answer(inexistant_question_id, answer_text).json()
         self.assertEqual(response['result'], 'error')
 
     def test_answer_evaluation_success(self):
+        """test_answer_evaluation_success."""
         answer_text = 'Test answer'
         answer_response = self.create_answer(1, answer_text).json()
         self.evaluate_answer(answer_response['answer_id'], 0)
@@ -699,6 +704,7 @@ class AnswerModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(answer.self_evaluation, 2)
 
     def test_answer_evaluation_fail_wrong_evaluation_value(self):
+        """test_answer_evaluation_fail_wrong_evaluation_value."""
         answer_text = 'Test answer'
         answer_response = self.create_answer(1, answer_text).json()
         self.evaluate_answer(answer_response['answer_id'], 3)

@@ -114,10 +114,10 @@ class CookieFilterMixIn(admin.ModelAdmin):
         Checks org->qset relation and if qset doesn't belong this organization -
         clears the qset field.
         """
-        qset_id = filters.get('qset')
-        org_id = filters.get('org')
+        qset_id = filters.get('qset', None)
+        org_id = filters.get('org', None)
 
-        if org_id is None or qset_id is None:
+        if org_id in (None, '0') or qset_id in (None, '0'):
             return filters
 
         qset_exists = Qset.objects.filter(id=qset_id, top_qset_id=org_id).exists()
@@ -137,7 +137,7 @@ class ParseUrlToParameters(object):
         url_parts = response.url.split('?')
 
         if len(url_parts) < 2:
-            return
+            return url_parts[0], []
 
         query_string = url_parts[1] if len(url_parts) > 1 else ''
         parameters = query_string.split('&') if query_string else []

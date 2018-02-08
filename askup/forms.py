@@ -177,10 +177,12 @@ class QsetModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
         """Set up additional fields rules."""
         self.fields['parent_qset'].required = True
         self.fields['parent_qset'].empty_label = None
-        self.fields['parent_qset'].queryset = Qset.get_user_related_qsets(
+        queryset = Qset.get_user_related_qsets(
             user,
             ('top_qset_id', '-is_organization', 'askup_qset.name')
         )
+        queryset = queryset.filter(parent_qset__isnull=True)
+        self.fields['parent_qset'].queryset = queryset
         self.fields['for_any_authenticated'].label = 'Questions are visible to all logged-in users'
         self.fields['for_unauthenticated'].label = 'Questions are visible to unauthenticated users'
         self.fields['show_authors'].label = 'Questions authors are visible to all users'
@@ -369,7 +371,6 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
 
     def _set_up_fields(self, user):
         """Set up the fields properties for the feedback form."""
-        # self.fields['blooms_tag'].choices[0] = ("", "- no tag -")
         pass
 
     def _set_up_helper(self, qset_id):
@@ -391,7 +392,7 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
                     css_class='row'
                 ),
             ),
-            self._get_helper_buttons(None)
+            self._get_helper_buttons(None, submit_name='Send')
         )
 
     def _get_cancel_button(self, qset_id):

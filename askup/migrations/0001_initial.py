@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(db_index=True, max_length=255)),
-                ('type', models.PositiveSmallIntegerField(choices=[(0, 'mixed'), (1, 'subsets only'), (2, 'questions only')], default=2)),
+                ('type', models.PositiveSmallIntegerField(choices=[(0, 'mixed'), (1, 'subjects only'), (2, 'questions only')], default=2)),
                 ('for_any_authenticated', models.BooleanField(db_index=True, default=False)),
                 ('for_unauthenticated', models.BooleanField(db_index=True, default=False)),
                 ('show_authors', models.BooleanField(default=True)),

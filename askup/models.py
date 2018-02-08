@@ -12,7 +12,7 @@ class Qset(models.Model):
 
     TYPES = (
         (0, "mixed"),
-        (1, "subsets only"),
+        (1, "subjects only"),
         (2, "questions only"),
     )
     name = models.CharField(max_length=255, db_index=True)
@@ -216,12 +216,18 @@ class Qset(models.Model):
 
         return queryset
 
-    def get_user_related_qsets_queryset(user):
-        """Return queryset of qset objects for the "user related qsets" request."""
-        if check_user_has_groups(user, 'admin'):
-            return Qset.objects.all()
-        else:
-            return Qset.objects.filter(top_qset__users=user.id)
+    @classmethod
+    def get_user_related_qsets_queryset(cls, user):
+        """Return queryset of qset objects for the 'user related qsets' request."""
+        return cls.apply_user_related_qsets_filters(user, Qset.objects.all())
+
+    @staticmethod
+    def apply_user_related_qsets_filters(user, queryset):
+        """Apply user related filters to the queryset."""
+        if not check_user_has_groups(user, 'admin'):
+            queryset = queryset.filter(top_qset__users=user.id)
+
+        return queryset
 
     class Meta:
         unique_together = ('parent_qset', 'name')
@@ -270,6 +276,9 @@ class Question(models.Model):
         default=None
     )
     vote_value = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('text', 'qset')
 
     def __init__(self, *args, **kwargs):
         """Initialize the Question model object."""
@@ -322,7 +331,7 @@ class Question(models.Model):
         exists = Vote.objects.filter(question_id=self.id, voter_id=user_id).exists()
 
         if exists:
-            return False
+            return False, 'You have already voted for this question'
 
         Vote.objects.create(
             value=value,
@@ -335,7 +344,7 @@ class Question(models.Model):
         if vote_value < 0:
             vote_value = 0
 
-        return vote_value
+        return vote_value, 'Thank you for your vote!'
 
     def get_votes_aggregated(self):
         """Return votes value of this question aggregated from the askup_vote table."""
@@ -347,8 +356,18 @@ class Question(models.Model):
         """Return a string representation of a Question object."""
         return self.text
 
-    class Meta:
-        unique_together = ('text', 'qset')
+    @classmethod
+    def get_user_related_questions_queryset(cls, user):
+        """Return queryset of qset objects for the 'user related qsets' request."""
+        return cls.apply_user_related_questions_filters(user, Question.objects.all())
+
+    @staticmethod
+    def apply_user_related_questions_filters(user, queryset):
+        """Apply user related filters to the queryset."""
+        if not check_user_has_groups(user, 'admin'):
+            queryset = queryset.filter(qset__top_qset__users=user.id)
+
+        return queryset
 
 
 class Answer(models.Model):

@@ -2,7 +2,7 @@ import logging
 
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from askup.forms import FeedbackForm, QsetModelForm, QuestionModelForm
@@ -87,6 +87,20 @@ def user_group_required(*required_groups):
         return wrapped_function
 
     return wrapper
+
+
+def qset_update_form_template(request, form, qset):
+    """Compose and return the qset update form template."""
+    return render(
+        request,
+        'askup/qset_form.html',
+        {
+            'form': form,
+            'main_title': 'Edit qset',
+            'submit_label': 'Save',
+            'breadcrumbs': qset.get_parents()
+        }
+    )
 
 
 def delete_qset_by_form(form, qset):
@@ -182,19 +196,27 @@ def question_vote(user, question_id, value):
     question = get_object_or_404(Question, pk=question_id)
 
     if user.id == question.user_id:
-        return redirect(reverse('askup:organizations'))
+        response = {
+            'result': 'error',
+            'message': 'You can not vote for your own questions'
+        }
+        return JsonResponse(response)
 
     is_admin = check_user_has_groups(user, 'admin')
 
     if not is_admin and user not in question.qset.top_qset.users.all():
-        return redirect(reverse('askup:organizations'))
+        response = {
+            'result': 'error',
+            'message': 'You have no permissions to vote for this question'
+        }
+        return JsonResponse(response)
 
-    vote_result = question.vote(user.id, value)
+    vote_result, message = question.vote(user.id, value)
 
     if vote_result is False:
-        response = {'result': 'error'}
+        response = {'result': 'error', 'message': message}
     else:
-        response = {'result': 'success', 'value': vote_result}
+        response = {'result': 'success', 'message': message, 'value': vote_result}
 
     return JsonResponse(response)
 
@@ -243,11 +265,11 @@ def validate_and_send_feedback_form(request, next_page):
         if form.is_valid():
             email = form.cleaned_data.get('email')
             subject = form.cleaned_data.get('subject')
-            text = form.cleaned_data.get('text')
+            text = form.cleaned_data.get('message')
             send_feedback(email, subject, text)
             return None, redirect(
                 add_notification_to_url(
-                    ('success', 'Thank you for your feedback'),
+                    ('success', 'Thank you for your feedback!'),
                     next_page or '/',
                 )
             )

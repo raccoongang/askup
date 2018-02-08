@@ -49,15 +49,14 @@
                     {% endif %}
                 </ul>            
             </div>
+
+            <div class="alert alert-{{notification_class}} center" style="display: none;">
+                {{ notification_text|safe }}<a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>
+            </div>
         </div>
     </div>
 
     <div class="spacer_nav"></div>
-
-    <div class="alert alert-{{notification_class}} center" style="display: none;">
-        {{ notification_text|safe }} &nbsp;
-        <a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>
-    </div>
 
     {% block body %}
     {% endblock %}

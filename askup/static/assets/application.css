@@ -9236,3 +9236,7 @@ select.form-control, input.form-control {
     font-weight: bold;
     text-decoration: underline;
 }
+
+.close-alert {
+    margin-left: 10px;
+}

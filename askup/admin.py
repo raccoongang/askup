@@ -17,34 +17,40 @@ class OrganizationFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         """Return a set of filter elements."""
-        items = [(org.id, org.name) for org in Organization.objects.all().order_by('name')]
+        queryset = Qset.get_user_related_qsets_queryset(request.user)
+        queryset = queryset.filter(parent_qset_id=None).order_by('name')
+        items = [(org.id, org.name) for org in queryset]
         items.insert(0, ('0', 'All'))
         return items
 
     def queryset(self, request, queryset):
         """Return a queryset modified correspondingly to a filter."""
         if queryset.model is Question:
-            return self.apply_question_queryset(queryset)
+            return self.apply_question_queryset(queryset, request.user)
         elif queryset.model is Qset:
-            return self.apply_qset_queryset(queryset)
+            return self.apply_qset_queryset(queryset, request.user)
 
         return queryset
 
-    def apply_question_queryset(self, queryset):
+    def apply_question_queryset(self, queryset, user):
         """Apply question queryset."""
-        if self.value():
-            if self.value() == '0':
-                return queryset
-            else:
-                return queryset.filter(qset__top_qset_id=self.value())
+        queryset = Question.apply_user_related_questions_filters(user, queryset)
 
-    def apply_qset_queryset(self, queryset):
-        """Apply qset queryset."""
+        if self.value() == '0':
+            return queryset
+
         if self.value():
-            if self.value() == '0':
-                return queryset
-            else:
-                return queryset.filter(top_qset_id=self.value())
+            return queryset.filter(qset__top_qset_id=self.value())
+
+    def apply_qset_queryset(self, queryset, user):
+        """Apply qset queryset."""
+        queryset = Qset.apply_user_related_qsets_filters(user, queryset)
+
+        if self.value() == '0':
+            return queryset
+
+        if self.value():
+            return queryset.filter(top_qset_id=self.value())
 
 
 class QsetFilter(admin.SimpleListFilter):
@@ -59,6 +65,7 @@ class QsetFilter(admin.SimpleListFilter):
         items = []
         org_id = request.GET.get('org', '0')
         queryset = Qset.objects.filter(parent_qset_id__gt=0)
+        queryset = Qset.apply_user_related_qsets_filters(request.user, queryset)
 
         if org_id != '0':
             queryset = queryset.filter(top_qset_id=org_id)
@@ -73,11 +80,13 @@ class QsetFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         """Return a queryset modified correspondingly to a filter."""
+        queryset = Question.apply_user_related_questions_filters(request.user, queryset)
+
+        if self.value() == '0':
+            return queryset
+
         if self.value():
-            if self.value() == '0':
-                return queryset
-            else:
-                return queryset.filter(qset_id=self.value())
+            return queryset.filter(qset_id=self.value())
 
 
 class OrganizationAdmin(admin.ModelAdmin):
@@ -144,11 +153,7 @@ class QsetAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         form.base_fields['parent_qset'].label = 'Organization'
         form.base_fields['parent_qset'].required = True
         form.base_fields['parent_qset'].initial = request.COOKIES.get('admin-filter-org', None)
-        queryset = Qset.objects.filter(parent_qset_id=None)
-
-        if obj and obj.id:
-            queryset = queryset.exclude(id=obj.id)
-
+        queryset = Qset.get_user_related_qsets_queryset(request.user).filter(parent_qset_id=None)
         form.base_fields['parent_qset'].queryset = queryset.order_by('name', 'parent_qset_id')
         return form
 
@@ -204,6 +209,7 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         queryset = Qset.objects.filter(
             parent_qset_id__isnull=False, type__in=(0, 2)
         )
+        queryset = Qset.apply_user_related_qsets_filters(request.user, queryset)
         queryset = queryset.order_by('name')
         form.base_fields['qset'].queryset = queryset
         form.base_fields['qset'].initial = request.COOKIES.get('admin-filter-qset', None)
@@ -231,7 +237,7 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         """Set admin-filter-qset on question creation."""
         response = super().response_change(*args, **kwargs)
         obj = args[1]
-        response = self.apply_org_and_qset_to_url(obj.qset_id, obj.qset.top_qset_id, response)
+        response = self.apply_org_and_qset_to_url(obj.qset_id, '0', response)
         response.set_cookie('admin-filter-qset', obj.qset_id)
         return response
 
@@ -239,7 +245,7 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         """Set admin-filter-qset cookie on question update."""
         response = super().response_change(*args, **kwargs)
         obj = args[1]
-        response = self.apply_org_and_qset_to_url(obj.qset_id, obj.qset.top_qset_id, response)
+        response = self.apply_org_and_qset_to_url(obj.qset_id, '0', response)
         response.set_cookie('admin-filter-qset', obj.qset_id)
         return response
 

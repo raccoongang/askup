@@ -36,6 +36,7 @@ from .utils.views import (
     compose_qset_form,
     compose_question_form_and_create,
     delete_qset_by_form,
+    qset_update_form_template,
     question_vote,
     user_group_required,
     validate_and_send_feedback_form,
@@ -134,7 +135,7 @@ class OrganizationView(CheckSelfForRedirectMixIn, ListViewUserContextDataMixIn, 
 
 
 class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
-    """Handles the Qset list view (subsets only/questions only/mixed)."""
+    """Handles the Qset list view (subjects only/questions only/mixed)."""
 
     model = Qset
 
@@ -145,7 +146,7 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
         Overriding the get_template_names of generic.ListView
         """
         if self._current_qset.type == 1:
-            return ['askup/qset_subsets_only.html']
+            return ['askup/qset_subjects_only.html']
         elif self._current_qset.type == 2:
             return ['askup/qset_questions_only.html']
         else:
@@ -191,7 +192,6 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
         """Fill qset checkboxes states context."""
         qset = self._current_qset
         context['mixed_type'] = self.get_checkbox_state(qset.type == 0)
-        context['subsets_type'] = self.get_checkbox_state(qset.type == 1)
         context['questions_type'] = self.get_checkbox_state(qset.type == 2)
         context['for_any_authenticated'] = self.get_checkbox_state(qset.for_any_authenticated)
         context['show_authors'] = self.get_checkbox_state(qset.show_authors)
@@ -322,6 +322,10 @@ def qset_create(request):
 def qset_update(request, pk):
     """Provide the update qset view for the student/teacher/admin."""
     qset = get_object_or_404(Qset, pk=pk)
+    is_admin = check_user_has_groups(request.user, 'admin')
+
+    if not is_admin and request.user not in qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
 
     if request.method == 'GET':
         form = QsetModelForm(user=request.user, instance=qset, qset_id=qset.id)
@@ -338,16 +342,7 @@ def qset_update(request, pk):
                 )
             )
 
-    return render(
-        request,
-        'askup/qset_form.html',
-        {
-            'form': form,
-            'main_title': 'Edit qset',
-            'submit_label': 'Save',
-            'breadcrumbs': qset.get_parents()
-        }
-    )
+    return qset_update_form_template(request, form, qset)
 
 
 @user_group_required('teacher', 'admin')
@@ -388,8 +383,12 @@ def qset_delete(request, pk):
 def question_answer(request, question_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question answering request for the question_id: %s', question_id)
-    question = get_object_or_404(Question, pk=question_id)
     is_quiz = request.GET.get('filter') is not None
+    question = Question.objects.filter(id=question_id).first()
+
+    if question is None:
+        return redirect(reverse('askup:organizations'))
+
     filter = UserFilterMixIn.get_clean_filter_parameter(request)
     form = do_make_answer_form(request, question)
 
