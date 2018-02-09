@@ -51,6 +51,18 @@ $(document).ready(function(){
     $(document).ready(function(){
         $('[data-toggle="tooltip"]').tooltip(); 
     });
+
+    $('.hide-on-answered textarea#id_text').on('keydown', function(event) {
+        if (event.keyCode === 13) {
+            if (event.ctrlKey) {
+                $(this).val($(this).val() + '\n');
+            } else {
+                $(this).parents('.hide-on-answered').find('#submit-id-submit').trigger('click');
+            }
+
+            event.preventDefault()
+        }
+    });
 });
 
 function alert_init() {

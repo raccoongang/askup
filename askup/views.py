@@ -261,7 +261,7 @@ def logout_view(request):
     logout(request)
     return redirect(
         add_notification_to_url(
-            ('danger', 'You was signed out'),
+            ('danger', 'You were signed out'),
             '/',
         ),
     )
