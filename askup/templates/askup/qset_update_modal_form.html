@@ -1,6 +1,6 @@
 <div class="modal-header">
     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-    <h4 class="modal-title">Edit qset</h4>
+    <h4 class="modal-title">Edit subject</h4>
 </div>
 <div class="modal-body">
     <form accept-charset="UTF-8" action="{% url 'askup:qset_update' current_qset_id %}" class="edit_qset" id="edit_qset_{{ current_qset_id }}" method="post">
@@ -9,13 +9,14 @@
             <input name="parent_qset" type="hidden" value="{{ parent_qset_id }}">
             {% csrf_token %}
         </div>
-        <div class="form-group" custom-valid-message="Qset name is required">
-            <label for="qset_name">Change the name of this qset</label>
-            <input id="qset_name" name="name" type="text" value="{{ current_qset_name }}" required>
+        <div class="form-group" custom-valid-message="Name is required">
+            <label for="qset_name">Change the name of this subject</label>
+            <input id="qset_name" name="name" type="text" value="{{ current_qset_name }}"
+                placeholder="Subject name here..." required>
         </div>
         <div class="form-group">
-            <strong>Qset permissions</strong>: note that these permissions apply only to non-admin users,
-            and clicking 'Save' will change the permissions for this Qset and <strong>all of its children</strong>,
+            <strong>Subject permissions</strong>: note that these permissions apply only to non-admin users,
+            and clicking 'Save' will change the permissions for this Subject and <strong>all of its children</strong>,
             without checking whether any permissions values have changed.
         </div>
         

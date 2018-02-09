@@ -96,7 +96,7 @@ def qset_update_form_template(request, form, qset):
         'askup/qset_form.html',
         {
             'form': form,
-            'main_title': 'Edit qset',
+            'main_title': 'Edit subject',
             'submit_label': 'Save',
             'breadcrumbs': qset.get_parents()
         }
@@ -134,14 +134,18 @@ def compose_question_form_and_create(request, qset_id):
     user = request.user
     form = None
     notification = ('', '')
+    obj = None
 
     if request.method == 'POST':
         form = compose_question_create_form(request, user, qset_id)
         obj = question_create_form_validate(form, user)
+        qset_id = obj and obj.qset_id
         form, notification = compose_question_creation_notification(obj, form)
 
     if form is None:
-        form = compose_question_create_form(request, user, qset_id, clean_form=True)
+        form = compose_question_create_form(
+            request, user, qset_id, clean_form=True
+        )
 
     return form, notification
 

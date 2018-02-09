@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 
-from .forms import OrganizationModelForm, UserForm
+from .forms import OrganizationModelForm, QuestionModelForm, UserForm
 from .mixins.admin import CookieFilterMixIn, ParseUrlToParameters
 from .models import EmailPattern, Organization, Qset, Question
 
@@ -56,7 +56,7 @@ class OrganizationFilter(admin.SimpleListFilter):
 class QsetFilter(admin.SimpleListFilter):
     """Provides a qset filter for the Questions list."""
 
-    title = 'Qset'
+    title = 'Subject'
     parameter_name = 'qset'
     template = 'askup/filters/dropdown_filter.html'
 
@@ -159,7 +159,7 @@ class QsetAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
 
     def response_add(self, *args, **kwargs):
         """Set admin-filter-org cookie on qset creation."""
-        response = super().response_change(*args, **kwargs)
+        response = super().response_add(*args, **kwargs)
         obj = args[1]
         response = self.apply_organization_to_url(obj.parent_qset_id, response)
         response.set_cookie('admin-filter-org', obj.parent_qset_id)
@@ -177,6 +177,9 @@ class QsetAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         """Apply organization filter value to the url on save."""
         url_path, parameters = self.parse_response_url_to_parameters(response)
 
+        if url_path is None:
+            return response
+
         for i in range(len(parameters)):
             if parameters[i][:4] == 'org=':
                 parameters[i] = 'org={0}'.format(organization_id)
@@ -187,12 +190,12 @@ class QsetAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
 class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
     """Admin list and detailed view for the Question model."""
 
+    form = QuestionModelForm
     fields = (
         'text',
         'answer_text',
         'qset',
         'blooms_tag',
-        'vote_value',
     )
     list_display = ('text', 'qset')
     list_filter = (OrganizationFilter, QsetFilter)
@@ -206,12 +209,7 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         Overriding the form fields for the admin model form of the Questions.
         """
         form = super().get_form(request, obj, **kwargs)
-        queryset = Qset.objects.filter(
-            parent_qset_id__isnull=False, type__in=(0, 2)
-        )
-        queryset = Qset.apply_user_related_qsets_filters(request.user, queryset)
-        queryset = queryset.order_by('name')
-        form.base_fields['qset'].queryset = queryset
+        form.current_user = request.user
         form.base_fields['qset'].initial = request.COOKIES.get('admin-filter-qset', None)
         return form
 
@@ -235,7 +233,7 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
 
     def response_add(self, *args, **kwargs):
         """Set admin-filter-qset on question creation."""
-        response = super().response_change(*args, **kwargs)
+        response = super().response_add(*args, **kwargs)
         obj = args[1]
         response = self.apply_org_and_qset_to_url(obj.qset_id, '0', response)
         response.set_cookie('admin-filter-qset', obj.qset_id)
@@ -252,6 +250,15 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
     def apply_org_and_qset_to_url(self, qset_id, org_id, response):
         """Apply org and qset filter values to the url on save."""
         url_path, parameters = self.parse_response_url_to_parameters(response)
+
+        if url_path is None:
+            return response
+
+        parameters = self.update_parameters(parameters, qset_id, org_id)
+        return HttpResponseRedirect('?'.join((url_path, ('&'.join(parameters)))))
+
+    def update_parameters(self, parameters, qset_id, org_id):
+        """Update parameters by filter values and return them."""
         filters = {'qset': str(qset_id), 'org': str(org_id)}
         filters = self.check_org_qset_relation(filters, 'org')
 
@@ -262,7 +269,7 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
             if parameters[i][:4] == 'org=':
                 parameters[i] = 'org={0}'.format(filters['org'])
 
-        return HttpResponseRedirect('?'.join((url_path, ('&'.join(parameters)))))
+        return parameters
 
 
 class EmailPatternAdmin(admin.ModelAdmin):

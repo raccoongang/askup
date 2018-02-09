@@ -9240,3 +9240,7 @@ select.form-control, input.form-control {
 .close-alert {
     margin-left: 10px;
 }
+
+.asteriskField {
+    display: none;
+}

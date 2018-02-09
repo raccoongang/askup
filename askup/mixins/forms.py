@@ -20,7 +20,7 @@ class InitFormWithCancelButtonMixIn(object):
         user = kwargs.pop('user', None)
         qset_id = kwargs.pop('qset_id', None)
         super().__init__(*args, **kwargs)
-        self._set_up_fields(user)
+        self._set_up_fields(user or getattr(self, 'current_user', None))
         self._set_up_helper(qset_id)
 
     def _set_up_fields(self, user):

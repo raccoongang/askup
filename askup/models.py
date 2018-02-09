@@ -17,7 +17,7 @@ class Qset(models.Model):
     )
     name = models.CharField(max_length=255, db_index=True)
     type = models.PositiveSmallIntegerField(choices=TYPES, default=2)
-    # top_qset (an organization) is a qset on the top of the tree"""
+    # top_qset (an organization) is a qset on the top of the tree
     top_qset = models.ForeignKey(
         "self",
         related_name="organization_qsets",
@@ -29,7 +29,8 @@ class Qset(models.Model):
         "self",
         on_delete=models.CASCADE,
         null=True,
-        blank=True
+        blank=True,
+        verbose_name="Organization",
     )
     for_any_authenticated = models.BooleanField(default=False, db_index=True)
     for_unauthenticated = models.BooleanField(default=False, db_index=True)
@@ -37,6 +38,24 @@ class Qset(models.Model):
     own_questions_only = models.BooleanField(default=False)
     users = models.ManyToManyField(User, blank=True)
     questions_count = models.PositiveIntegerField(default=0, db_index=True)
+
+    class Meta:
+        unique_together = ('parent_qset', 'name')
+        verbose_name = 'Subject'
+        verbose_name_plural = 'Subjects'
+
+    @property
+    def full_name(self):
+        """
+        Return a string representation of a Qset object.
+
+        Tries to get the include_parent_name value first (can be passed by RawSQL)
+        in lack of it gets name field of model.
+        """
+        if getattr(self, 'include_parent_name', None):
+            return '{0}: {1}'.format(self.top_qset.name, self.name)
+        else:
+            return self.name
 
     def __init__(self, *args, **kwargs):
         """Initialize the Qset model object."""
@@ -149,13 +168,8 @@ class Qset(models.Model):
         super().validate_unique(exclude)
 
     def __str__(self):
-        """
-        Return a string representation of a Qset object.
-
-        Tries to get the customized_name value first (can be passed by RawSQL)
-        in lack of it gets name field of model.
-        """
-        return getattr(self, 'customized_name', self.name)
+        """Return string representation of Qset."""
+        return self.full_name
 
     def get_parent_organization(self):
         """
@@ -190,35 +204,34 @@ class Qset(models.Model):
         return parents
 
     @classmethod
-    def get_user_related_qsets(cls, user, order_by, qsets_only=False):
+    def get_user_related_qsets(
+        cls,
+        user,
+        order_by,
+        qsets_only=False,
+        organizations_only=False,
+    ):
         """Return queryset of formatted qsets, permitted to the user."""
         if user and user.id:
             queryset = cls.get_user_related_qsets_queryset(user)
-
-            if qsets_only:
-                queryset = queryset.filter(parent_qset_id__gt=0)
-                prefix = ''
-            else:
-                prefix = '— '
-
-            name_selector = ''.join((
-                "case when askup_qset.parent_qset_id is null ",
-                "then askup_qset.name ",
-                "else concat('{0}', askup_qset.name) end".format(prefix),
-            ))
+            queryset = queryset.select_related('top_qset')
+            queryset = cls.apply_context_related_qsets_filters(
+                queryset,
+                qsets_only,
+                organizations_only,
+            )
             queryset = queryset.annotate(
-                customized_name=RawSQL(name_selector, tuple()),
                 is_organization=RawSQL('askup_qset.parent_qset_id is null', tuple()),
             )
             queryset = queryset.order_by(*order_by)
         else:
-            queryset = []
+            queryset = Qset.objects.none()
 
         return queryset
 
     @classmethod
     def get_user_related_qsets_queryset(cls, user):
-        """Return queryset of qset objects for the 'user related qsets' request."""
+        """Return queryset of qset objects for the user related qsets request."""
         return cls.apply_user_related_qsets_filters(user, Qset.objects.all())
 
     @staticmethod
@@ -229,8 +242,19 @@ class Qset(models.Model):
 
         return queryset
 
-    class Meta:
-        unique_together = ('parent_qset', 'name')
+    @staticmethod
+    def apply_context_related_qsets_filters(queryset, qsets_only, organizations_only):
+        """Apply context related filters to the queryset."""
+        if qsets_only:
+            queryset = queryset.filter(parent_qset_id__gt=0)
+            queryset = queryset.annotate(
+                include_parent_name=RawSQL('1', tuple()),
+            )
+
+        if organizations_only:
+            queryset = queryset.filter(parent_qset_id__isnull=True)
+
+        return queryset
 
 
 class Organization(Qset):

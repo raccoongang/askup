@@ -220,7 +220,7 @@ class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
 
     def create_qset(self, name, parent_qset_id):
         """Create qset with the parameters."""
-        self.client.post(
+        return self.client.post(
             reverse(
                 'askup:qset_create'
             ),

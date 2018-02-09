@@ -311,7 +311,7 @@ def qset_create(request):
         'askup/qset_form.html',
         {
             'form': form,
-            'main_title': 'Create qset:',
+            'main_title': 'Create subject:',
             'submit_label': 'Create',
             'breadcrumbs': parent_qset.get_parents()
         }
@@ -334,7 +334,7 @@ def qset_update(request, pk):
 
         if form.is_valid():
             form.save()
-            notification = ('success', 'Qset was successfuly edited')
+            notification = ('success', 'Subject was successfuly saved')
             return redirect(
                 add_notification_to_url(
                     notification,

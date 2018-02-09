@@ -179,9 +179,9 @@ class QsetModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
         self.fields['parent_qset'].empty_label = None
         queryset = Qset.get_user_related_qsets(
             user,
-            ('top_qset_id', '-is_organization', 'askup_qset.name')
+            ('top_qset_id', '-is_organization', 'askup_qset.name'),
+            organizations_only=True,
         )
-        queryset = queryset.filter(parent_qset__isnull=True)
         self.fields['parent_qset'].queryset = queryset
         self.fields['for_any_authenticated'].label = 'Questions are visible to all logged-in users'
         self.fields['for_unauthenticated'].label = 'Questions are visible to unauthenticated users'
@@ -250,8 +250,9 @@ class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
         self.fields['qset'].empty_label = None
         self.fields['qset'].queryset = Qset.get_user_related_qsets(
             user,
-            ('top_qset_id', '-is_organization', 'askup_qset.name'),
-            qsets_only=True
+            ('top_qset__name', '-is_organization', 'askup_qset.name'),
+            qsets_only=True,
+            prefix_organization=True,
         )
         self.fields['text'].placeholder = 'Question'
         self.fields['text'].label = 'Question'

@@ -134,11 +134,14 @@ class ParseUrlToParameters(object):
     @staticmethod
     def parse_response_url_to_parameters(response):
         """Parse response url to parameter pair strings "name=value"."""
+        if getattr(response, 'url', None) is None:
+            return None, None
+
         url_parts = response.url.split('?')
 
         if len(url_parts) < 2:
             return url_parts[0], []
 
-        query_string = url_parts[1] if len(url_parts) > 1 else ''
+        query_string = url_parts[1]
         parameters = query_string.split('&') if query_string else []
         return url_parts[0], parameters
