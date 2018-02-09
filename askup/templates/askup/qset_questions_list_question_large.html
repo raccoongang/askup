@@ -1,0 +1,45 @@
+<div>
+    <h5>Questions of {{ current_qset_name }}:</h5>
+</div>
+<span id="question_list">
+    <div class="question_list">
+        {% for question in questions_list %}
+        {% with question_id=question.id question_text=question.text author_id=question.user.id author_name=question.user.username user_id=user.id %}
+        <div class="box valign my-question row">
+            <div class="col-xs-9">
+                <div class="row">
+                    <div class="col-xs-4">
+                        <div class="net-votes"><p id="question-{{ question_id }}-net-votes">1</p><br></div>
+                        <div class="question-voting">
+                              <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
+                              <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="84"></div>
+                        </div>
+                    </div>
+                    <div class="col-xs-8">
+                        <div class="question-content">
+                            <a href="{% url 'askup:question' question_id %}">
+                                {{ question_text }}
+                            </a>          
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        {% include 'askup/question_author_buttons.html' %}
+                    </div>
+                    <div class="col-md-6">
+                        {% include 'askup/question_author_name.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="box valign no-questions row">
+            <p>There are no questions here.{% if is_question_creator %} <a href="{% url 'askup:qset_question_create' current_qset_id %}" title="Create new question">Create one now!</a>{% endif %}</p>
+        </div>
+        {% endfor %}
+    </div>
+</span>

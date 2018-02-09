@@ -1,0 +1,46 @@
+{% extends 'askup/base.html' %}
+
+{% block body %}
+    <div class="container">
+        <div class="row">
+            <h3 class="center">
+                {{main_title}} 
+                {% if user.is_superuser %}
+                    {% include 'askup/edit_qset_button.html' %}
+                {% endif %}
+            </h3>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <h5 class="center">
+                    <span id="breadcrumbs" class="center">
+                    </span>
+                </h5>
+            </div>
+        </div>
+        <div>
+            <h5>Subsets of {{main_title}}:</h5>
+        </div>
+        {% if is_qset_creator %}
+        <div>
+            <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">New subset</a>
+        </div>
+        {% endif %}
+        <div class="qset-list">
+        {% for qset in object_list %}
+            <div class="box qset">
+                {% with qset_name=qset.name questions_count=qset.questions_count %}
+                <a href="{% url 'askup:qset' qset.id %}" title="{{ qset_name }}">{{ qset_name }}</a>
+                <span class="pull-right badge">{{ questions_count }} question{{ questions_count|pluralize }}</span>
+                {% endwith %}
+            </div>
+        {% empty %}
+            <div class="box valign no-questions row">
+                <p>There are no subsets here.</p>
+            </div>
+        {% endfor %} 
+        </div> <!-- .qset-list -->
+
+        {% include "askup/qset_modals.html" %}
+    </div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'askup/base.html' %}
+
+{% block body %}
+    <div class="container">
+        {% if is_qset_creator %}
+        <div class="row">
+            <h3 class="center">
+                {{ main_title }}
+                {% if is_qset_creator %}
+                    {% include 'askup/edit_qset_button.html' %}
+                {% endif %}
+            </h3>
+        </div>
+        {% endif %}
+        {% include "askup/qset_breadcrumbs.html" %}
+        <div>
+            <h5>Subsets of {{main_title}}:</h5>
+        </div>
+        {%include "askup/new_subset_button.html" %}
+        
+        {% include "askup/qsets_list_qset_full.html" %}
+
+
+        {% include "askup/qset_modals.html" %}
+    </div>
+{% endblock %}
+
+

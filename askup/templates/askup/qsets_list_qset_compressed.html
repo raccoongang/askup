@@ -1,0 +1,14 @@
+    <ul class="qset-list-compressed">
+    {% for qset in object_list %}
+        <li>
+        {% with qset_name=qset.name questions_count=qset.questions_count %}
+            <a href="{% url 'askup:qset' qset.id %}" title="{{qset_name}}">{{qset_name}}</a>
+            <span class="pull-right badge">{{ questions_count }}</span>
+        {% endwith %}
+        </li>
+    {% empty %}
+        <li>
+            There are no subsets here.
+        </li>
+    {% endfor %} 
+    </ul>

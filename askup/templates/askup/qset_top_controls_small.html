@@ -1,0 +1,43 @@
+<div class="show-small-screen">
+    <div class="row">
+        <div class="col-xs-12">
+            <h3 class="center">
+                {{ main_title }}
+                {% if is_qset_creator %}
+                    {% include 'askup/edit_qset_button.html' %}
+                {% endif %}
+            </h3>
+        </div>
+    </div>
+    {% include "askup/qset_breadcrumbs.html" %}
+    <div class="row center">
+        <div class="col-xs-12">
+            <span id="generate-question-group">
+                <a class="btn btn-primary" href="{% url 'askup:qset_question_create' qset_id=current_qset_id %}">Generate Question</a>
+            </span>
+        </div>
+    </div>
+    <div class="row center">
+        <div class="col-xs-12">
+            <span id="all-mine-other-group" class="btn-group all-mine-other-filter" data-toggle="buttons">
+                <label class="btn btn-primary filter-choice all-radioactive">
+                    <input type="radio" name="all" checked="">All
+                </label>
+                <label class="btn btn-primary filter-choice ">
+                    <input type="radio" name="mine">Mine
+                </label>
+                <label class="btn btn-primary filter-choice ">
+                    <input type="radio" name="other">Other
+                </label>
+            </span>
+
+        </div>
+    </div>
+    <div class="row center">
+        <div class="col-xs-12" id="quizAll-smallscreen-buttonpadding">
+            <a data-toggle="modal" href="#" data-target="#question_display_Modal" class="btn btn-primary btn-large quiz-all">
+                Quiz All
+            </a>
+        </div>
+    </div>
+</div>

@@ -52,6 +52,7 @@ coverage.xml
 
 # Django stuff:
 *.log
+*.log.*
 local_settings.py
 
 # Flask stuff:
@@ -99,3 +100,12 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Docker compose subdirs
+.dc-*
+
+# Vim swap files
+.*.sw*
+
+# Git utility files
+.commit_message 

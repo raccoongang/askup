@@ -1,0 +1,101 @@
+{% extends 'askup/base.html' %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- HEADER -->
+    <div class="row jumbotron askup-header">
+        <div class="cell">
+            <h1>Ask<span>Up</span></h1>
+            <h3>Learn better, together.</h3>
+        </div>
+        <div class="question-cell">
+            <div class=""><a class="btn btn-theme btn-lg" href="/askup/question/new/">Generate Question</a></div>
+        </div>
+    </div>
+    <!-- INTRO -->
+    <div class="intro row center">
+        <div class="intro-col col-md-4">
+            <i class="fa fa-pencil"></i>
+            <h3>What is AskUp?</h3>
+            <p>AskUp is an educational tool to help you make sense and remember material
+                you learn in class, at home, or in the hospital. It uses evidence-based
+                principles to improve your learning.</p>
+        </div>
+        <div class="intro-col col-md-4">
+            <i class="fa fa-list-alt"></i>
+            <h3>What to do?</h3>
+            <p>After any educational event—a lecture, a reading, a patient encounter,
+                a video-generate your own question and answer. Periodically, test
+                yourself on these questions to make sure you remember the material.
+                If your classmates also create questions on AskUp, quiz yourself
+                on their questions as well.</p>
+        </div>
+        <div class="intro-col col-md-4">
+            <i class="fa fa-university"></i>
+            <h3>Why does it work?</h3>
+            <p>Self-testing has been shown to be one of the most effective learning
+                strategies. Generating questions will require you to recall information,
+                identify the main points, reflect on how it relates to things you’ve
+                previously learned, and generate your own answer—powerful techniques
+                for learning!</p>
+        </div>
+    </div>
+    <!-- QUOTE -->
+    <div class="twrap row">
+        <i class="fa fa-comment-o"></i>
+        <p>"AskUp is a revolutionary educational tool to enhance learning. It empowers
+            learners to create their own questions and answers, employing techniques
+            that have been shown to improve learning and retention."</p>
+        <h4><br>Jonathan S. Hausmann, MD</h4>
+        <p>HARVARD MEDICAL SCHOOL</p>
+    </div>
+    <!-- FOOTER -->
+    <div class="footerwrap row">
+        <div class="col-sm-4">
+            <h4>About</h4>
+            <div class="hline-w"></div>
+            <p>AskUp is a joint venture between investigators at <a href="http://www.bidmc.org"
+                    target="_blank">Beth Israel Deaconess Medical Center</a> (BIDMC)
+                and engineers in the <a href="http://tlt.harvard.edu/" target="_blank">Teaching and Learning Technologies</a>                (TLT) program at Harvard University. Our project was awarded a
+                <a href="http://hilt.harvard.edu/askup" target="_blank">Spark Grant</a>                from the <a href="http://hilt.harvard.edu/">Harvard Initiative for Teaching &amp; Learning (HILT)</a>.</p>
+        </div>
+        <div class="col-sm-4">
+            <h4>Find out More</h4>
+            <div class="hline-w"></div>
+            <p> To learn more about the educational strategies used in this app, including
+                question-generation, spaced repetition, and testing, check out
+                the book <a href="http://www.amazon.com/Make-It-Stick-Successful-Learning/dp/0674729013"
+                    target="_blank"><i>Make it Stick</i> by Peter C. Brown. &nbsp; <i class="fa fa-share-square-o"></i></a></p>
+        </div>
+        <div class="col-sm-4">
+            <h4>Contact Us</h4>
+            <div class="hline-w"></div>
+            <p>
+                125 Mt. Auburn Street<br> Room 524<br> Cambridge, MA 02138<br>                617-871-0040
+                <br>
+                <a href="mailto:support@askup.net">support@askup.net</a><br>
+                <iframe id="twitter-widget-0" scrolling="no" frameborder="0" allowtransparency="true"
+                    class="twitter-follow-button twitter-follow-button-rendered" title="Twitter Follow Button"
+                    src="https://platform.twitter.com/widgets/follow_button.eaf4b750247dd4d0c4a27df474e7e934.en.html#dnt=false&amp;id=twitter-widget-0&amp;lang=en&amp;screen_name=GoAskUp&amp;show_count=false&amp;show_screen_name=true&amp;size=m&amp;time=1515012236362"
+                    style="position: static; visibility: visible; width: 125px; height: 20px;"
+                    data-screen-name="GoAskUp"></iframe>
+                <script>
+                    ! function(d, s, id)
+                    {
+                        var js, fjs = d.getElementsByTagName(s)[0],
+                            p = /^http:/.test(d.location) ? 'http' : 'https';
+                        if (!d.getElementById(id))
+                        {
+                            js = d.createElement(s);
+                            js.id = id;
+                            js.src = p + '://platform.twitter.com/widgets.js';
+                            fjs.parentNode.insertBefore(js, fjs);
+                        }
+                    }(document, 'script', 'twitter-wjs');
+                </script>
+            </p>
+            <p>© 2015 Harvard TLT</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

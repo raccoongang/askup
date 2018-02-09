@@ -1,0 +1,43 @@
+[
+    {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+            "password": "pbkdf2_sha256$36000$qL0JVaprQ3bp$YPJVNMq/ES/jtJOQKbGHR/7ZNSFu2vUb7Sg00dGEdmU=",
+            "last_login": null,
+            "is_superuser": true,
+            "username": "admin",
+            "first_name": "Admin",
+            "last_name": "Admin",
+            "email": "admin@admin.org",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2017-12-22T09:21:07Z",
+            "groups": [],
+            "user_permissions": []
+        }
+    },{
+        "model": "auth.group",
+        "pk": 1,
+        "fields": {
+            "name": "Teachers",
+            "permissions": [
+                19, 20, 21,
+                25, 26, 27,
+                28, 29, 30
+            ]
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 2,
+        "fields": {
+            "name": "Students",
+            "permissions": [
+                19, 20, 21,
+                28, 29, 30,
+                31, 32, 33
+            ]
+        }
+    }
+]

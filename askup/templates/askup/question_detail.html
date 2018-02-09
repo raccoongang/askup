@@ -1,0 +1,23 @@
+{% extends 'askup/base.html' %}
+
+{% block body %}
+<div class="container-fluid">
+	<div class="prettyform">
+		<div class="box center">
+			<h2 class="title-no-margin">{{ question.text }}</h2>
+			<br>
+			<br>
+			<form accept-charset="UTF-8" action="{% url 'askup:question_answer' question.id %}" class="new_answer center" data-remote="true" id="new_answer" method="post">
+				<div style="display:none">
+					{{ csrf_token }}
+					<input type="hidden" name="question_id" value="{{ question.id }}">
+				</div>
+				<textarea autofocus="autofocus" class="form-control answer-text" id="single-answer-text" name="answer[text]" placeholder="Type your answer here"></textarea>
+				<div class="btn-div">
+					<input class="btn btn-theme btn-lg submit-answer" id="single-submit-answer" type="submit" value="Submit answer">
+				</div>
+			</form>
+		</div>   
+	</div>
+</div>
+{% endblock %}

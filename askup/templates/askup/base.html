@@ -1,0 +1,66 @@
+<html><head>
+    <title>{{main_title}}</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <script data-turbolinks-track="true" src="/static/assets/application.js"></script>
+    <link data-turbolinks-track="true" href="/static/assets/application.css" media="all" rel="stylesheet">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <meta content="authenticity_token" name="csrf-param">
+    <link href="/static/assets/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="navbar navbar-inverse navbar-fixed-top one-edge-shadow" role="navigation">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                </button>
+                    <a class="navbar-brand float" href="/">AskUp</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-left">
+                    <li><a class="float" href="{% url 'askup:organizations' %}">Review Questions</a></li>
+                    <li><a class="float" id="generate-question-link" href="{% url 'askup:question_create' %}">Generate Question</a></li>
+                    <li><a class="float offset" href="mailto:feedback@askup.net">Feedback</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right"> 
+                    {% if request.user.is_authenticated %}
+                    <li>
+                        {% with id=request.user.id username=request.user.username email=request.user.email name=request.user.name %}
+                        <a class="float" href="{% url 'askup:user_profile' %}">{{ email }}
+                            <span class="badge">{{ username }}</span>
+                        </a>
+                        {% endwith %}
+                    </li>
+                    <li>
+                        <a class="float" href="/askup/sign-out" id="sign_out" rel="nofollow">Sign Out</a>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a class="float" href="{% url 'askup:sign_in' %}" id="sign_in" rel="nofollow">Sign In</a>
+                    </li>
+                    {% endif %}
+                </ul>            
+            </div>
+        </div>
+    </div>
+
+    <div class="spacer_nav"></div>
+
+    <div class="alert {{alert_type}} alert-success center" style="display: none;">
+            Qset 'ABP General Pediatrics Board Examination' saved. &nbsp;
+            <a href="#" class="close-alert grow"><i class="fa fa-times-circle"></i></a>
+    </div>
+
+    {% block body %}
+    {% endblock %}
+
+    </body>
+</html>
