@@ -46,9 +46,6 @@ class UserLoginForm(forms.Form):
         if not user:
             raise forms.ValidationError("This user doesn't exist")
 
-        if not user.check_password(password):
-            raise forms.ValidationError("Incorrect password")
-
         if not user.is_active:
             raise forms.ValidationError("This user is no longer active")
 
@@ -316,7 +313,7 @@ class AnswerModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
 
         Overriding the same method of the forms.ModelForm
         """
-        is_quiz_all = kwargs.get('is_quiz_all', None)
+        is_quiz_all = kwargs.get('is_quiz_all')
         qset_id = kwargs.pop('parent_qset_id', None)
         super().__init__(*args, **kwargs)
         self.fields['text'].required = True
@@ -368,10 +365,6 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
 
         self.fields['subject'].widget.attrs['placeholder'] = 'Feadback subject...'
         self.fields['message'].widget.attrs['placeholder'] = 'Feadback message...'
-
-    def _set_up_fields(self, user):
-        """Set up the fields properties for the feedback form."""
-        pass
 
     def _set_up_helper(self, qset_id):
         """Set up form helper that describes the form html structure."""

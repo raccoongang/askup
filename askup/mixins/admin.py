@@ -17,7 +17,7 @@ class CookieFilterMixIn(admin.ModelAdmin):
         url = request.META['PATH_INFO']
         query = request.META.get('QUERY_STRING', '')
         self._request = request
-        filters_query_string, cookies = self.get_filters_query_string()
+        filters_query_string, cookies = self.get_filters_from_query_string_and_cookies()
 
         if filters_query_string != query:
             # If filters query are different after applying default and cookie filters onto GET ones.
@@ -30,13 +30,12 @@ class CookieFilterMixIn(admin.ModelAdmin):
 
         return response
 
-    def get_filters_query_string(self):
+    def get_filters_from_query_string_and_cookies(self):
         """
         Return filters query string and cookies.
 
         Return filters query string and cookies composed of default, applied and cookie filters.
         """
-        cookie_filters = {}
         result_filters = self.get_default_filters()
         cookie_filters = self.get_cookie_filters()
         applied_filters = self.get_applied_filters()
@@ -126,19 +125,3 @@ class CookieFilterMixIn(admin.ModelAdmin):
             filters[clean_field] = '0'
 
         return filters
-
-
-class ParseUrlToParameters(object):
-    """Provides a response parsing functionality."""
-
-    @staticmethod
-    def parse_response_url_to_parameters(response):
-        """Parse response url to parameter pair strings "name=value"."""
-        url_parts = response.url.split('?')
-
-        if len(url_parts) < 2:
-            return url_parts[0], []
-
-        query_string = url_parts[1] if len(url_parts) > 1 else ''
-        parameters = query_string.split('&') if query_string else []
-        return url_parts[0], parameters
