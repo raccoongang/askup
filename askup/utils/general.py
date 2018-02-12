@@ -170,7 +170,7 @@ def send_feedback_to_recipient(admins, body, from_email):
             send_mail(
                 "Feedback from the web-site",
                 body,
-                'AskupMailer <mailer@askup.net>',
+                'AskUp Mailer <mailer@askup.net>',
                 (to_email,),
                 reply_to=('AskUp mailer {0}'.format(from_email),)
             )

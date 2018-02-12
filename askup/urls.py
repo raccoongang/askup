@@ -7,6 +7,17 @@ from . import views
 app_name = 'askup'
 
 urlpatterns = [
+    url(
+        r'^sign-up-activation-sent/$',
+        views.sign_up_activation_sent,
+        name='sign_up_activation_sent'
+    ),
+    url(
+        r'^sign-up-activate/(?P<uid>\d+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        views.sign_up_activate,
+        name='sign_up_activate'
+    ),
+    url(r'^sign-up$', views.sign_up_view, name='sign_up'),
     url(r'^sign-in$', views.login_view, name='sign_in'),
     url(r'^sign-out$', views.logout_view, name='sign_out'),
     url(r'^organization/(?P<pk>\d+)/$', views.OrganizationView.as_view(), name='organization'),

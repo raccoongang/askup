@@ -3,7 +3,7 @@ from .base import * # noqa F403
 
 DEBUG = True
 EMAIL_HOST = 'localhost'
-EMAIL_PORT = 20025
+EMAIL_PORT = 25
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

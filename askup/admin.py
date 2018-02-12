@@ -1,11 +1,12 @@
 """Admin views."""
 from django.contrib import admin
+from django.contrib.admin import StackedInline, TabularInline
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 
 from .forms import OrganizationModelForm, QuestionModelForm, UserForm
 from .mixins.admin import CookieFilterMixIn, ParseUrlToParameters
-from .models import EmailPattern, Organization, Qset, Question
+from .models import Domain, Organization, Profile, Qset, Question
 
 
 class OrganizationFilter(admin.SimpleListFilter):
@@ -89,20 +90,39 @@ class QsetFilter(admin.SimpleListFilter):
             return queryset.filter(qset_id=self.value())
 
 
+class DomainsInline(TabularInline):
+    model = Domain
+    can_delete = True
+    verbose_name_plural = 'Domains'
+    fk_name = 'organization'
+
+
 class OrganizationAdmin(admin.ModelAdmin):
     """Admin view for the Organization model."""
 
     form = OrganizationModelForm
-    list_display = ('name', 'email_patterns')
+    list_display = ('name', 'domains')
     fields = (
         'name',
         'users',
     )
+    inlines = (DomainsInline,)
+
+    def get_inline_instances(self, request, obj=None):
+        """
+        Return an inline instances for the form.
+
+        Overrides the function of the ModelForm with the same name.
+        """
+        if not obj:
+            return list()
+
+        return super().get_inline_instances(request, obj)
 
     @staticmethod
-    def email_patterns(obj):
+    def domains(obj):
         """Return email-patters of the organization comma separated."""
-        return ", ".join(tuple(pattern.text for pattern in obj.emailpattern_set.all()))
+        return ", ".join(tuple(domain.name for domain in obj.domain_set.all()))
 
     def get_queryset(self, request):
         """
@@ -272,11 +292,27 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         return parameters
 
 
-class EmailPatternAdmin(admin.ModelAdmin):
-    """Admin list and detailed view for the EmailPattern model."""
+class DomainAdmin(admin.ModelAdmin):
+    """Admin list and detailed view for the Domain model."""
 
-    fields = ('organization', 'text')
-    list_display = ('organization', 'text')
+    fields = ('name', 'organization')
+    list_display = ('name', 'organization')
+
+    class Media:
+        js = ('assets/hide_add_edit_icons.js',)
+
+
+class UserProfileInline(StackedInline):
+    model = Profile
+    can_delete = False
+    verbose_name_plural = 'Profile'
+    fk_name = 'user'
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Return a tuple of field names that should behave as a read only.
+        """
+        return ('email_confirmed',)
 
 
 class UserAdmin(admin.ModelAdmin):
@@ -284,11 +320,23 @@ class UserAdmin(admin.ModelAdmin):
 
     form = UserForm
     list_display = ('username', 'email', 'first_name', 'last_name')
+    inlines = (UserProfileInline,)
+
+    def get_inline_instances(self, request, obj=None):
+        """
+        Return an inline instances for the form.
+
+        Overrides the function of the ModelForm with the same name.
+        """
+        if not obj:
+            return list()
+
+        return super().get_inline_instances(request, obj)
 
 
 admin.site.register(Organization, OrganizationAdmin)
 admin.site.register(Qset, QsetAdmin)
 admin.site.register(Question, QuestionAdmin)
-admin.site.register(EmailPattern, EmailPatternAdmin)
+admin.site.register(Domain, DomainAdmin)
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
