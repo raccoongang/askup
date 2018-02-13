@@ -7,6 +7,7 @@ from crispy_forms.layout import HTML
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group, User
 
@@ -15,6 +16,14 @@ from askup.models import Organization, Qset, Question
 
 
 log = logging.getLogger(__name__)
+
+
+class SignUpForm(UserCreationForm):
+    email = forms.EmailField(max_length=254, help_text='Your email address.')
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password1', 'password2')
 
 
 class UserLoginForm(forms.Form):
@@ -95,7 +104,7 @@ class UserForm(forms.ModelForm):
 
         if self.instance.id:
             group = self.instance.groups.all().first()
-            self.initial['groups'] = group.id
+            self.initial['groups'] = group.id if group else None
 
         self.fields['groups'].empty_label = 'select a role...'
         self.fields['groups'].label = 'Role'
@@ -166,7 +175,8 @@ class OrganizationModelForm(forms.ModelForm):
             'name',
         )
         widgets = {
-            'users': FilteredSelectMultiple(verbose_name='Users', is_stacked=False)
+            'users': FilteredSelectMultiple(verbose_name='Users', is_stacked=False),
+            'domains': FilteredSelectMultiple(verbose_name='Domains', is_stacked=False),
         }
 
 
@@ -252,7 +262,6 @@ class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
             user,
             ('top_qset__name', '-is_organization', 'askup_qset.name'),
             qsets_only=True,
-            prefix_organization=True,
         )
         self.fields['text'].placeholder = 'Question'
         self.fields['text'].label = 'Question'

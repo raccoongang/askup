@@ -3,8 +3,38 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models.expressions import RawSQL
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from .utils.general import check_user_has_groups
+
+
+class Profile(models.Model):
+    """
+    Handles the User profile functionality.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    email_confirmed = models.BooleanField(default=False)
+
+    def __str__(self):
+        """
+        Return string representation of the model.
+
+        Used in admin user form to represent an inline, the Profile, part of user form.
+        """
+        return self.user.username
+
+
+@receiver(post_save, sender=User)
+def update_user_profile(sender, instance, created, **kwargs):
+    """
+    Receive a post_save signal from User model and update the profile.
+    """
+    if created:
+        Profile.objects.create(user=instance)
+
+    instance.profile.save()
 
 
 class Qset(models.Model):
@@ -265,7 +295,7 @@ class Organization(Qset):
         return self.name
 
 
-class EmailPattern(models.Model):
+class Domain(models.Model):
     """Contains all the email patterns of the organizations."""
 
     organization = models.ForeignKey(
@@ -273,7 +303,7 @@ class EmailPattern(models.Model):
         on_delete=models.CASCADE,
         null=True
     )
-    text = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
 
 
 class Question(models.Model):

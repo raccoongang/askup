@@ -1,11 +1,13 @@
 """Askup django views."""
 import logging
 
-from django.contrib.auth import logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
+from django.contrib.sites.shortcuts import get_current_site
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views import generic
 
@@ -16,6 +18,7 @@ from .forms import (
     QsetModelForm,
     QuestionDeleteModelForm,
     QuestionModelForm,
+    SignUpForm,
     UserLoginForm,
 )
 from .mixins.views import (
@@ -24,7 +27,8 @@ from .mixins.views import (
     QsetViewMixIn,
     UserFilterMixIn,
 )
-from .models import Answer, Organization, Qset, Question
+from .models import Answer, Domain, Organization, Qset, Question
+from .tokens import account_activation_token
 from .utils.general import (
     add_notification_to_url,
     check_user_has_groups,
@@ -234,6 +238,98 @@ def user_profile_view(request, user_id):
             'is_student': check_user_has_groups(request.user, 'student')
         },
     )
+
+
+def sign_up_view(request):
+    """
+    Provide a sign up view.
+    """
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+
+        redirect = sign_up_form_validate_and_create_user()
+
+        if redirect:
+            return redirect
+    else:
+        form = SignUpForm
+
+    return render(request, 'askup/sign_up_form.html', {'form': form})
+
+
+def sign_up_form_validate_and_create_user(form):
+    if form.is_valid():
+        user = form.save(commit=False)
+        user.is_active = False
+        user.save()
+        current_site = get_current_site(request)
+        subject = 'Activate Your AskUp Account'
+        message = render_to_string(
+            'askup/account_activation_email.html',
+            {
+                'user': user,
+                'domain': current_site.domain,
+                'uid': user.id,
+                'token': account_activation_token.make_token(user),
+            }
+        )
+        user.email_user(subject, message)
+        email = user.email
+        domain = Domain.objects.filter(name=email[email.find('@') + 1:]).first()
+
+        if domain is None:
+            return redirect('askup:sign_up_activation_sent')
+
+        domain_org = domain.organization
+
+        if domain.organization is None:
+            return redirect('askup:sign_up_activation_sent')
+
+        user.qset_set = [domain.organization]
+        user.groups = [get_object_or_404(Group, name='Student')]
+
+        return redirect('askup:sign_up_activation_sent')
+
+    return None
+
+
+def sign_up_activation_sent(request):
+    """
+    Show the "Sign Up activation sent" message.
+    """
+    return render(request, 'askup/sign_up_activation_sent.html')
+
+
+def sign_up_activate(request, uid, token):
+    """
+    Activate the user by the link from the registration email.
+    """
+    try:
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and account_activation_token.check_token(user, token):
+        user.is_active = True
+        user.profile.email_confirmed = True
+        user.save()
+        login(request, user)
+        organization = user.qset_set.first()
+        organization_text = ''
+
+        if organization:
+            organization_text = ' and applied to the organization: "{0}"'.format(
+                organization.name
+            )
+
+        notification = (
+            'success',
+            'You\'ve successfuly registered{0}'.format(organization_text)
+        )
+
+        return redirect(add_notification_to_url(notification, '/'))
+
+    return(render(request, 'askup/sign_up_activation_invalid.html'))
 
 
 def login_view(request):
