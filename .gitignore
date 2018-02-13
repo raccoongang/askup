@@ -109,3 +109,7 @@ ENV/
 
 # Git utility files
 .commit_message 
+
+# Django non-deployable static
+askup/static/admin
+askup/static/debug_toolbar

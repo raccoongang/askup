@@ -9,7 +9,6 @@
             </h3>
         </div>
     </div>
-    {% include "askup/qset_breadcrumbs.html" %}
     <div class="row center">
         <div class="col-xs-12">
             <span id="generate-question-group">
@@ -20,24 +19,18 @@
     <div class="row center">
         <div class="col-xs-12">
             <span id="all-mine-other-group" class="btn-group all-mine-other-filter" data-toggle="buttons">
-                <label class="btn btn-primary filter-choice all-radioactive">
-                    <input type="radio" name="all" checked="">All
-                </label>
-                <label class="btn btn-primary filter-choice ">
-                    <input type="radio" name="mine">Mine
-                </label>
-                <label class="btn btn-primary filter-choice ">
-                    <input type="radio" name="other">Other
-                </label>
+                <a href="?filter=all" class="btn btn-primary {{ filter_all_active }}">All</a>
+                <a href="?filter=mine" class="btn btn-primary {{ filter_mine_active }}">Mine</a>
+                <a href="?filter=other" class="btn btn-primary {{ filter_other_active }}">Other</a>
             </span>
 
         </div>
     </div>
+    {% if questions_list %}
     <div class="row center">
         <div class="col-xs-12" id="quizAll-smallscreen-buttonpadding">
-            <a data-toggle="modal" href="#" data-target="#question_display_Modal" class="btn btn-primary btn-large quiz-all">
-                Quiz All
-            </a>
+            <a href="{% url 'askup:start_quiz_all' current_qset_id %}?filter={{ filter }}" class="btn btn-primary btn-large quiz-all">Quiz {{ filter }}</a>
         </div>
     </div>
+    {% endif %}
 </div>

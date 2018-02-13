@@ -1,29 +1,11 @@
 <div class="modal fade" tabindex="-1" id="modal-edit-qset" role="dialog" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-                <h4 class="modal-title">Edit Qset</h4>
-            </div>
-            <div class="modal-body">
-                {% if parent_qset_id is None %}
-                    {% include 'askup/organization_update_modal_form.html' %}
-                {% else %}
-                    {% include 'askup/qset_update_modal_form.html' %}
-                {% endif %}
-                <div id="delete_confirmation_form_container" style="display:none;">
-                    <form accept-charset="UTF-8" action="/qset/{{qset_id}}/" class="edit_qset" id="edit_qset_{{qset_id}}" method="post">
-                        <div style="display:none">
-                            <input name="utf8" type="hidden" value="✓">
-                            <input name="_method" type="hidden" value="delete">
-                            {% csrf_token %}
-                        </div>
-                        <p> Are you sure you want to delete this qset? </p>
-                        <p><i> All questions in this group will be moved into the parent group. </i></p>
-                        <input class="btn btn-pink" data-disable-with="Deleting..." id="edit-qset-confirm-delete" name="commit" type="submit" value="Confirm delete">
-                    </form>
-                </div>
-            </div>
+            {% if parent_qset_id is None %}
+                {% include 'askup/organization_update_modal_form.html' %}
+            {% else %}
+                {% include 'askup/qset_update_modal_form.html' %}
+            {% endif %}
         </div>
     </div>
 </div>
@@ -43,22 +25,15 @@
                         <input type="text" class="form-control" name="name">
                     </div>
                     <div class="form-group">
-                        <label class="qset-type-padding" for="0">Mixed</label>
-                        <input type="radio" id="mixed" name="type" value="0">
-                        <label class="qset-type-padding" for="1">Subsets</label>
-                        <input type="radio" id="subsets" name="type" value="1">
-                        <label class="qset-type-padding" for="2">Questions</label>
-                        <input type="radio" id="questions" name="type" value="2" checked="">
-                    </div>
-                    <div class="form-group">
-                        <label for="text"> This qset will be created under the parent group: </label>
+                        <label> This qset will be created under the organization:</label><br/>
+                        <label>{{ main_title }}</label>
                         <input type="hidden" class="form-control" name="parent_qset" value="{{ current_qset_id }}">
                     </div>
-                    <button type="submit" class="btn btn-theme" id="new-qset-submit" aria-label="Create qset">
-                        Create
-                    </button>
                     <button type="button" class="btn btn-flat" data-dismiss="modal" aria-label="Cancel">
                         Cancel
+                    </button>
+                    <button type="submit" class="btn btn-theme" id="new-qset-submit" aria-label="Create qset">
+                        Create
                     </button>
                 </form>
             </div>

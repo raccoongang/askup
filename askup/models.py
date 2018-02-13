@@ -2,6 +2,9 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models.expressions import RawSQL
+
+from .utils.general import check_user_has_groups
 
 
 class Qset(models.Model):
@@ -9,11 +12,11 @@ class Qset(models.Model):
 
     TYPES = (
         (0, "mixed"),
-        (1, "subsets only"),
+        (1, "subjects only"),
         (2, "questions only"),
     )
     name = models.CharField(max_length=255, db_index=True)
-    type = models.PositiveSmallIntegerField(choices=TYPES, default=1)
+    type = models.PositiveSmallIntegerField(choices=TYPES, default=2)
     # top_qset (an organization) is a qset on the top of the tree"""
     top_qset = models.ForeignKey(
         "self",
@@ -47,7 +50,7 @@ class Qset(models.Model):
 
         Overriding the models.Model save method.
         """
-        is_organization = self._previous_parent_qset_id is None
+        is_organization = self.parent_qset_id is None
 
         if self.process_new_qset_and_organization_save(is_organization, args, kwargs):
             return
@@ -166,9 +169,13 @@ class Qset(models.Model):
         else:
             return self.parent_qset.top_qset_id
 
-    def get_parents(self):
+    def get_parents(self, include_itself=False):
         """Collect parents data for the breadcrumbs composing."""
         parents = []
+
+        if include_itself:
+            parents.append(('askup:qset', self.id, self.name))
+
         parent = self.parent_qset
 
         while parent:
@@ -181,6 +188,46 @@ class Qset(models.Model):
 
         parents.reverse()
         return parents
+
+    @classmethod
+    def get_user_related_qsets(cls, user, order_by, qsets_only=False):
+        """Return queryset of formatted qsets, permitted to the user."""
+        if user and user.id:
+            queryset = cls.get_user_related_qsets_queryset(user)
+
+            if qsets_only:
+                queryset = queryset.filter(parent_qset_id__gt=0)
+                prefix = ''
+            else:
+                prefix = '— '
+
+            name_selector = ''.join((
+                "case when askup_qset.parent_qset_id is null ",
+                "then askup_qset.name ",
+                "else concat('{0}', askup_qset.name) end".format(prefix),
+            ))
+            queryset = queryset.annotate(
+                customized_name=RawSQL(name_selector, tuple()),
+                is_organization=RawSQL('askup_qset.parent_qset_id is null', tuple()),
+            )
+            queryset = queryset.order_by(*order_by)
+        else:
+            queryset = []
+
+        return queryset
+
+    @classmethod
+    def get_user_related_qsets_queryset(cls, user):
+        """Return queryset of qset objects for the 'user related qsets' request."""
+        return cls.apply_user_related_qsets_filters(user, Qset.objects.all())
+
+    @staticmethod
+    def apply_user_related_qsets_filters(user, queryset):
+        """Apply user related filters to the queryset."""
+        if not check_user_has_groups(user, 'admin'):
+            queryset = queryset.filter(top_qset__users=user.id)
+
+        return queryset
 
     class Meta:
         unique_together = ('parent_qset', 'name')
@@ -209,25 +256,29 @@ class Question(models.Model):
     """Describes all the Qset's and the Organization's models and their behaviours."""
 
     BLOOMS_TAGS = (
-        (0, 'remember'),
-        (1, 'understand'),
-        (2, 'apply'),
-        (3, 'analyze'),
-        (4, 'evaluate'),
-        (5, 'create')
+        (0, 'remembering'),
+        (1, 'understanding'),
+        (2, 'applying'),
+        (3, 'analyzing'),
+        (4, 'evaluating'),
+        (5, 'creating')
     )
     text = models.TextField(db_index=True)
     answer_text = models.CharField(max_length=255)
     qset = models.ForeignKey(Qset, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE, default=0)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
     blooms_tag = models.PositiveSmallIntegerField(
         choices=BLOOMS_TAGS,
         null=True,
         blank=True,
         default=None
     )
+    vote_value = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = ('text', 'qset')
 
     def __init__(self, *args, **kwargs):
         """Initialize the Question model object."""
@@ -241,9 +292,12 @@ class Question(models.Model):
 
         Overriding the models.Model save method.
         """
+        is_new = self.id is None
         super().save(*args, **kwargs)
 
-        if self.qset_id != self._previous_qset_id:
+        if is_new:
+            self.qset.iterate_questions_count(1)
+        elif self.qset_id != self._previous_qset_id:
             # Process the case when the question is just created
             if self._previous_qset_id:
                 previous_parent = Qset.objects.get(id=self._previous_qset_id)
@@ -252,7 +306,6 @@ class Question(models.Model):
 
             self.qset.iterate_questions_count(1)
             self._previous_qset_id = self.qset_id
-            super().save(*args, **kwargs)
 
     @transaction.atomic
     def delete(self, *args, **kwargs):
@@ -264,9 +317,48 @@ class Question(models.Model):
         self.qset.iterate_questions_count(-1)
         super().delete(*args, **kwargs)
 
+    def vote(self, user_id, value):
+        """
+        Vote for this question.
+
+        Adds a value to the vote_value of this question as well as creates the vote
+        record for the specific user and question in the askup_vote table.
+        """
+        exists = Vote.objects.filter(question_id=self.id, voter_id=user_id).exists()
+
+        if exists:
+            return False, 'You have already voted for this question'
+
+        Vote.objects.create(
+            value=value,
+            question_id=self.id,
+            voter_id=user_id,
+        )
+        vote_value = self.vote_value + value
+        return vote_value, 'Thank you for your vote!'
+
+    def get_votes_aggregated(self):
+        """Return votes value of this question aggregated from the askup_vote table."""
+        votes = Vote.objects.filter(question_id=self.id).aggregate(models.Sum('value'))
+        value = votes['value__sum'] if votes['value__sum'] else 0
+        return value
+
     def __str__(self):
         """Return a string representation of a Question object."""
         return self.text
+
+    @classmethod
+    def get_user_related_questions_queryset(cls, user):
+        """Return queryset of qset objects for the 'user related qsets' request."""
+        return cls.apply_user_related_questions_filters(user, Question.objects.all())
+
+    @staticmethod
+    def apply_user_related_questions_filters(user, queryset):
+        """Apply user related filters to the queryset."""
+        if not check_user_has_groups(user, 'admin'):
+            queryset = queryset.filter(qset__top_qset__users=user.id)
+
+        return queryset
 
 
 class Answer(models.Model):
@@ -279,8 +371,8 @@ class Answer(models.Model):
     )
     text = models.CharField(max_length=255)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, db_column='author_id', on_delete=models.CASCADE)
-    self_evaluation = models.PositiveSmallIntegerField(choices=EVALUATIONS)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    self_evaluation = models.PositiveSmallIntegerField(choices=EVALUATIONS, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
@@ -299,6 +391,20 @@ class Vote(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     voter = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+        """
+        Save the object updates into the DB.
+
+        Overriding the models.Model save method.
+        """
+        is_new = self.id is None
+        super().save(*args, **kwargs)
+
+        if is_new:
+            self.question.vote_value += self.value
+            self.question.save()
 
     class Meta:
         unique_together = ('question', 'voter')

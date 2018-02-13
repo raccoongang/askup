@@ -1,5 +1,5 @@
 <div>
-    <h5>Questions of {{ current_qset_name }}:</h5>
+    <h5>{{ current_qset_name }} questions:</h5>
 </div>
 <span id="question_list">
     <div class="question_list">
@@ -9,15 +9,15 @@
             <div class="col-xs-9">
                 <div class="row">
                     <div class="col-xs-4">
-                        <div class="net-votes"><p id="question-{{ question_id }}-net-votes">1</p><br></div>
+                        <div class="net-votes"><p class="question-{{ question_id }}-net-votes">{{ question.vote_value }}</p><br></div>
                         <div class="question-voting">
                               <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
-                              <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="84"></div>
+                              <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="{{ question_id }}"></div>
                         </div>
                     </div>
                     <div class="col-xs-8">
                         <div class="question-content">
-                            <a href="{% url 'askup:question' question_id %}">
+                            <a href="{% url 'askup:question_answer' question_id %}">
                                 {{ question_text }}
                             </a>          
                         </div>

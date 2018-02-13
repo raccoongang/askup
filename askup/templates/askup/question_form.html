@@ -1,0 +1,59 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+{% include "askup/qset_breadcrumbs.html" %}
+<div class="container-fluid">
+    <h3 class="center">{{ main_title }}</h3>
+    <div class="prettyform">
+        <div class="row">
+            <div class="col-sm-7">
+                <div class="box">
+                    <form accept-charset="UTF-8" action="" class="center" id="question_form" method="post">
+                        {% crispy form %}
+                    </form>
+                </div>
+            </div>
+            <div class="col-sm-5">
+                <div class="box">
+                    <h4 class="center"><b>Writing better questions with Bloom’s taxonomy</b></h4>
+                    <br/>
+                    Remembering:
+                    <ul>
+                        <li>What is ___?</li>
+                        <li>What are the most common causes of ___?</li>
+                        <li>Where is ___ located?</li>
+                    </ul>
+                    Understanding:
+                    <ul>
+                        <li>How does ___ work?</li>
+                        <li>Explain why ___?</li>
+                        <li>Describe ___?</li>
+                    </ul>
+                    Applying:
+                    <ul>
+                        <li>What would happen if ___?</li>
+                        <li>Calculate ___ ?</li>
+                    </ul>
+                    Analyzing:
+                    <ul>
+                        <li>What diagnosis does the data suggest?</li>
+                        <li>How is ___ related to ___ ?</li>
+                    </ul>
+                    **Evaluating:
+                    <ul>
+                        <li>How was ___ managed?</li>
+                        <li>What is the evidence to support this treatment plan?</li>
+                    </ul>
+                    **Creating:
+                    <ul>
+                        <li>How would you improve ___?</li>
+                        <li>How could you create ___?</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

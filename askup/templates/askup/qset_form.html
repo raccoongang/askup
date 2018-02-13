@@ -1,0 +1,17 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<div class="prettyform">
+    <div class="box maxwidth-box">
+        <h2 class="fixed-title center">{{ main_title }}</h2>
+
+        <form accept-charset="UTF-8" action="" class="form" id="new_qset" method="post">
+            <div style="display:none">
+            {% csrf_token %}
+            </div>
+            {% crispy form %}
+        </form>
+    </div>
+</div>
+{% endblock %}

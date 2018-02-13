@@ -2,6 +2,8 @@
 
 {% block body %}
 <div class="container-fluid" id="qset-show-container" data-qset-id="{{ current_qset_id }}">
+    <br/>
+    {% include "askup/qset_breadcrumbs.html" %}
     {% include "askup/qset_top_controls_large.html" %}
     {% include "askup/qset_top_controls_small.html" %}
     <div class="row">
@@ -14,4 +16,5 @@
     </div>
     {% include "askup/qset_modals.html" %}
 </div>
+{% include "askup/questions_quiz_modal.html" %}
 {% endblock %}

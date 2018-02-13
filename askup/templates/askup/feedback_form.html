@@ -1,0 +1,20 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<div class="container">
+    <h3 class="center">Feedback form</h3>
+    <div class="prettyform">
+        <div class="row">
+            <div class="box">
+                <form accept-charset="UTF-8" action="" class="center" id="new_user" method="post">
+                    <div style="display:none">
+                    {% csrf_token %}
+                    </div>
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

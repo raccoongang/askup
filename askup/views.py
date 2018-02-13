@@ -1,24 +1,54 @@
 """Askup django views."""
 import logging
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils.decorators import method_decorator
 from django.views import generic
 
-from .forms import OrganizationModelForm, QsetDeleteModelForm, QsetModelForm, UserLoginForm
-from .mixins import ListViewUserContextDataMixin, QsetViewMixin
-from .models import Organization, Qset, Question
-from .utils import user_group_required
+from .forms import (
+    AnswerModelForm,
+    OrganizationModelForm,
+    QsetDeleteModelForm,
+    QsetModelForm,
+    QuestionDeleteModelForm,
+    QuestionModelForm,
+    UserLoginForm,
+)
+from .mixins.views import (
+    CheckSelfForRedirectMixIn,
+    ListViewUserContextDataMixIn,
+    QsetViewMixIn,
+)
+from .models import Answer, Organization, Qset, Question
+from .utils.general import (
+    add_notification_to_url,
+    check_user_has_groups,
+    get_user_answers_count,
+    get_user_questions_count,
+    get_user_score_by_id,
+)
+from .utils.views import (
+    apply_filter_to_queryset,
+    compose_qset_form,
+    compose_question_form_and_create,
+    delete_qset_by_form,
+    get_clean_filter_parameter,
+    qset_update_form_template,
+    question_vote,
+    user_group_required,
+    validate_and_send_feedback_form,
+    validate_answer_form_and_create,
+)
 
 
 log = logging.getLogger(__name__)
 
 
-class OrganizationsView(generic.ListView):
+class OrganizationsView(CheckSelfForRedirectMixIn, generic.ListView):
     """Handles the User Organizations list view."""
 
     template_name = 'askup/organizations.html'
@@ -41,15 +71,38 @@ class OrganizationsView(generic.ListView):
         """
         user = self.request.user
 
-        if user.is_superuser:
-            return Qset.objects.filter(parent_qset=None).order_by('name')
-        if user.is_authenticated():
-            return Qset.objects.filter(parent_qset=None, top_qset__users=user.id).order_by('name')
+        if check_user_has_groups(user, 'admin'):
+            queryset = Qset.objects.filter(parent_qset=None)
+        elif user.is_authenticated():
+            queryset = Qset.objects.filter(parent_qset=None, top_qset__users=user.id)
         else:
+            self._redirect = redirect(
+                '{0}?next={1}'.format(
+                    reverse('askup:sign_in'),
+                    reverse('askup:organizations')
+                )
+            )
             return []
 
+        if queryset.count() == 1:
+            self._redirect = redirect(
+                reverse(
+                    'askup:organization',
+                    kwargs={'pk': queryset.first().id}
+                )
+            )
+            return []
 
-class OrganizationView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
+        queryset = queryset.order_by('name')
+        return queryset
+
+
+class OrganizationView(
+    CheckSelfForRedirectMixIn,
+    ListViewUserContextDataMixIn,
+    QsetViewMixIn,
+    generic.ListView
+):
     """Handles root qsets of the Organization list view."""
 
     template_name = 'askup/organization.html'
@@ -77,7 +130,7 @@ class OrganizationView(ListViewUserContextDataMixin, QsetViewMixin, generic.List
         user = self.request.user
         log.debug("USER in view: %s", self.request)
 
-        if user.is_superuser:
+        if check_user_has_groups(user, 'admin'):
             log.debug('Filtered qsets for the superuser by pk=%s', pk)
             return Qset.objects.filter(parent_qset_id=pk).order_by('name')
         elif user.is_authenticated():
@@ -87,8 +140,8 @@ class OrganizationView(ListViewUserContextDataMixin, QsetViewMixin, generic.List
             return []
 
 
-class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
-    """Handles the Qset list view (subsets only/questions only/mixed)."""
+class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
+    """Handles the Qset list view (subjects only/questions only/mixed)."""
 
     model = Qset
 
@@ -99,7 +152,7 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
         Overriding the get_template_names of generic.ListView
         """
         if self._current_qset.type == 1:
-            return ['askup/qset_subsets_only.html']
+            return ['askup/qset_subjects_only.html']
         elif self._current_qset.type == 2:
             return ['askup/qset_questions_only.html']
         else:
@@ -112,17 +165,25 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
         Overriding the get_context_data of generic.ListView
         """
         context = super().get_context_data(*args, **kwargs)
-
-        if self._current_qset.type == 1:
-            # Clear the questions queryset if rendering the "qsets only" Qset
-            context['questions_list'] = []
-        else:
-            context['questions_list'] = Question.objects.filter(qset_id=self.kwargs.get('pk'))
-
+        context['questions_list'] = self.get_questions_queryset(context)
         self.fill_user_context(context)
         self.fill_qset_context(context)
         self.fill_checkboxes_context(context)
+        context['breadcrumbs'] = self._current_qset.get_parents()
         return context
+
+    def get_questions_queryset(self, context):
+        """Get questions queryset corresponding to the filter and qset type."""
+        if self._current_qset.type == 1:
+            # Empty questions queryset if rendering the "qsets only" Qset
+            queryset = []
+        else:
+            queryset = Question.objects.filter(
+                qset_id=self.kwargs.get('pk')
+            ).order_by('-vote_value', 'text')
+
+        queryset = self.process_user_filter(context, queryset)
+        return queryset
 
     def fill_qset_context(self, context):
         """Fill qset related context extra fields."""
@@ -137,7 +198,6 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
         """Fill qset checkboxes states context."""
         qset = self._current_qset
         context['mixed_type'] = self.get_checkbox_state(qset.type == 0)
-        context['subsets_type'] = self.get_checkbox_state(qset.type == 1)
         context['questions_type'] = self.get_checkbox_state(qset.type == 2)
         context['for_any_authenticated'] = self.get_checkbox_state(qset.for_any_authenticated)
         context['show_authors'] = self.get_checkbox_state(qset.show_authors)
@@ -162,37 +222,24 @@ class QsetView(ListViewUserContextDataMixin, QsetViewMixin, generic.ListView):
         return queryset
 
 
-class QuestionView(generic.DetailView):
-    """Handles the Question detailed view."""
-
-    model = Question
-
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        """
-        Check presence of required credentials and parameters.
-
-        Overriding the dispatch method of generic.DetailView
-        """
-        return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
-
-
-class UserProfileView(generic.DetailView):
-    """Handles the Question detailed view."""
-
-    model = User
-    template_name = 'askup/user_profile.html'
-
-    @method_decorator(login_required)
-    def dispatch(*args, **kwargs):
-        """
-        Check presence of required credentials and parameters.
-
-        Overriding the dispatch method of generic.DetailView
-        """
-        # return super().dispatch(*args, **kwargs)  # Uncomment on stub remove
-        # Stub
-        return redirect(reverse('askup:organizations'))
+@login_required
+def user_profile_view(request, user_id):
+    """Provide the user profile view."""
+    user = get_object_or_404(User, pk=user_id)
+    return render(
+        request,
+        'askup/user_profile.html',
+        {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'questions_count': get_user_questions_count(user.id),
+            'answers_count': get_user_answers_count(user.id),
+            'own_score': get_user_score_by_id(user.id),
+            'is_owner': user.id == request.user.id,
+            'is_student': check_user_has_groups(request.user, 'student')
+        },
+    )
 
 
 def login_view(request):
@@ -200,16 +247,17 @@ def login_view(request):
     if request.user.is_authenticated():
         return redirect('/')
 
-    form = UserLoginForm(request.POST or None)
+    form = UserLoginForm(request.POST or None, request=request)
+    next_page = request.GET.get('next', '/')
 
     if form.is_valid():
-        username = form.cleaned_data.get('username')
-        password = form.cleaned_data.get('password')
-        user = authenticate(username=username, password=password)
-        login(request, user)
-
         if request.user.is_authenticated():
-            return redirect('/')
+            return redirect(
+                add_notification_to_url(
+                    ('success', 'You\'ve successfuly signed in'),
+                    next_page,
+                )
+            )
 
     return render(request, 'askup/login_form.html', {'form': form})
 
@@ -217,66 +265,92 @@ def login_view(request):
 def logout_view(request):
     """Provide the logout view and functionality."""
     logout(request)
-    return redirect('/')
+    return redirect(
+        add_notification_to_url(
+            ('danger', 'You were signed out'),
+            '/',
+        ),
+    )
 
 
-@user_group_required('admins')
+@user_group_required('admin')
 def organization_update(request, pk):
     """Provide the update qset view for the teacher/admin."""
     organization = get_object_or_404(Organization, pk=pk)
+    notification = None
 
-    if request.method == 'GET':
-        form = OrganizationModelForm(instance=organization)
-    else:
+    if request.method == 'POST':
         form = OrganizationModelForm(request.POST or None, instance=organization)
 
         if form.is_valid():
             form.save()
+            notification = ('success', 'Organization was successfuly edited')
 
-    return redirect(reverse('askup:organization', kwargs={'pk': organization.id}))
+    url = add_notification_to_url(
+        notification,
+        reverse('askup:organization', kwargs={'pk': organization.id}),
+    )
+
+    return redirect(url)
 
 
 @login_required
 def qset_create(request):
     """Provide the create qset view for the student/teacher/admin."""
-    if request.method == 'GET':
-        form = QsetModelForm(user=request.user)
-    else:
-        form = QsetModelForm(request.POST or None, user=request.user)
+    parent_qset_id = request.POST.get('parent_qset')
+    parent_qset = get_object_or_404(Qset, pk=parent_qset_id)
+    form = compose_qset_form(request, parent_qset_id)
 
+    if request.method == 'POST':
         if form.is_valid():
             name = form.cleaned_data.get('name')
-            type = form.cleaned_data.get('type')
             parent_qset = form.cleaned_data.get('parent_qset')
             qset = Qset.objects.create(
                 name=name,
                 parent_qset_id=parent_qset.id,
                 top_qset_id=parent_qset.top_qset_id,
-                type=type
             )
             return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
-    return render(request, 'askup/create_qset_form.html', {'form': form})
+    return render(
+        request,
+        'askup/qset_form.html',
+        {
+            'form': form,
+            'main_title': 'Create qset:',
+            'submit_label': 'Create',
+            'breadcrumbs': parent_qset.get_parents()
+        }
+    )
 
 
-@user_group_required('teachers', 'admins')
+@user_group_required('teacher', 'admin')
 def qset_update(request, pk):
     """Provide the update qset view for the student/teacher/admin."""
     qset = get_object_or_404(Qset, pk=pk)
 
+    if not request._is_admin and request.user not in qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
     if request.method == 'GET':
-        form = QsetModelForm(user=request.user, instance=qset)
+        form = QsetModelForm(user=request.user, instance=qset, qset_id=qset.id)
     else:
-        form = QsetModelForm(request.POST or None, user=request.user, instance=qset)
+        form = QsetModelForm(request.POST or None, user=request.user, instance=qset, qset_id=qset.id)
 
         if form.is_valid():
             form.save()
-            return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
+            notification = ('success', 'Qset was successfuly edited')
+            return redirect(
+                add_notification_to_url(
+                    notification,
+                    reverse('askup:qset', kwargs={'pk': qset.id}),
+                )
+            )
 
-    return render(request, 'askup/create_qset_form.html', {'form': form})
+    return qset_update_form_template(request, form, qset)
 
 
-@user_group_required('teachers', 'admins')
+@user_group_required('teacher', 'admin')
 def qset_delete(request, pk):
     """Provide the delete qset view for the teacher/admin."""
     qset = get_object_or_404(Qset, pk=pk)
@@ -285,11 +359,11 @@ def qset_delete(request, pk):
     if qset.parent_qset_id is None:
         return redirect(reverse('askup:qset', kwargs={'pk': qset.id}))
 
-    if not request.user.is_superuser and request.user.id not in qset.top_qset.users.all():
+    if not request._is_admin and request.user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
     if request.method == 'POST':
-        redirect_response = do_qset_validate_delete(
+        redirect_response = delete_qset_by_form(
             QsetDeleteModelForm(
                 request.POST,
                 instance=qset,
@@ -303,57 +377,306 @@ def qset_delete(request, pk):
         {
             'form': QsetDeleteModelForm(instance=qset),
             'qset_name': qset.name,
+            'breadcrumbs': qset.get_parents(),
         }
     )
 
 
-def do_qset_validate_delete(form, qset):
-    """Perform a form validation and delete qset."""
-    if form.is_valid():  # checks the CSRF
-        parent = qset.parent_qset
-        qset.delete()
-        redirect_url = 'askup:organization' if parent.parent_qset_id is None else 'askup:qset'
-        return redirect(reverse(redirect_url, kwargs={'pk': parent.id}))
-
-    return None
-
-
+@login_required
 def question_answer(request, question_id=None):
     """Provide a create question view for the student/teacher/admin."""
-    log.debug('Got the question answer request for the question_id: %s', question_id)
-    # Stub
-    return redirect(reverse('askup:question', kwargs={'pk': question_id}))
+    log.debug('Got the question answering request for the question_id: %s', question_id)
+    is_quiz = request.GET.get('filter') is not None
+    question = Question.objects.filter(id=question_id).first()
 
-    if request.user.id is None:
-        return redirect(reverse('askup:sign_in'))
+    if question is None:
+        return redirect(reverse('askup:organizations'))
+
+    filter = get_clean_filter_parameter(request)
+    form = do_make_answer_form(request, question)
+
+    if request.method == 'GET':
+        return render(
+            request,
+            'askup/question_answer.html',
+            {
+                'form': form,
+                'question_id': question.id,
+                'question_text': question.text,
+                'question_vote_value': question.vote_value,
+                'question_answer_text': question.answer_text,
+                'filter': filter * is_quiz,
+                'breadcrumbs': question.qset.get_parents(True),
+            }
+        )
+    else:
+        response = validate_answer_form_and_create(form, request, question)
+        return JsonResponse(response)
+
+
+def do_make_answer_form(request, question):
+    """Compose and return answer form."""
+    if request.method == 'POST':
+        return AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
+    else:
+        return AnswerModelForm(parent_qset_id=question.qset_id)
 
 
 @login_required
 def question_create(request, qset_id=None):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question creation request for the qset_id: %s', qset_id)
-    # Stub
-    return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
+
+    if qset_id:
+        qset = get_object_or_404(Qset, pk=qset_id)
+    else:
+        qset = None
+
+    form, notification = compose_question_form_and_create(request, qset_id)
+
+    return render(
+        request,
+        'askup/question_form.html',
+        {
+            'form': form,
+            'main_title': 'Create question:',
+            'submit_label': 'Create',
+            'breadcrumbs': qset and qset.get_parents(True),
+            'notification_class': notification[0],
+            'notification_text': notification[1],
+        }
+    )
 
 
-def question_edit(request):
+@user_group_required('student', 'teacher', 'admin')
+def question_edit(request, pk):
     """Provide an edit question view for the student/teacher/admin."""
-    # Stub
-    return redirect(reverse('askup:organizations'))
+    question = get_object_or_404(Question, pk=pk)
+    user = request.user
 
-    if request.user.id is None:
-        return redirect(reverse('askup:sign_in'))
+    if not request._is_admin and user not in question.qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if not request._is_admin and not request._is_teacher and user.id != question.user_id:
+        return redirect(reverse('askup:organizations'))
+
+    form, redirect_response = do_compose_question_form_and_update(request, question)
+
+    return redirect_response or render(
+        request,
+        'askup/question_form.html',
+        {
+            'form': form,
+            'main_title': 'Edit question:',
+            'submit_label': 'Save',
+            'current_qset': question.qset,
+            'breadcrumbs': question.qset.get_parents(True),
+        }
+    )
 
 
-def question_delete(request):
+def do_compose_question_form_and_update(request, question):
+    """Compose Question form and update question on validation success."""
+    redirect_response = None
+
+    if request.method == 'POST':
+        form = QuestionModelForm(
+            request.POST,
+            user=request.user,
+            instance=question,
+            qset_id=question.qset_id,
+        )
+
+        if form.is_valid():
+            form.save()
+            url = add_notification_to_url(
+                ('success', 'The question is saved successfuly'),
+                reverse('askup:qset', kwargs={'pk': question.qset_id}),
+            )
+            redirect_response = redirect(url)
+    else:
+        form = QuestionModelForm(
+            user=request.user,
+            instance=question,
+            qset_id=question.qset_id,
+        )
+
+    return form, redirect_response
+
+
+@user_group_required('student', 'teacher', 'admin')
+def question_delete(request, pk):
     """Provide a delete question view for the student/teacher/admin."""
-    # Stub
-    return redirect(reverse('askup:organizations'))
+    question = get_object_or_404(Question, pk=pk)
+    qset_id = question.qset_id
+    user = request.user
 
-    if request.user.id is None:
-        return redirect(reverse('askup:sign_in'))
+    if not request._is_admin and user not in question.qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if not request._is_admin and not request._is_teacher and user.id != question.user_id:
+        return redirect(reverse('askup:organizations'))
+
+    form = do_make_form_and_delete(request, question)
+
+    if form is None:
+        return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
+
+    return render(
+        request,
+        'askup/delete_question_form.html',
+        {
+            'form': form,
+            'question_name': question.text,
+        }
+    )
+
+
+def do_make_form_and_delete(request, question):
+    """Make form and delete question on validation success."""
+    if request.method == 'POST':
+        form = QuestionDeleteModelForm(
+            request.POST,
+            instance=question,
+            parent_qset_id=question.qset_id,
+        )
+    else:
+        form = QuestionDeleteModelForm(
+            instance=question,
+            parent_qset_id=question.qset_id,
+        )
+
+    if form.is_valid():  # checks the CSRF
+        question.delete()
+        return None
+
+    return form
+
+
+@login_required
+def answer_evaluate(request, answer_id, evaluation):
+    """Provide a self-evaluation for the student/teacher/admin."""
+    log.debug(
+        'Got the "%s" evaluation for the answer_id - %s',
+        evaluation,
+        answer_id
+    )
+    filter = request.GET.get('filter', None)
+    answer = get_object_or_404(Answer, pk=answer_id)
+
+    if not do_user_checks_and_evaluate(request.user, answer, evaluation):
+        return redirect(reverse('askup:organizations'))
+
+    if filter:
+        # If it's a Quiz
+        filter = get_clean_filter_parameter(request)
+        qset_id = answer.question.qset_id
+        queryset = Question.objects.filter(
+            qset_id=qset_id,
+            vote_value__lte=answer.question.vote_value,
+            text__gt=answer.question.text,
+        )
+        queryset = apply_filter_to_queryset(request, filter, queryset)
+        next_question = queryset.order_by('-vote_value', 'text').first()
+
+        if next_question:
+            return get_quiz_question_redirect(next_question.id, filter)
+
+    return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
+
+
+def do_user_checks_and_evaluate(user, answer, evaluation):
+    """Do user checks and evaluate answer for the answer evaluation view."""
+    evaluation_int = int(evaluation)
+    is_admin = check_user_has_groups(user, 'admin')
+
+    if not is_admin and user not in answer.question.qset.top_qset.users.all():
+        return False
+
+    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
+        answer.self_evaluation = evaluation_int
+        answer.save()
+
+    return True
 
 
 def index_view(request):
     """Provide the index view."""
     return render(request, 'askup/index.html')
+
+
+@login_required
+def start_quiz_all(request, qset_id):
+    """Provide a start quiz all in qset view for the student/teacher/admin."""
+    log.debug('Got the quiz all request for the qset_id: %s', qset_id)
+    qset = get_object_or_404(Qset, pk=qset_id)
+    filter = get_clean_filter_parameter(request)
+    queryset = Question.objects.filter(qset_id=qset.id)
+    queryset = apply_filter_to_queryset(request, filter, queryset)
+    question = queryset.order_by('-vote_value', 'text').first()
+    user = request.user
+
+    if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
+        return redirect(reverse('askup:organizations'))
+
+    if not question:
+        raise Http404
+
+    if request.method == 'GET':
+        return get_quiz_question_redirect(question.id, filter)
+    else:
+        return redirect(reverse('askup:organizations'))
+
+
+def get_quiz_question_redirect(next_question_id, filter):
+    """Get quiz question redirect."""
+    return redirect(
+        '{0}?filter={1}'.format(
+            reverse('askup:question_answer', kwargs={'question_id': next_question_id}),
+            filter,
+        )
+    )
+
+
+@login_required
+def question_upvote(request, question_id):
+    """Provide a question up-vote functionality."""
+    return question_vote(request.user, question_id, 1)
+
+
+@login_required
+def question_downvote(request, question_id):
+    """Provide a question down-vote functionality."""
+    return question_vote(request.user, question_id, -1)
+
+
+def feedback_form_view(request):
+    """Provide a feedback form view."""
+    next_page = request.GET.get('next', None)
+    form, redirect = validate_and_send_feedback_form(request, next_page)
+
+    if redirect:
+        return redirect
+
+    return render(
+        request,
+        'askup/feedback_form.html',
+        {
+            'form': form,
+        }
+    )
+
+
+def public_qsets_view(request):
+    """Provide a public qsets view."""
+    queryset = Qset.objects.filter(
+        parent_qset_id__gt=0,
+        for_unauthenticated=True
+    )
+    return render(
+        request,
+        'askup/public_qsets.html',
+        {
+            'object_list': queryset,
+        }
+    )

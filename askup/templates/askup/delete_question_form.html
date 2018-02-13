@@ -1,0 +1,15 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<div class="prettyform">
+        <div class="box maxwidth-box">
+            <h3 class="fixed-title center">Are you sure you want to delete the question?</h3>
+            <h5 class="fixed-title center">"{{ question_name }}"</h5>
+
+            <form accept-charset="UTF-8" action="" class="center" id="new_qset" method="post">
+				{% crispy form %}
+            </form>
+        </div>
+</div>
+{% endblock %}

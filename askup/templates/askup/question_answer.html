@@ -1,0 +1,62 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<div class="container-fluid">
+    <br/>
+    {% include "askup/qset_breadcrumbs.html" %}
+    <div class="prettyform">
+        <div class="box center">
+            <h2 class="title-no-margin">{{ question_text }}</h2>
+            <br>
+            <br>
+            <div class="center show-on-answered" id="your-answer" style="display: none">
+                <h3>Your answer:</h3>
+                <div class="correct-container">
+                    <h4 class="correct your-answer"></h4>
+                </div>
+                <br />
+            </div>
+            <div class="hide-on-answered">
+            {% crispy form %}
+            </div>
+        </div>   
+    </div>
+    <div class="prettyform answers show-on-answered" style="display:none">
+        <div class="box center">
+            <h3>Correct answer:</h3>
+            <div class="net-votes">
+                <p class="question-{{ question_id }}-net-votes">{{ question_vote_value }}</p><br>
+            </div>
+            <div class="question-voting">
+                <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
+                <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="{{ question_id }}"></div>
+            </div>
+            <div class="correct-container">
+                <h4 class="correct">{{ question_answer_text }}</h4>
+            </div>
+        </div>  
+    </div>
+    <div class="prettyform response self-evaluate show-on-answered" style="display:none">
+        <h3 class="center">Did you know the answer?</h3>
+        <br>
+        <div class="row row-no-padding">
+            <div class="col-xs-4 center">
+                <a class="btn-feedback btn-success" href="{% url 'askup:answer_evaluate' 1 2 %}{% if filter %}?filter={{ filter }}{% endif %}" title="Yes">
+                    <i class="fa fa-check self-evaluation-symbol"></i>
+                </a>
+            </div>
+            <div class="col-xs-4 center">
+                <a class="btn-feedback btn-maybe" href="{% url 'askup:answer_evaluate' 1 1 %}{% if filter %}?filter={{ filter }}{% endif %}" title="Not sure">
+                    <i class="fa fa-question self-evaluation-symbol"></i>
+                </a>
+            </div>
+            <div class="col-xs-4 center">
+                <a class="btn-feedback btn-pink" href="{% url 'askup:answer_evaluate' 1 0 %}{% if filter %}?filter={{ filter }}{% endif %}" title="No">
+                    <i class="fa fa-times self-evaluation-symbol"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

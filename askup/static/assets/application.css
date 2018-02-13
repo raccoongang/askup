@@ -2678,8 +2678,8 @@ fieldset[disabled] .form-control {
 }
 textarea.form-control {
     height: auto;
-    margin: 0;
-    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
 }
 input[type="search"] {
     -webkit-appearance: none
@@ -2737,7 +2737,7 @@ input[type="search"] {
     }
 }
 .form-group {
-    margin-bottom: 15px
+    margin-bottom: 25px
 }
 .radio,
 .checkbox {
@@ -6716,11 +6716,11 @@ a {
     padding: 0;
     margin: 0;
     text-decoration: none;
-    -webkit-transition: background-color .4s linear, color .4s linear;
-    -moz-transition: background-color .4s linear, color .4s linear;
-    -o-transition: background-color .4s linear, color .4s linear;
-    -ms-transition: background-color .4s linear, color .4s linear;
-    transition: background-color .4s linear, color .4s linear;
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear;
+    transition: background-color .2s linear, color .2s linear;
     text-decoration: none;
     color: inherit
 }
@@ -6796,30 +6796,25 @@ a:hover {
     margin-left: 15px
 }
 .navbar-inverse .navbar-nav>li>a {
-    color: white
+    color: white;
+    opacity: 0.8;
 }
 .navbar-inverse .navbar-nav>li>a:hover,
 .navbar-inverse .navbar-nav>li>a:focus {
-    color: white
+    opacity: 1;
 }
 .navbar-inverse .navbar-nav>li>a.offset {
-    color: white
+    color: white;
+    opacity: 0.8;
 }
 .navbar-inverse .navbar-nav>li>a.offset:hover,
 .navbar-inverse .navbar-nav>li>a.offset:focus {
-    color: white
+    opacity: 1;
 }
 .one-edge-shadow {
     -webkit-box-shadow: 0px 1px 10px 0px rgba(50, 50, 50, 0.3);
     -moz-box-shadow: 0px 1px 10px 0px rgba(50, 50, 50, 0.3);
     box-shadow: 0px 1px 10px 0px rgba(50, 50, 50, 0.3)
-}
-a.btn {
-    color: white;
-    margin-bottom: 5px
-}
-input.btn {
-    margin-bottom: 5px
 }
 .btn-blue {
     background-color: #00b3fe;
@@ -6856,31 +6851,51 @@ input.btn {
     -webkit-transform: translate(0px, 5px)
 }
 .btn-flat {
-    color: #fff;
+    color: #000;
     margin: 0;
     padding: 6px 12px;
     text-decoration: none;
-    transition: background-color .4s linear, color .4s linear;
-    -webkit-transition: background-color .4s linear, color .4s linear;
-    -moz-transition: background-color .4s linear, color .4s linear;
-    -o-transition: background-color .4s linear, color .4s linear;
-    -ms-transition: background-color .4s linear, color .4s linear
+    transition: background-color .2s linear, color .2s linear;
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear
+}
+.btn-flat:hover {
+    color: #fff;
+    background-color: #888;
 }
 .btn-maybe {
     background-color: orange;
-    box-shadow: 0px 3px 0px 0px darkorange;
     text-decoration: none
 }
 .btn-maybe:hover {
-    background-color: darkorange;
+    background-color: #c36b00;
     text-decoration: none
 }
+.btn-pink.bright {
+    background-color: #e0c6ce;
+    color: black;
+}
+
 .btn-pink {
+    background-color: #e0c6ce;
     background-color: #d8266a;
-    box-shadow: 0 3px 0 0 #a61d51;
+    color: white;
     text-decoration: none
+    transition: background-color .2s linear, color .2s linear;
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear
+}
+.btn-pink.bright:hover {
+    color: #fff;
+    background-color: #b66d81;
 }
 .btn-pink:hover {
+    color: #fff;
+    background-color: #b66d81;
     background-color: #a61d51;
     text-decoration: none
 }
@@ -6908,11 +6923,11 @@ input.btn {
     padding: 6px 12px;
     margin: 0;
     text-decoration: none;
-    -webkit-transition: background-color .4s linear, color .4s linear;
-    -moz-transition: background-color .4s linear, color .4s linear;
-    -o-transition: background-color .4s linear, color .4s linear;
-    -ms-transition: background-color .4s linear, color .4s linear;
-    transition: background-color .4s linear, color .4s linear
+    -webkit-transition: background-color .2s linear, color .2s linear;
+    -moz-transition: background-color .2s linear, color .2s linear;
+    -o-transition: background-color .2s linear, color .2s linear;
+    -ms-transition: background-color .2s linear, color .2s linear;
+    transition: background-color .2s linear, color .2s linear
 }
 .btn-theme:hover,
 .btn-theme:focus,
@@ -7268,19 +7283,13 @@ input.btn {
 }
 .float {
     display: inline-block;
-    -webkit-transition-duration: 0.3s;
-    transition-duration: 0.3s;
-    -webkit-transition-property: transform;
-    transition-property: transform;
+    -webkit-transition-duration: 0.2s;
+    transition-duration: 0.2s;
+    -webkit-transition-property: all;
+    transition-property: all;
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
     box-shadow: 0 0 1px rgba(0, 0, 0, 0)
-}
-.float:hover,
-.float:focus,
-.float:active {
-    -webkit-transform: translateY(-5px);
-    transform: translateY(-5px)
 }
 .sink {
     display: inline-block;
@@ -8826,7 +8835,6 @@ input.btn {
     color: white;
     margin: 0;
     font-size: 20px;
-    opacity: 0.6
 }
 .alert i {
     cursor: pointer
@@ -8839,16 +8847,16 @@ input.btn {
     text-decoration: underline
 }
 .alert-success {
-    background-color: #00d73f;
-    border: 1px solid #27ad60
+    background-color: #2ede83;
+    border: 1px solid #2ede83
+}
+.alert-warning {
+    background-color: #fcbb45;
+    border: 1px solid #fcbb45
 }
 .alert-danger {
-    background-color: #df4781;
-    border: 1px solid #a61d51
-}
-.alert-maybe {
-    background-color: goldenrod;
-    border: 1px solid darkorange
+    background-color: #ef6781;
+    border: 1px solid #ef6781
 }
 #all-mine-other-container {
     padding: 20px 25px 10px 0px
@@ -9175,4 +9183,60 @@ ul.qset-list-compressed {
 #new_user .form-group .controls input {
     margin-left: auto;
     margin-right: auto;
+}
+
+select.form-control, input.form-control {
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.buttonHolder a, .buttonHolder input, .buttonHolder button {
+    margin-right: 5px;
+}
+
+.btn-info {
+    background-color: #70b3de;
+    border-color: #60a3ce;
+}
+
+.btn-info:hover,
+.btn-info.active:hover {
+    background-color: #60a3ce;
+    border-color: #5093be;
+}
+
+.btn.btn-info:active,
+.btn.btn-info:active:focus,
+.btn.btn-info.active,
+.btn.btn-info.active:focus,
+.btn.btn-info.active:active,
+.btn.btn-info:focus,
+.btn.btn-info.active.focus,
+.btn.btn-info.active.focus:hover {
+    background-color: #6093be;
+    border-color: #5083ae;
+}
+
+#all-mine-other-container a:hover,
+#all-mine-other-container a:active,
+#all-mine-other-container a:focus {
+    text-decoration: none;
+    color: white;
+}
+
+.errorlist {
+    color: red;
+}
+
+.prettyform i.self-evaluation-symbol {
+    line-height: 85px;
+}
+
+.alert a {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.close-alert {
+    margin-left: 10px;
 }

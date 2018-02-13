@@ -5,7 +5,7 @@
         <div class="row">
             <h3 class="center">
                 {{main_title}} 
-                {% if user.is_superuser %}
+                {% if is_admin %}
                     {% include 'askup/edit_qset_button.html' %}
                 {% endif %}
             </h3>
@@ -19,11 +19,11 @@
             </div>
         </div>
         <div>
-            <h5>Subsets of {{main_title}}:</h5>
+            <h5>Subjects within {{main_title}}:</h5>
         </div>
         {% if is_qset_creator %}
         <div>
-            <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">New subset</a>
+            <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">New subject</a>
         </div>
         {% endif %}
         <div class="qset-list">
@@ -36,7 +36,7 @@
             </div>
         {% empty %}
             <div class="box valign no-questions row">
-                <p>There are no subsets here.</p>
+                <p>There are no subjects here.</p>
             </div>
         {% endfor %} 
         </div> <!-- .qset-list -->
