@@ -5,20 +5,30 @@ from django.utils.decorators import method_decorator
 
 from askup.models import Qset
 from askup.utils.general import check_user_has_groups
-from askup.utils.views import check_self_for_redirect_decorator
+from askup.utils.views import apply_filter_to_queryset, get_clean_filter_parameter
 
 
 class CheckSelfForRedirectMixIn(object):
     """Provides a redirect, requested from within view object."""
 
-    @check_self_for_redirect_decorator
     def dispatch(self, *args, **kwargs):
         """
         Check presence of required credentials and parameters.
 
         Overriding the dispatch method of generic.ListView
         """
-        return super().dispatch(*args, **kwargs)
+        func_result = super().dispatch(*args, **kwargs)
+        redirect = self.check_self_for_redirect()
+        return redirect or func_result
+
+    def check_self_for_redirect(self):
+        """Check if object has a _redirect property and return it if found."""
+        redirect = getattr(self, '_redirect', None)
+
+        if redirect:
+            return redirect
+        else:
+            return False
 
 
 class QsetViewMixIn(object):
@@ -46,29 +56,7 @@ class QsetViewMixIn(object):
         return super().dispatch(request, *args, **kwargs)
 
 
-class UserFilterMixIn(object):
-    """Provides the user filter related functionality."""
-
-    @staticmethod
-    def get_clean_filter_parameter(request):
-        """Return a clean user filter value."""
-        allowed_filters = ('all', 'mine', 'other')
-        get_parameter = request.GET.get('filter')
-        return 'all' if get_parameter not in allowed_filters else get_parameter
-
-    @staticmethod
-    def apply_filter_to_queryset(request, filter, queryset):
-        """Return a queryset with user filter applied."""
-        if filter == 'mine':
-            return queryset.filter(user_id=request.user.id)
-
-        if filter == 'other':
-            return queryset.exclude(user_id=request.user.id)
-
-        return queryset
-
-
-class ListViewUserContextDataMixIn(UserFilterMixIn, object):
+class ListViewUserContextDataMixIn(object):
     """ListView user data mixin."""
 
     def fill_user_context(self, context):
@@ -82,7 +70,7 @@ class ListViewUserContextDataMixIn(UserFilterMixIn, object):
 
     def fill_user_filter_context(self, context):
         """Fill a filter related context data."""
-        context['filter'] = self.get_clean_filter_parameter(self.request)
+        context['filter'] = get_clean_filter_parameter(self.request)
         context['filter_all_active'] = 'active'
         context['filter_mine_active'] = ''
         context['filter_other_active'] = ''
@@ -98,4 +86,4 @@ class ListViewUserContextDataMixIn(UserFilterMixIn, object):
     def process_user_filter(self, context, queryset):
         """Process user filter and return queryset with the correspondent changes."""
         filter = self.fill_user_filter_context(context)
-        return self.apply_filter_to_queryset(self.request, filter, queryset)
+        return apply_filter_to_queryset(self.request, filter, queryset)

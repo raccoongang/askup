@@ -23,30 +23,6 @@ def do_redirect_unauthenticated(user, back_url):
         return False
 
 
-def check_self_for_redirect_decorator(func):
-    """
-    Redirect on self._redirect presence.
-
-    Can decorate a dispatch() view class method to redirect request if self._redirect is present.
-    """
-    def wrapper(*args, **kwargs):
-        func_result = func(*args, **kwargs)
-        redirect = check_self_for_redirect(args[0])
-        return redirect or func_result
-
-    return wrapper
-
-
-def check_self_for_redirect(obj):
-    """Check if object has a _redirect property and return it if found."""
-    redirect = getattr(obj, '_redirect', None)
-
-    if redirect:
-        return redirect
-    else:
-        return False
-
-
 def user_group_required(*required_groups):
     """
     Decorate a view function to check if user belongs to one of the groups passed as an arguments.
@@ -258,3 +234,21 @@ def validate_and_send_feedback_form(request, next_page):
             )
 
     return form, None
+
+
+def get_clean_filter_parameter(request):
+    """Return a clean user filter value."""
+    allowed_filters = ('all', 'mine', 'other')
+    get_parameter = request.GET.get('filter')
+    return 'all' if get_parameter not in allowed_filters else get_parameter
+
+
+def apply_filter_to_queryset(request, filter, queryset):
+    """Return a queryset with user filter applied."""
+    if filter == 'mine':
+        return queryset.filter(user_id=request.user.id)
+
+    if filter == 'other':
+        return queryset.exclude(user_id=request.user.id)
+
+    return queryset

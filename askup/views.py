@@ -22,7 +22,6 @@ from .mixins.views import (
     CheckSelfForRedirectMixIn,
     ListViewUserContextDataMixIn,
     QsetViewMixIn,
-    UserFilterMixIn,
 )
 from .models import Answer, Organization, Qset, Question
 from .utils.general import (
@@ -33,9 +32,11 @@ from .utils.general import (
     get_user_score_by_id,
 )
 from .utils.views import (
+    apply_filter_to_queryset,
     compose_qset_form,
     compose_question_form_and_create,
     delete_qset_by_form,
+    get_clean_filter_parameter,
     qset_update_form_template,
     question_vote,
     user_group_required,
@@ -96,7 +97,12 @@ class OrganizationsView(CheckSelfForRedirectMixIn, generic.ListView):
         return queryset
 
 
-class OrganizationView(CheckSelfForRedirectMixIn, ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
+class OrganizationView(
+    CheckSelfForRedirectMixIn,
+    ListViewUserContextDataMixIn,
+    QsetViewMixIn,
+    generic.ListView
+):
     """Handles root qsets of the Organization list view."""
 
     template_name = 'askup/organization.html'
@@ -389,7 +395,7 @@ def question_answer(request, question_id=None):
     if question is None:
         return redirect(reverse('askup:organizations'))
 
-    filter = UserFilterMixIn.get_clean_filter_parameter(request)
+    filter = get_clean_filter_parameter(request)
     form = do_make_answer_form(request, question)
 
     if request.method == 'GET':
@@ -570,14 +576,14 @@ def answer_evaluate(request, answer_id, evaluation):
 
     if filter:
         # If it's a Quiz
-        filter = UserFilterMixIn.get_clean_filter_parameter(request)
+        filter = get_clean_filter_parameter(request)
         qset_id = answer.question.qset_id
         queryset = Question.objects.filter(
             qset_id=qset_id,
             vote_value__lte=answer.question.vote_value,
             text__gt=answer.question.text,
         )
-        queryset = UserFilterMixIn.apply_filter_to_queryset(request, filter, queryset)
+        queryset = apply_filter_to_queryset(request, filter, queryset)
         next_question = queryset.order_by('-vote_value', 'text').first()
 
         if next_question:
@@ -611,9 +617,9 @@ def start_quiz_all(request, qset_id):
     """Provide a start quiz all in qset view for the student/teacher/admin."""
     log.debug('Got the quiz all request for the qset_id: %s', qset_id)
     qset = get_object_or_404(Qset, pk=qset_id)
-    filter = UserFilterMixIn.get_clean_filter_parameter(request)
+    filter = get_clean_filter_parameter(request)
     queryset = Question.objects.filter(qset_id=qset.id)
-    queryset = UserFilterMixIn.apply_filter_to_queryset(request, filter, queryset)
+    queryset = apply_filter_to_queryset(request, filter, queryset)
     question = queryset.order_by('-vote_value', 'text').first()
     user = request.user
 
