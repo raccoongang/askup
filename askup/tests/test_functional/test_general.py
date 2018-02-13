@@ -3,13 +3,14 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.middleware import SessionMiddleware
+from django.db import models
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
-from askup.models import Answer, Qset, Question
+from askup.models import Answer, Qset, Question, Vote
 from askup.views import login_view
 
 
@@ -710,3 +711,86 @@ class AnswerModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.evaluate_answer(answer_response['answer_id'], 3)
         answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
         self.assertEqual(answer.self_evaluation, None)
+
+
+class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+    """Tests the Vote model related functionality."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """Set up the test assets."""
+        settings.DEBUG = False
+        self.default_login()
+
+    def upvote_question(self, question_id):
+        """Upvote the questioon by sending a get request."""
+        return self.client.get(
+            reverse(
+                'askup:question_upvote',
+                kwargs={'question_id': question_id}
+            )
+        )
+
+    def downvote_question(self, question_id):
+        """Downvote the questioon by sending a get request."""
+        return self.client.get(
+            reverse(
+                'askup:question_downvote',
+                kwargs={'question_id': question_id}
+            )
+        )
+
+    @client_user('student01', 'student01')
+    def test_upvote_question_success(self):
+        """Test upvote question with success."""
+        question_id = 2
+        original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.upvote_question(question_id)
+        result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'] + 1)
+
+    @client_user('student01', 'student01')
+    def test_downvote_question_success(self):
+        """Test downvote question with success."""
+        question_id = 2
+        original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.downvote_question(question_id)
+        result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'] - 1)
+
+    @client_user('student01', 'student01')
+    def test_upvote_question_fail_own_question(self):
+        """Test upvote question with fail by voting for own question."""
+        question_id = 1
+        original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.upvote_question(question_id)
+        result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
+
+    @client_user('student01', 'student01')
+    def test_downvote_question_fail_own_question(self):
+        """Test downvote question with fail by voting for own question."""
+        question_id = 1
+        original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.downvote_question(question_id)
+        result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
+
+    @client_user('student02_no_orgs', 'student02_no_orgs')
+    def test_upvote_question_fail_permission(self):
+        """Test upvote question with fail by permissions to the question organization."""
+        question_id = 1
+        original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.upvote_question(question_id)
+        result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
+
+    @client_user('student02_no_orgs', 'student02_no_orgs')
+    def test_downvote_question_fail_permission(self):
+        """Test downvote question with fail by permissions to the question organization."""
+        question_id = 1
+        original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.downvote_question(question_id)
+        result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
+        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
