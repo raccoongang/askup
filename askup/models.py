@@ -341,7 +341,7 @@ class Question(models.Model):
         """Return votes value of this question aggregated from the askup_vote table."""
         votes = Vote.objects.filter(question_id=self.id).aggregate(models.Sum('value'))
         value = votes['value__sum'] if votes['value__sum'] else 0
-        return 0 if value < 0 else value
+        return value
 
     def __str__(self):
         """Return a string representation of a Question object."""

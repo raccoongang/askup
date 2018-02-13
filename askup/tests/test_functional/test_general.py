@@ -350,15 +350,26 @@ class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
             'orig_count': None,
             'new_count': None,
         }
+        new_org_qset = {
+            'id': 10,  # Organization 4 from the mockups
+            'orig_count': None,
+            'new_count': None,
+        }
         move_qset = get_object_or_404(Qset, pk=4)
         move_qset_count = move_qset.questions_count
         org_qset['orig_count'] = get_object_or_404(Qset, pk=org_qset['id']).questions_count
-        move_qset.parent_qset_id = 10
+        new_org_qset['orig_count'] = get_object_or_404(Qset, pk=new_org_qset['id']).questions_count
+        move_qset.parent_qset_id = new_org_qset['id']
         move_qset.save()
         org_qset['new_count'] = get_object_or_404(Qset, pk=org_qset['id']).questions_count
+        new_org_qset['new_count'] = get_object_or_404(Qset, pk=new_org_qset['id']).questions_count
         self.assertEqual(
             org_qset['new_count'],
             org_qset['orig_count'] - move_qset_count
+        )
+        self.assertEqual(
+            new_org_qset['new_count'],
+            new_org_qset['orig_count'] + move_qset_count
         )
 
 
@@ -756,8 +767,11 @@ class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         question_id = 2
         original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
         self.downvote_question(question_id)
+        self.client.login(username='student03', password='student03')
+        result = self.downvote_question(question_id)
         result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
-        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'] - 1)
+        self.assertEqual(result_votes['value__sum'], original_votes['value__sum'] - 2)
+        self.assertEqual(result_votes['value__sum'], -1)
 
     @client_user('student01', 'student01')
     def test_upvote_question_fail_own_question(self):

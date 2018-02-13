@@ -1,6 +1,9 @@
 import base64
 import json
 import logging
+import binascii
+
+from smtplib import SMTPException
 
 from django.contrib.auth.models import User
 from django.core.mail.message import EmailMessage
@@ -174,7 +177,7 @@ def send_feedback_to_recipient(admins, body, from_email):
                 (to_email,),
                 reply_to=('AskUp mailer {0}'.format(from_email),)
             )
-        except Exception:
+        except SMTPException:
             log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
 
 
@@ -217,7 +220,7 @@ def extract_notification_from_request(request):
 
     try:
         notification = json.loads(base64.b64decode(encoded))
-    except Exception:
+    except (json.JSONDecodeError, binascii.Error):
         notification = ('', '')
 
     return notification
