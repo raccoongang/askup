@@ -768,7 +768,7 @@ class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         original_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
         self.downvote_question(question_id)
         self.client.login(username='student03', password='student03')
-        result = self.downvote_question(question_id)
+        self.downvote_question(question_id)
         result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
         self.assertEqual(result_votes['value__sum'], original_votes['value__sum'] - 2)
         self.assertEqual(result_votes['value__sum'], -1)

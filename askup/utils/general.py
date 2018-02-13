@@ -1,8 +1,7 @@
 import base64
+import binascii
 import json
 import logging
-import binascii
-
 from smtplib import SMTPException
 
 from django.contrib.auth.models import User

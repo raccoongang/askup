@@ -39,6 +39,7 @@ def user_group_required(*required_groups):
                 return auth_check_result
 
             if check_user_has_groups(user, required_groups):
+                set_group_properties_to_request(request)
                 return func(*args, **kwargs)
 
             return redirect(reverse('askup:organizations'))
@@ -46,6 +47,12 @@ def user_group_required(*required_groups):
         return wrapped_function
 
     return wrapper
+
+
+def set_group_properties_to_request(request, groups_to_set=('admin', 'teacher', 'student')):
+    """Set _is_<group> like properties to the request object for later usage in view etc."""
+    for group in groups_to_set:
+        setattr(request, '_is_{}'.format(group), check_user_has_groups(request.user, group))
 
 
 def qset_update_form_template(request, form, qset):
