@@ -95,6 +95,7 @@ class DomainsInline(TabularInline):
     can_delete = True
     verbose_name_plural = 'Domains'
     fk_name = 'organization'
+    extra = 0
 
 
 class OrganizationAdmin(admin.ModelAdmin):

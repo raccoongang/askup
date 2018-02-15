@@ -2,14 +2,15 @@ import logging
 
 from crispy_forms.bootstrap import InlineRadios
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Div, Fieldset, Layout
-from crispy_forms.layout import HTML
+from crispy_forms.layout import ButtonHolder, Div, Fieldset, HTML, Layout, Submit
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group, User
+from django.db import models
+from django.urls import reverse
 
 from askup.mixins.forms import InitFormWithCancelButtonMixIn
 from askup.models import Organization, Qset, Question
@@ -18,12 +19,98 @@ from askup.models import Organization, Qset, Question
 log = logging.getLogger(__name__)
 
 
-class SignUpForm(UserCreationForm):
+class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
     email = forms.EmailField(max_length=254, help_text='Your email address.')
+    organization = forms.ModelChoiceField(
+        queryset=Organization.objects.all().order_by('name'),
+        empty_label='apply to organization...',
+        required=False,
+        help_text=(
+            'Organization you will be applied to, after the registration' +
+            '<ul><li>Email restricted organizations are applied automatically.</li></ul>'
+        ),
+    )
 
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2')
+
+    def _set_up_fields(self, *args, **kwargs):
+        """
+        Set up custom fields behaviour.
+        """
+        queryset = self.fields['organization'].queryset.select_related().annotate(
+            email_restricted=models.Sum('domain__id')
+        )
+        self.fields['organization'].queryset = queryset
+        self.fields['organization'].choices = self.compose_organization_choices(queryset)
+
+    def compose_organization_choices(self, queryset):
+        """
+        Return a customized organization choices.
+        """
+        choices = [('', 'select an organization to apply...')]
+
+        for organization in queryset:
+            template = '{} [email restricted]' if organization.email_restricted else '{}'
+            choices.append((organization.id, template.format(organization.name)))
+
+        return choices
+
+    def _set_up_helper(self, qset_id):
+        """
+        Set up form helper that describes the form html structure.
+        """
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-xs-4 col-md-4 col-lg-4'
+        self.helper.field_class = 'col-xs-8 col-md-6 col-lg-8'
+        self.helper.layout = Layout(
+            'username',
+            'email',
+            'password1',
+            'password2',
+            'organization',
+            ButtonHolder(
+                HTML(
+                    '<a class="btn btn-flat cancel-btn" href="{}">Cancel</a>'.format(
+                        reverse('askup:sign_in')
+                    )
+                ),
+                Submit('submit', 'Sign Up', css_class='btn btn-theme'),
+                css_class='center',
+            )
+        )
+
+    def clean_organization(self, *args, **kwargs):
+        """
+        Validate the organization field.
+        """
+        organization = self.cleaned_data['organization']
+        email = self.cleaned_data['email']
+
+        if not self.check_if_organization_is_permitted(organization, email):
+            raise forms.ValidationError(
+                "This organization is an email restricted. " +
+                "You should specify an email from one of it's domains."
+            )
+        return self.cleaned_data['organization']
+
+    def check_if_organization_is_permitted(self, organization, user_email):
+        """
+        Check whether this organization is permitted for the email specified.
+
+        Return True if organization isn't selected or domain of user email is in
+        the organization domains (can be added/modified in the admin panel).
+        """
+        if not organization or not organization.domain_set.exists():
+            return True
+
+        for domain in organization.domain_set.all():
+            if user_email.endswith('@{}'.format(domain.name)):
+                return True
+
+        return False
 
 
 class UserLoginForm(forms.Form):

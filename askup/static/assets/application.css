@@ -9244,3 +9244,12 @@ select.form-control, input.form-control {
 .asteriskField {
     display: none;
 }
+
+#sign_up_form_container .controls input.form-control,
+#sign_up_form_container .controls select.form-control {
+    margin-left: 0;
+}
+
+#sign_up_form_container label {
+    margin-top: 10px;
+}

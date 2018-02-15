@@ -246,8 +246,7 @@ def sign_up_view(request):
     """
     if request.method == 'POST':
         form = SignUpForm(request.POST)
-
-        redirect = sign_up_form_validate_and_create_user()
+        redirect = validate_sign_up_form_and_create_user(form, request)
 
         if redirect:
             return redirect
@@ -257,40 +256,55 @@ def sign_up_view(request):
     return render(request, 'askup/sign_up_form.html', {'form': form})
 
 
-def sign_up_form_validate_and_create_user(form):
+def validate_sign_up_form_and_create_user(form, request):
+    """
+    Validate the Sign Up form and create a user on success.
+
+    Creates a user and emails the activation url to him/her on success.
+    """
     if form.is_valid():
         user = form.save(commit=False)
         user.is_active = False
         user.save()
-        current_site = get_current_site(request)
-        subject = 'Activate Your AskUp Account'
-        message = render_to_string(
-            'askup/account_activation_email.html',
-            {
-                'user': user,
-                'domain': current_site.domain,
-                'uid': user.id,
-                'token': account_activation_token.make_token(user),
-            }
-        )
-        user.email_user(subject, message)
+        send_user_an_activation_email(user, request)
         email = user.email
+        user.groups = [Group.objects.get(name='Student')]
         domain = Domain.objects.filter(name=email[email.find('@') + 1:]).first()
-
-        if domain is None:
-            return redirect('askup:sign_up_activation_sent')
-
-        domain_org = domain.organization
-
-        if domain.organization is None:
-            return redirect('askup:sign_up_activation_sent')
-
-        user.qset_set = [domain.organization]
-        user.groups = [get_object_or_404(Group, name='Student')]
+        add_organizations_to_user(
+            (form.cleaned_data['organization'], (domain and domain.organization)),
+            user
+        )
 
         return redirect('askup:sign_up_activation_sent')
 
     return None
+
+
+def add_organizations_to_user(organizations, user):
+    """
+    Iterate over organizations tuple and add the non-empty organizations to the user.
+    """
+    for organization in organizations:
+        if organization:
+            user.qset_set.add(organization)
+
+
+def send_user_an_activation_email(user, request):
+    """
+    Compose and send an activation email to the specified user.
+    """
+    current_site = get_current_site(request)
+    subject = 'Activate Your AskUp Account'
+    message = render_to_string(
+        'askup/account_activation_email.html',
+        {
+            'user': user,
+            'domain': current_site.domain,
+            'uid': user.id,
+            'token': account_activation_token.make_token(user),
+        }
+    )
+    user.email_user(subject, message)
 
 
 def sign_up_activation_sent(request):
@@ -314,12 +328,12 @@ def sign_up_activate(request, uid, token):
         user.profile.email_confirmed = True
         user.save()
         login(request, user)
-        organization = user.qset_set.first()
+        organizations = user.qset_set.all().order_by('name')
         organization_text = ''
 
-        if organization:
-            organization_text = ' and applied to the organization: "{0}"'.format(
-                organization.name
+        if organizations.count():
+            organization_text = ' and applied to the organizations: <b>{}</b>'.format(
+                '</b>, <b>'.join(tuple(str(org) for org in organizations))
             )
 
         notification = (
