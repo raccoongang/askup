@@ -20,7 +20,6 @@ log = logging.getLogger(__name__)
 
 
 class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
-    email = forms.EmailField(required=True, max_length=254, help_text='Your email address.')
     organization = forms.ModelChoiceField(
         queryset=Organization.objects.all().order_by('name'),
         empty_label='apply to organization...',
@@ -358,6 +357,23 @@ class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
         self.fields['blooms_tag'].choices[0] = ("", "- no tag -")
         self.fields['blooms_tag'].label = 'Bloom\'s category'
         self.fields['qset'].label = 'Subject'
+        self.fields['qset'].choices = self.get_qset_choices(self.fields['qset'].queryset)
+
+    def get_qset_choices(self, qsets):
+        """
+        Get choices for the qset field.
+        """
+        choices = [('', 'select a subject...')]
+
+        for qset in qsets:
+            choices.append(
+                (
+                    qset.id,
+                    '{0}: {1}'.format(qset.top_qset.name, qset.name)
+                )
+            )
+
+        return choices
 
     def _set_up_helper(self, qset_id):
         """Set up form helper that describes the form html structure."""

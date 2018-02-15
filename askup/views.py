@@ -277,13 +277,14 @@ def validate_sign_up_form_and_create_user(form, request):
         user.groups = [Group.objects.get(name='Student')]
         domain = Domain.objects.filter(name=email[email.find('@') + 1:]).first()
         add_organizations_to_user(
-            (form.cleaned_data['organization'], (domain and domain.organization)),
-            user
+            set({
+                form.cleaned_data['organization'],
+                domain and domain.organization,
+            }),
+            user,
         )
 
         return redirect('askup:sign_up_activation_sent')
-
-    return None
 
 
 def add_organizations_to_user(organizations, user):

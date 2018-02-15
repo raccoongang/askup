@@ -124,7 +124,7 @@ class OrganizationAdmin(admin.ModelAdmin):
     @staticmethod
     def domains(obj):
         """Return email-patters of the organization comma separated."""
-        return ", ".join(tuple(domain.name for domain in obj.domain_set.all()))
+        return ", ".join((domain.name for domain in obj.domain_set.all()))
 
     def get_queryset(self, request):
         """

@@ -74,19 +74,6 @@ class Qset(models.Model):
         verbose_name = 'Subject'
         verbose_name_plural = 'Subjects'
 
-    @property
-    def full_name(self):
-        """
-        Return a string representation of a Qset object.
-
-        Tries to get the include_parent_name value first (can be passed by RawSQL)
-        in lack of it gets name field of model.
-        """
-        if getattr(self, 'include_parent_name', None):
-            return '{0}: {1}'.format(self.top_qset.name, self.name)
-        else:
-            return self.name
-
     def __init__(self, *args, **kwargs):
         """Initialize the Qset model object."""
         super().__init__(*args, **kwargs)
@@ -199,7 +186,7 @@ class Qset(models.Model):
 
     def __str__(self):
         """Return string representation of Qset."""
-        return self.full_name
+        return self.name
 
     def get_parent_organization(self):
         """
@@ -277,9 +264,6 @@ class Qset(models.Model):
         """Apply context related filters to the queryset."""
         if qsets_only:
             queryset = queryset.filter(parent_qset_id__gt=0)
-            queryset = queryset.annotate(
-                include_parent_name=RawSQL('1', tuple()),
-            )
 
         if organizations_only:
             queryset = queryset.filter(parent_qset_id__isnull=True)

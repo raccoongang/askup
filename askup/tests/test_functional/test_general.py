@@ -824,7 +824,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         Set up a TestCase.
         """
         settings.DEBUG = False
-        self.default_login()
 
     def user_sign_up(self, username, email, first_name, second_name, org, password1, password2):
         """
@@ -843,7 +842,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
             }
         )
 
-    @client_user(None)
     def test_sign_up_success_no_selected_organization(self):
         """
         Test sign up success with no selected organization and not email restricted one.
@@ -863,7 +861,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         orgs = user.qset_set.all()
         self.assertEqual(orgs.count(), 0)
 
-    @client_user(None)
     def test_sign_up_success_selected_organization(self):
         """
         Test sign up success with selected organization but not email restricted one.
@@ -884,7 +881,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(orgs.count(), 1)
         self.assertEqual(orgs[0].id, 3)
 
-    @client_user(None)
     def test_sign_up_success_not_selected_organization_but_email_restricted(self):
         """
         Test sign up success with no selected organization but email restricted one.
@@ -905,7 +901,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(orgs.count(), 1)
         self.assertEqual(orgs[0].id, 1)
 
-    @client_user(None)
     def test_sign_up_success_selected_organization_and_email_restricted(self):
         """
         Test sign up success with selected one public organization and email restricted one.
@@ -927,7 +922,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(orgs[0].id, 1)
         self.assertEqual(orgs[1].id, 3)
 
-    @client_user(None)
     def test_sign_up_fail_unmatched_email_restricted_selected(self):
         """
         Test sign up fail on no username specified.
@@ -945,7 +939,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         user = User.objects.filter(email='testuser01@testuser01.com').first()
         self.assertEqual(user, None)
 
-    @client_user(None)
     def test_sign_up_fail_no_username_specified(self):
         """
         Test sign up fail on no username specified.
@@ -962,7 +955,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         user = User.objects.filter(email='testuser01@testuser01.com').first()
         self.assertEqual(user, None)
 
-    @client_user(None)
     def test_sign_up_fail_no_email_specified(self):
         """
         Test sign up fail on no email specified.
@@ -979,7 +971,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         user = User.objects.filter(username='testuser01').first()
         self.assertEqual(user, None)
 
-    @client_user(None)
     def test_sign_up_fail_passwords_doesnt_match(self):
         """
         Test sign up fail on unmatched passwords.
@@ -996,7 +987,6 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         user = User.objects.filter(username='testuser01').first()
         self.assertEqual(user, None)
 
-    @client_user(None)
     def test_sign_up_fail_passwords_unspecified(self):
         """
         Test sign up fail on unspecified passwords.
