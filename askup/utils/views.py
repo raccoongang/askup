@@ -23,23 +23,6 @@ def do_redirect_unauthenticated(user, back_url):
         return False
 
 
-def redirect_unauthenticated(func):
-    """
-    Decorate a view function to redirect requests of unauthenticated users.
-
-    Can decorate a simple view function as well as dispatch method of generic view class.
-    """
-    def wrapper(*args, **kwargs):
-        if isinstance(args[0], WSGIRequest):
-            request = args[0]
-        else:
-            request = args[0].request
-
-        return do_redirect_unauthenticated(request.user) or func(*args, **kwargs)
-
-    return wrapper
-
-
 def check_self_for_redirect_decorator(func):
     """
     Redirect on self._redirect presence.
