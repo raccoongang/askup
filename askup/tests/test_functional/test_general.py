@@ -9,7 +9,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
-from askup.models import Answer, Organization, Qset, Question
+from askup.models import Answer, Qset, Question
 from askup.views import login_view
 
 
@@ -722,10 +722,16 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
     fixtures = ['groups', 'mockup_data']
 
     def setUp(self):
+        """
+        Set up a TestCase.
+        """
         settings.DEBUG = False
         self.default_login()
 
     def user_sign_up(self, username, email, first_name, second_name, org, password1, password2):
+        """
+        Send the Sign Up form and return a response.
+        """
         return self.client.post(
             reverse('askup:sign_up'),
             {
@@ -741,6 +747,9 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
 
     @client_user(None)
     def test_sign_up_success_no_selected_organization(self):
+        """
+        Test sign up success with no selected organization and not email restricted one.
+        """
         response = self.user_sign_up(
             'testuser01',
             'testuser01@testuser01.com',
@@ -758,6 +767,9 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
 
     @client_user(None)
     def test_sign_up_success_selected_organization(self):
+        """
+        Test sign up success with selected organization but not email restricted one.
+        """
         response = self.user_sign_up(
             'testuser01',
             'testuser01@testuser01.com',
@@ -776,6 +788,9 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
 
     @client_user(None)
     def test_sign_up_success_not_selected_organization_but_email_restricted(self):
+        """
+        Test sign up success with no selected organization but email restricted one.
+        """
         response = self.user_sign_up(
             'testuser01',
             'testuser01@maildomain1.com',
@@ -794,6 +809,9 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
 
     @client_user(None)
     def test_sign_up_success_selected_organization_and_email_restricted(self):
+        """
+        Test sign up success with selected one public organization and email restricted one.
+        """
         response = self.user_sign_up(
             'testuser01',
             'testuser01@maildomain1.com',
@@ -812,8 +830,29 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(orgs[1].id, 3)
 
     @client_user(None)
-    def test_sign_up_fail_no_selected_username(self):
+    def test_sign_up_fail_unmatched_email_restricted_selected(self):
+        """
+        Test sign up fail on no username specified.
+        """
         response = self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            1,
+            'PasswordString',
+            'PasswordString',
+        )
+        self.assertContains(response, 'This organization is an email restricted.')
+        user = User.objects.filter(email='testuser01@testuser01.com').first()
+        self.assertEqual(user, None)
+
+    @client_user(None)
+    def test_sign_up_fail_no_username_specified(self):
+        """
+        Test sign up fail on no username specified.
+        """
+        self.user_sign_up(
             '',
             'testuser01@testuser01.com',
             'Test',
@@ -826,8 +865,11 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(user, None)
 
     @client_user(None)
-    def test_sign_up_fail_no_selected_email(self):
-        response = self.user_sign_up(
+    def test_sign_up_fail_no_email_specified(self):
+        """
+        Test sign up fail on no email specified.
+        """
+        self.user_sign_up(
             'testuser01',
             '',
             'Test',
@@ -841,7 +883,10 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
 
     @client_user(None)
     def test_sign_up_fail_passwords_doesnt_match(self):
-        response = self.user_sign_up(
+        """
+        Test sign up fail on unmatched passwords.
+        """
+        self.user_sign_up(
             'testuser01',
             'testuser01@testuser01.com',
             'Test',
@@ -855,7 +900,10 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
 
     @client_user(None)
     def test_sign_up_fail_passwords_unspecified(self):
-        response = self.user_sign_up(
+        """
+        Test sign up fail on unspecified passwords.
+        """
+        self.user_sign_up(
             'testuser01',
             'testuser01@testuser01.com',
             'Test',
