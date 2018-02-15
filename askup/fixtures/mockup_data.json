@@ -54,6 +54,24 @@
         }
     },
     {
+        "model": "auth.user",
+        "pk": 5,
+        "fields": {
+            "password": "pbkdf2_sha256$36000$X8jiEycyMLr9$MX2Ed0ut1K3z1n/+XQXNdafSZFayJeTrfIcQKX5vF8U=",
+            "last_login": null,
+            "is_superuser": false,
+            "username": "student03",
+            "first_name": "Very curious",
+            "last_name": "Student",
+            "email": "student03@example.com",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2018-01-11T08:27:49.583Z",
+            "groups": [3],
+            "user_permissions": []
+        }
+    },
+    {
         "model": "askup.qset",
         "pk": 1,
         "fields": {
@@ -66,7 +84,7 @@
             "show_authors": true,
             "own_questions_only": false,
             "questions_count": 4,
-            "users": [2, 3]
+            "users": [2, 3, 5]
         }
     },
     {
@@ -82,7 +100,7 @@
             "show_authors": true,
             "own_questions_only": false,
             "questions_count": 0,
-            "users": [2]
+            "users": [2, 5]
         }
     },
     {

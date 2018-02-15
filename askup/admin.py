@@ -5,8 +5,9 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 
 from .forms import OrganizationModelForm, QuestionModelForm, UserForm
-from .mixins.admin import CookieFilterMixIn, ParseUrlToParameters
+from .mixins.admin import CookieFilterMixIn
 from .models import Domain, Organization, Profile, Qset, Question
+from .utils.general import parse_response_url_to_parameters
 
 
 class OrganizationFilter(admin.SimpleListFilter):
@@ -134,7 +135,7 @@ class OrganizationAdmin(admin.ModelAdmin):
         return super().get_queryset(request).order_by('name')
 
 
-class QsetAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
+class QsetAdmin(CookieFilterMixIn, admin.ModelAdmin):
     """Admin list and detailed view for the Qset model."""
 
     fields = (
@@ -173,7 +174,7 @@ class QsetAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         form = super().get_form(request, obj, **kwargs)
         form.base_fields['parent_qset'].label = 'Organization'
         form.base_fields['parent_qset'].required = True
-        form.base_fields['parent_qset'].initial = request.COOKIES.get('admin-filter-org', None)
+        form.base_fields['parent_qset'].initial = request.COOKIES.get('admin-filter-org')
         queryset = Qset.get_user_related_qsets_queryset(request.user).filter(parent_qset_id=None)
         form.base_fields['parent_qset'].queryset = queryset.order_by('name', 'parent_qset_id')
         return form
@@ -196,19 +197,19 @@ class QsetAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
 
     def apply_organization_to_url(self, organization_id, response):
         """Apply organization filter value to the url on save."""
-        url_path, parameters = self.parse_response_url_to_parameters(response)
+        url_path, parameters = parse_response_url_to_parameters(response)
 
         if url_path is None:
             return response
 
         for i in range(len(parameters)):
-            if parameters[i][:4] == 'org=':
+            if parameters[i].startswith('org='):
                 parameters[i] = 'org={0}'.format(organization_id)
 
         return HttpResponseRedirect('?'.join((url_path, ('&'.join(parameters)))))
 
 
-class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
+class QuestionAdmin(CookieFilterMixIn, admin.ModelAdmin):
     """Admin list and detailed view for the Question model."""
 
     form = QuestionModelForm
@@ -230,8 +231,14 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         Overriding the form fields for the admin model form of the Questions.
         """
         form = super().get_form(request, obj, **kwargs)
+        queryset = Qset.objects.filter(
+            parent_qset_id__isnull=False, type__in=(0, 2)
+        )
+        queryset = Qset.apply_user_related_qsets_filters(request.user, queryset)
+        queryset = queryset.order_by('name')
+        form.base_fields['qset'].queryset = queryset
         form.current_user = request.user
-        form.base_fields['qset'].initial = request.COOKIES.get('admin-filter-qset', None)
+        form.base_fields['qset'].initial = request.COOKIES.get('admin-filter-qset')
         return form
 
     def get_queryset(self, request):
@@ -270,7 +277,7 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
 
     def apply_org_and_qset_to_url(self, qset_id, org_id, response):
         """Apply org and qset filter values to the url on save."""
-        url_path, parameters = self.parse_response_url_to_parameters(response)
+        url_path, parameters = parse_response_url_to_parameters(response)
 
         if url_path is None:
             return response
@@ -284,11 +291,11 @@ class QuestionAdmin(ParseUrlToParameters, CookieFilterMixIn, admin.ModelAdmin):
         filters = self.check_org_qset_relation(filters, 'org')
 
         for i in range(len(parameters)):
-            if parameters[i][:5] == 'qset=':
-                parameters[i] = 'qset={0}'.format(filters['qset'])
-
-            if parameters[i][:4] == 'org=':
+            if parameters[i].startswith('org='):
                 parameters[i] = 'org={0}'.format(filters['org'])
+
+            if parameters[i].startswith('qset='):
+                parameters[i] = 'qset={0}'.format(filters['qset'])
 
         return parameters
 

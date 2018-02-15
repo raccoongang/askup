@@ -329,7 +329,7 @@ class Question(models.Model):
         blank=True,
         default=None
     )
-    vote_value = models.PositiveIntegerField(default=1)
+    vote_value = models.IntegerField(default=1)
 
     class Meta:
         unique_together = ('text', 'qset')
@@ -347,10 +347,6 @@ class Question(models.Model):
         Overriding the models.Model save method.
         """
         is_new = self.id is None
-
-        if self.vote_value < 0:
-            self.vote_value = 0
-
         super().save(*args, **kwargs)
 
         if is_new:
@@ -392,19 +388,14 @@ class Question(models.Model):
             question_id=self.id,
             voter_id=user_id,
         )
-
         vote_value = self.vote_value + value
-
-        if vote_value < 0:
-            vote_value = 0
-
         return vote_value, 'Thank you for your vote!'
 
     def get_votes_aggregated(self):
         """Return votes value of this question aggregated from the askup_vote table."""
         votes = Vote.objects.filter(question_id=self.id).aggregate(models.Sum('value'))
         value = votes['value__sum'] if votes['value__sum'] else 0
-        return 0 if value < 0 else value
+        return value
 
     def __str__(self):
         """Return a string representation of a Question object."""

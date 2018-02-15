@@ -80,6 +80,7 @@ def user_group_required(*required_groups):
                 return auth_check_result
 
             if check_user_has_groups(user, required_groups):
+                set_group_properties_to_request(request)
                 return func(*args, **kwargs)
 
             return redirect(reverse('askup:organizations'))
@@ -87,6 +88,12 @@ def user_group_required(*required_groups):
         return wrapped_function
 
     return wrapper
+
+
+def set_group_properties_to_request(request, groups_to_set=('admin', 'teacher', 'student')):
+    """Set _is_<group> like properties to the request object for later usage in view etc."""
+    for group in groups_to_set:
+        setattr(request, '_is_{}'.format(group), check_user_has_groups(request.user, group))
 
 
 def qset_update_form_template(request, form, qset):
@@ -134,7 +141,6 @@ def compose_question_form_and_create(request, qset_id):
     user = request.user
     form = None
     notification = ('', '')
-    obj = None
 
     if request.method == 'POST':
         form = compose_question_create_form(request, user, qset_id)
@@ -279,3 +285,21 @@ def validate_and_send_feedback_form(request, next_page):
             )
 
     return form, None
+
+
+def get_clean_filter_parameter(request):
+    """Return a clean user filter value."""
+    allowed_filters = ('all', 'mine', 'other')
+    get_parameter = request.GET.get('filter')
+    return 'all' if get_parameter not in allowed_filters else get_parameter
+
+
+def apply_filter_to_queryset(request, filter, queryset):
+    """Return a queryset with user filter applied."""
+    if filter == 'mine':
+        return queryset.filter(user_id=request.user.id)
+
+    if filter == 'other':
+        return queryset.exclude(user_id=request.user.id)
+
+    return queryset

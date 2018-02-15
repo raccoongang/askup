@@ -40,12 +40,13 @@ urlpatterns = [
     url(r'^question/delete/(?P<pk>\d+)/$', views.question_delete, name='question_delete'),
     url(
         r'^question/upvote/(?P<question_id>\d+)/$',
-        views.question_upvote, name='question_vote_up'
+        views.question_upvote,
+        name='question_upvote'
     ),
     url(
         r'^question/downvote/(?P<question_id>\d+)/$',
         views.question_downvote,
-        name='question_vote_down'
+        name='question_downvote'
     ),
     url(
         r'^answer/evaluate/(?P<answer_id>\d+)/(?P<evaluation>\d+)/$',
