@@ -40,11 +40,7 @@ def check_self_for_redirect_decorator(func):
 def check_self_for_redirect(obj):
     """Check if object has a _redirect property and return it if found."""
     redirect = getattr(obj, '_redirect', None)
-
-    if redirect:
-        return redirect
-    else:
-        return False
+    return redirect or False
 
 
 def user_group_required(*required_groups):
