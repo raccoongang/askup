@@ -17,11 +17,15 @@ from askup.views import login_view
 log = logging.getLogger(__name__)
 
 
-def client_user(username, password):
+def client_user(username, password=None):
     """Decorate a TestCase class method to login client by username and password provided."""
     def client_wrapper(func):
         def wrapping_function(*args, **kwargs):
-            args[0].client.login(username=username, password=password)
+            if username is None:
+                args[0].client.logout()
+            else:
+                args[0].client.login(username=username, password=password)
+
             result = func(*args, **kwargs)
             args[0].default_login()
             return result
@@ -221,7 +225,7 @@ class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
 
     def create_qset(self, name, parent_qset_id):
         """Create qset with the parameters."""
-        self.client.post(
+        return self.client.post(
             reverse(
                 'askup:qset_create'
             ),
@@ -808,3 +812,193 @@ class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.downvote_question(question_id)
         result_votes = Vote.objects.filter(question_id=question_id).aggregate(models.Sum('value'))
         self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
+
+
+class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
+    """Tests the user sign up process."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """
+        Set up a TestCase.
+        """
+        settings.DEBUG = False
+
+    def user_sign_up(self, username, email, first_name, second_name, org, password1, password2):
+        """
+        Send the Sign Up form and return a response.
+        """
+        return self.client.post(
+            reverse('askup:sign_up'),
+            {
+                'username': username,
+                'email': email,
+                'first_name': first_name,
+                'last_name': second_name,
+                'organization': org,
+                'password1': password1,
+                'password2': password2,
+            }
+        )
+
+    def test_sign_up_success_no_selected_organization(self):
+        """
+        Test sign up success with no selected organization and not email restricted one.
+        """
+        response = self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '',
+            'PasswordString',
+            'PasswordString',
+        )
+        self.assertRedirects(response, reverse('askup:sign_up_activation_sent'))
+        user = User.objects.filter(username='testuser01').first()
+        self.assertNotEqual(user, None)
+        orgs = user.qset_set.all()
+        self.assertEqual(orgs.count(), 0)
+
+    def test_sign_up_success_selected_organization(self):
+        """
+        Test sign up success with selected organization but not email restricted one.
+        """
+        response = self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '3',
+            'PasswordString',
+            'PasswordString',
+        )
+        self.assertRedirects(response, reverse('askup:sign_up_activation_sent'))
+        user = User.objects.filter(username='testuser01').first()
+        self.assertNotEqual(user, None)
+        orgs = user.qset_set.all()
+        self.assertEqual(orgs.count(), 1)
+        self.assertEqual(orgs[0].id, 3)
+
+    def test_sign_up_success_not_selected_organization_but_email_restricted(self):
+        """
+        Test sign up success with no selected organization but email restricted one.
+        """
+        response = self.user_sign_up(
+            'testuser01',
+            'testuser01@maildomain1.com',
+            'Test',
+            'User',
+            '',
+            'PasswordString',
+            'PasswordString',
+        )
+        self.assertRedirects(response, reverse('askup:sign_up_activation_sent'))
+        user = User.objects.filter(username='testuser01').first()
+        self.assertNotEqual(user, None)
+        orgs = user.qset_set.all()
+        self.assertEqual(orgs.count(), 1)
+        self.assertEqual(orgs[0].id, 1)
+
+    def test_sign_up_success_selected_organization_and_email_restricted(self):
+        """
+        Test sign up success with selected one public organization and email restricted one.
+        """
+        response = self.user_sign_up(
+            'testuser01',
+            'testuser01@maildomain1.com',
+            'Test',
+            'User',
+            '3',
+            'PasswordString',
+            'PasswordString',
+        )
+        self.assertRedirects(response, reverse('askup:sign_up_activation_sent'))
+        user = User.objects.filter(username='testuser01').first()
+        self.assertNotEqual(user, None)
+        orgs = user.qset_set.all().order_by('id')
+        self.assertEqual(orgs.count(), 2)
+        self.assertEqual(orgs[0].id, 1)
+        self.assertEqual(orgs[1].id, 3)
+
+    def test_sign_up_fail_unmatched_email_restricted_selected(self):
+        """
+        Test sign up fail on no username specified.
+        """
+        response = self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            1,
+            'PasswordString',
+            'PasswordString',
+        )
+        self.assertContains(response, 'This organization is an email restricted.')
+        user = User.objects.filter(email='testuser01@testuser01.com').first()
+        self.assertEqual(user, None)
+
+    def test_sign_up_fail_no_username_specified(self):
+        """
+        Test sign up fail on no username specified.
+        """
+        self.user_sign_up(
+            '',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '',
+            'PasswordString',
+            'PasswordString',
+        )
+        user = User.objects.filter(email='testuser01@testuser01.com').first()
+        self.assertEqual(user, None)
+
+    def test_sign_up_fail_no_email_specified(self):
+        """
+        Test sign up fail on no email specified.
+        """
+        self.user_sign_up(
+            'testuser01',
+            '',
+            'Test',
+            'User',
+            '',
+            'PasswordString',
+            'PasswordString',
+        )
+        user = User.objects.filter(username='testuser01').first()
+        self.assertEqual(user, None)
+
+    def test_sign_up_fail_passwords_doesnt_match(self):
+        """
+        Test sign up fail on unmatched passwords.
+        """
+        self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '',
+            'PasswordString1',
+            'PasswordString2',
+        )
+        user = User.objects.filter(username='testuser01').first()
+        self.assertEqual(user, None)
+
+    def test_sign_up_fail_passwords_unspecified(self):
+        """
+        Test sign up fail on unspecified passwords.
+        """
+        self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '',
+            '',
+            '',
+        )
+        user = User.objects.filter(username='testuser01').first()
+        self.assertEqual(user, None)

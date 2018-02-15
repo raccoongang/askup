@@ -3,8 +3,38 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models.expressions import RawSQL
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from .utils.general import check_user_has_groups
+
+
+class Profile(models.Model):
+    """
+    Handles the User profile functionality.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    email_confirmed = models.BooleanField(default=False)
+
+    def __str__(self):
+        """
+        Return string representation of the model.
+
+        Used in admin user form to represent an inline, the Profile, part of user form.
+        """
+        return self.user.username
+
+
+@receiver(post_save, sender=User)
+def update_user_profile(sender, instance, created, **kwargs):
+    """
+    Receive a post_save signal from User model and update the profile.
+    """
+    if created:
+        Profile.objects.create(user=instance)
+
+    instance.profile.save()
 
 
 class Qset(models.Model):
@@ -17,7 +47,7 @@ class Qset(models.Model):
     )
     name = models.CharField(max_length=255, db_index=True)
     type = models.PositiveSmallIntegerField(choices=TYPES, default=2)
-    # top_qset (an organization) is a qset on the top of the tree"""
+    # top_qset (an organization) is a qset on the top of the tree
     top_qset = models.ForeignKey(
         "self",
         related_name="organization_qsets",
@@ -29,7 +59,8 @@ class Qset(models.Model):
         "self",
         on_delete=models.CASCADE,
         null=True,
-        blank=True
+        blank=True,
+        verbose_name="Organization",
     )
     for_any_authenticated = models.BooleanField(default=False, db_index=True)
     for_unauthenticated = models.BooleanField(default=False, db_index=True)
@@ -37,6 +68,11 @@ class Qset(models.Model):
     own_questions_only = models.BooleanField(default=False)
     users = models.ManyToManyField(User, blank=True)
     questions_count = models.PositiveIntegerField(default=0, db_index=True)
+
+    class Meta:
+        unique_together = ('parent_qset', 'name')
+        verbose_name = 'Subject'
+        verbose_name_plural = 'Subjects'
 
     def __init__(self, *args, **kwargs):
         """Initialize the Qset model object."""
@@ -149,13 +185,8 @@ class Qset(models.Model):
         super().validate_unique(exclude)
 
     def __str__(self):
-        """
-        Return a string representation of a Qset object.
-
-        Tries to get the customized_name value first (can be passed by RawSQL)
-        in lack of it gets name field of model.
-        """
-        return getattr(self, 'customized_name', self.name)
+        """Return string representation of Qset."""
+        return self.name
 
     def get_parent_organization(self):
         """
@@ -190,35 +221,34 @@ class Qset(models.Model):
         return parents
 
     @classmethod
-    def get_user_related_qsets(cls, user, order_by, qsets_only=False):
+    def get_user_related_qsets(
+        cls,
+        user,
+        order_by,
+        qsets_only=False,
+        organizations_only=False,
+    ):
         """Return queryset of formatted qsets, permitted to the user."""
         if user and user.id:
             queryset = cls.get_user_related_qsets_queryset(user)
-
-            if qsets_only:
-                queryset = queryset.filter(parent_qset_id__gt=0)
-                prefix = ''
-            else:
-                prefix = '— '
-
-            name_selector = ''.join((
-                "case when askup_qset.parent_qset_id is null ",
-                "then askup_qset.name ",
-                "else concat('{0}', askup_qset.name) end".format(prefix),
-            ))
+            queryset = queryset.select_related('top_qset')
+            queryset = cls.apply_context_related_qsets_filters(
+                queryset,
+                qsets_only,
+                organizations_only,
+            )
             queryset = queryset.annotate(
-                customized_name=RawSQL(name_selector, tuple()),
                 is_organization=RawSQL('askup_qset.parent_qset_id is null', tuple()),
             )
             queryset = queryset.order_by(*order_by)
         else:
-            queryset = []
+            queryset = Qset.objects.none()
 
         return queryset
 
     @classmethod
     def get_user_related_qsets_queryset(cls, user):
-        """Return queryset of qset objects for the 'user related qsets' request."""
+        """Return queryset of qset objects for the user related qsets request."""
         return cls.apply_user_related_qsets_filters(user, Qset.objects.all())
 
     @staticmethod
@@ -229,8 +259,16 @@ class Qset(models.Model):
 
         return queryset
 
-    class Meta:
-        unique_together = ('parent_qset', 'name')
+    @staticmethod
+    def apply_context_related_qsets_filters(queryset, qsets_only, organizations_only):
+        """Apply context related filters to the queryset."""
+        if qsets_only:
+            queryset = queryset.filter(parent_qset_id__gt=0)
+
+        if organizations_only:
+            queryset = queryset.filter(parent_qset_id__isnull=True)
+
+        return queryset
 
 
 class Organization(Qset):
@@ -241,7 +279,7 @@ class Organization(Qset):
         return self.name
 
 
-class EmailPattern(models.Model):
+class Domain(models.Model):
     """Contains all the email patterns of the organizations."""
 
     organization = models.ForeignKey(
@@ -249,7 +287,7 @@ class EmailPattern(models.Model):
         on_delete=models.CASCADE,
         null=True
     )
-    text = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
 
 
 class Question(models.Model):

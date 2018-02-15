@@ -1,11 +1,12 @@
 """Admin views."""
 from django.contrib import admin
+from django.contrib.admin import StackedInline, TabularInline
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 
-from .forms import OrganizationModelForm, UserForm
+from .forms import OrganizationModelForm, QuestionModelForm, UserForm
 from .mixins.admin import CookieFilterMixIn
-from .models import EmailPattern, Organization, Qset, Question
+from .models import Domain, Organization, Profile, Qset, Question
 from .utils.general import parse_response_url_to_parameters
 
 
@@ -57,7 +58,7 @@ class OrganizationFilter(admin.SimpleListFilter):
 class QsetFilter(admin.SimpleListFilter):
     """Provides a qset filter for the Questions list."""
 
-    title = 'Qset'
+    title = 'Subject'
     parameter_name = 'qset'
     template = 'askup/filters/dropdown_filter.html'
 
@@ -90,20 +91,40 @@ class QsetFilter(admin.SimpleListFilter):
             return queryset.filter(qset_id=self.value())
 
 
+class DomainsInline(TabularInline):
+    model = Domain
+    can_delete = True
+    verbose_name_plural = 'Domains'
+    fk_name = 'organization'
+    extra = 0
+
+
 class OrganizationAdmin(admin.ModelAdmin):
     """Admin view for the Organization model."""
 
     form = OrganizationModelForm
-    list_display = ('name', 'email_patterns')
+    list_display = ('name', 'domains')
     fields = (
         'name',
         'users',
     )
+    inlines = (DomainsInline,)
+
+    def get_inline_instances(self, request, obj=None):
+        """
+        Return an inline instances for the form.
+
+        Overrides the function of the ModelForm with the same name.
+        """
+        if not obj:
+            return list()
+
+        return super().get_inline_instances(request, obj)
 
     @staticmethod
-    def email_patterns(obj):
+    def domains(obj):
         """Return email-patters of the organization comma separated."""
-        return ", ".join(tuple(pattern.text for pattern in obj.emailpattern_set.all()))
+        return ", ".join(domain.name for domain in obj.domain_set.all())
 
     def get_queryset(self, request):
         """
@@ -178,6 +199,9 @@ class QsetAdmin(CookieFilterMixIn, admin.ModelAdmin):
         """Apply organization filter value to the url on save."""
         url_path, parameters = parse_response_url_to_parameters(response)
 
+        if url_path is None:
+            return response
+
         for i in range(len(parameters)):
             if parameters[i].startswith('org='):
                 parameters[i] = 'org={0}'.format(organization_id)
@@ -188,6 +212,7 @@ class QsetAdmin(CookieFilterMixIn, admin.ModelAdmin):
 class QuestionAdmin(CookieFilterMixIn, admin.ModelAdmin):
     """Admin list and detailed view for the Question model."""
 
+    form = QuestionModelForm
     fields = (
         'text',
         'answer_text',
@@ -212,6 +237,7 @@ class QuestionAdmin(CookieFilterMixIn, admin.ModelAdmin):
         queryset = Qset.apply_user_related_qsets_filters(request.user, queryset)
         queryset = queryset.order_by('name')
         form.base_fields['qset'].queryset = queryset
+        form.current_user = request.user
         form.base_fields['qset'].initial = request.COOKIES.get('admin-filter-qset')
         return form
 
@@ -252,6 +278,15 @@ class QuestionAdmin(CookieFilterMixIn, admin.ModelAdmin):
     def apply_org_and_qset_to_url(self, qset_id, org_id, response):
         """Apply org and qset filter values to the url on save."""
         url_path, parameters = parse_response_url_to_parameters(response)
+
+        if url_path is None:
+            return response
+
+        parameters = self.update_parameters(parameters, qset_id, org_id)
+        return HttpResponseRedirect('?'.join((url_path, ('&'.join(parameters)))))
+
+    def update_parameters(self, parameters, qset_id, org_id):
+        """Update parameters by filter values and return them."""
         filters = {'qset': str(qset_id), 'org': str(org_id)}
         filters = self.check_org_qset_relation(filters, 'org')
 
@@ -262,14 +297,30 @@ class QuestionAdmin(CookieFilterMixIn, admin.ModelAdmin):
             if parameters[i].startswith('qset='):
                 parameters[i] = 'qset={0}'.format(filters['qset'])
 
-        return HttpResponseRedirect('?'.join((url_path, ('&'.join(parameters)))))
+        return parameters
 
 
-class EmailPatternAdmin(admin.ModelAdmin):
-    """Admin list and detailed view for the EmailPattern model."""
+class DomainAdmin(admin.ModelAdmin):
+    """Admin list and detailed view for the Domain model."""
 
-    fields = ('organization', 'text')
-    list_display = ('organization', 'text')
+    fields = ('name', 'organization')
+    list_display = ('name', 'organization')
+
+    class Media:
+        js = ('assets/hide_add_edit_icons.js',)
+
+
+class UserProfileInline(StackedInline):
+    model = Profile
+    can_delete = False
+    verbose_name_plural = 'Profile'
+    fk_name = 'user'
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Return a tuple of field names that should behave as a read only.
+        """
+        return ('email_confirmed',)
 
 
 class UserAdmin(admin.ModelAdmin):
@@ -277,11 +328,23 @@ class UserAdmin(admin.ModelAdmin):
 
     form = UserForm
     list_display = ('username', 'email', 'first_name', 'last_name')
+    inlines = (UserProfileInline,)
+
+    def get_inline_instances(self, request, obj=None):
+        """
+        Return an inline instances for the form.
+
+        Overrides the function of the ModelForm with the same name.
+        """
+        if not obj:
+            return list()
+
+        return super().get_inline_instances(request, obj)
 
 
 admin.site.register(Organization, OrganizationAdmin)
 admin.site.register(Qset, QsetAdmin)
 admin.site.register(Question, QuestionAdmin)
-admin.site.register(EmailPattern, EmailPatternAdmin)
+admin.site.register(Domain, DomainAdmin)
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)

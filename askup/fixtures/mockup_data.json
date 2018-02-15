@@ -284,19 +284,19 @@
         }
     },
     {
-        "model": "askup.emailpattern",
+        "model": "askup.domain",
         "pk": 1,
         "fields": {
             "organization": 1,
-            "text": "maildomain1.com"
+            "name": "maildomain1.com"
         }
     },
     {
-        "model": "askup.emailpattern",
+        "model": "askup.domain",
         "pk": 2,
         "fields": {
             "organization": 1,
-            "text": "maildomain11.com"
+            "name": "maildomain11.com"
         }
     },
     {

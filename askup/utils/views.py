@@ -23,6 +23,26 @@ def do_redirect_unauthenticated(user, back_url):
         return False
 
 
+def check_self_for_redirect_decorator(func):
+    """
+    Redirect on self._redirect presence.
+
+    Can decorate a dispatch() view class method to redirect request if self._redirect is present.
+    """
+    def wrapper(*args, **kwargs):
+        func_result = func(*args, **kwargs)
+        redirect = check_self_for_redirect(args[0])
+        return redirect or func_result
+
+    return wrapper
+
+
+def check_self_for_redirect(obj):
+    """Check if object has a _redirect property and return it if found."""
+    redirect = getattr(obj, '_redirect', None)
+    return redirect or False
+
+
 def user_group_required(*required_groups):
     """
     Decorate a view function to check if user belongs to one of the groups passed as an arguments.
@@ -62,7 +82,7 @@ def qset_update_form_template(request, form, qset):
         'askup/qset_form.html',
         {
             'form': form,
-            'main_title': 'Edit qset',
+            'main_title': 'Edit subject',
             'submit_label': 'Save',
             'breadcrumbs': qset.get_parents()
         }
@@ -104,10 +124,13 @@ def compose_question_form_and_create(request, qset_id):
     if request.method == 'POST':
         form = compose_question_create_form(request, user, qset_id)
         obj = question_create_form_validate(form, user)
+        qset_id = obj and obj.qset_id
         form, notification = compose_question_creation_notification(obj, form)
 
     if form is None:
-        form = compose_question_create_form(request, user, qset_id, clean_form=True)
+        form = compose_question_create_form(
+            request, user, qset_id, clean_form=True
+        )
 
     return form, notification
 

@@ -1,0 +1,14 @@
+{% extends 'askup/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<div class="container-fluid" id="sign_up_form_container">
+    <h3 class="center">Sign Up</h3>
+    <div class="prettyform">
+        <div class="box col-xs-push-0 col-md-push-1 col-lg-push-3 col-xs-12 col-md-10 col-lg-6 ">
+            {% crispy form %}
+        </div>
+    </div>
+    <br/>
+</div>
+{% endblock %}

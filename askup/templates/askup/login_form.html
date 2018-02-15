@@ -2,11 +2,10 @@
 {% load crispy_forms_tags %}
 
 {% block body %}
-<div class="prettyform">
-    <div class="container" id="signin">
+<div class="container">
+    <h3 class="title center">Sign In</h3>
+    <div class="prettyform">
         <div class="box maxwidth-box">
-            <h2 class="fixed-title center">Sign In</h2>
-
             <form accept-charset="UTF-8" action="" class="center" id="new_user" method="post">
                 <div style="display:none">
                 {% csrf_token %}
@@ -14,13 +13,14 @@
                 {{ form|crispy }}
                 <div class="center">
                     <input class="btn btn-theme" type="submit" value="Sign in">
-                    <a class="btn btn-theme" href="/users/sign_up">Sign up</a>
+                    <a class="btn btn-theme" href="{% url 'askup:sign_up' %}">Sign up</a>
                 </div>
                 <div class="center user-link">
                     <a href="{% url 'password_reset' %}">Forgot your password?</a><br>
                 </div>
             </form>
         </div>
+        <br/>
     </div>
     <br/>
 </div>

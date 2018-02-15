@@ -15,17 +15,18 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-                <h4 class="modal-title">New Qset</h4>
+                <h4 class="modal-title">New Subject</h4>
             </div>
             <div class="modal-body">
                 <form role="form" action="{% url 'askup:qset_create' %}" method="post">
                     {% csrf_token %}
-                    <div class="form-group">
+                    <div class="form-group" custom-valid-message="Name is required">
                         <label for="text"> What name would you like for this new qset? </label>
-                        <input type="text" class="form-control" name="name">
+                        <input type="text" class="form-control" name="name"
+                            placeholder="New subject name here..." required>
                     </div>
                     <div class="form-group">
-                        <label> This qset will be created under the organization:</label><br/>
+                        <label> This subject will be created under the organization:</label><br/>
                         <label>{{ main_title }}</label>
                         <input type="hidden" class="form-control" name="parent_qset" value="{{ current_qset_id }}">
                     </div>
