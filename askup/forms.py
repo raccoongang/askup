@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
-    email = forms.EmailField(max_length=254, help_text='Your email address.')
+    email = forms.EmailField(required=True, max_length=254, help_text='Your email address.')
     organization = forms.ModelChoiceField(
         queryset=Organization.objects.all().order_by('name'),
         empty_label='apply to organization...',
@@ -33,7 +33,7 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password1', 'password2')
+        fields = ('username', 'email', 'first_name', 'last_name', 'password1', 'password2')
 
     def _set_up_fields(self, *args, **kwargs):
         """
@@ -42,6 +42,7 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
         queryset = self.fields['organization'].queryset.select_related().annotate(
             email_restricted=models.Sum('domain__id')
         )
+        self.fields['email'].required = True
         self.fields['organization'].queryset = queryset
         self.fields['organization'].choices = self.compose_organization_choices(queryset)
 
@@ -68,6 +69,8 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
         self.helper.layout = Layout(
             'username',
             'email',
+            'first_name',
+            'last_name',
             'password1',
             'password2',
             'organization',
@@ -87,7 +90,7 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
         Validate the organization field.
         """
         organization = self.cleaned_data['organization']
-        email = self.cleaned_data['email']
+        email = self.cleaned_data.get('email')
 
         if not self.check_if_organization_is_permitted(organization, email):
             raise forms.ValidationError(
