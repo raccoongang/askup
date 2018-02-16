@@ -42,6 +42,7 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
             email_restricted=models.Sum('domain__id')
         )
         self.fields['email'].required = True
+        self.fields['organization'].required = True
         self.fields['organization'].queryset = queryset
         self.fields['organization'].choices = self.compose_organization_choices(queryset)
 
