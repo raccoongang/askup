@@ -26,7 +26,7 @@ from .mixins.views import (
     ListViewUserContextDataMixIn,
     QsetViewMixIn,
 )
-from .models import Answer, Domain, Organization, Qset, Question
+from .models import Answer, Organization, Qset, Question
 from .tokens import account_activation_token
 from .utils.general import (
     add_notification_to_url,
@@ -273,27 +273,21 @@ def validate_sign_up_form_and_create_user(form, request):
         user.is_active = False
         user.save()
         send_user_an_activation_email(user, request)
-        email = user.email
         user.groups = [Group.objects.get(name='Student')]
-        domain = Domain.objects.filter(name=email[email.find('@') + 1:]).first()
         add_organizations_to_user(
-            set({
-                form.cleaned_data['organization'],
-                domain and domain.organization,
-            }),
+            form.cleaned_data['organization'],
             user,
         )
 
         return redirect('askup:sign_up_activation_sent')
 
 
-def add_organizations_to_user(organizations, user):
+def add_organizations_to_user(organization, user):
     """
-    Iterate over organizations tuple and add the non-empty organizations to the user.
+    Add a non-empty organization to the user.
     """
-    for organization in organizations:
-        if organization:
-            user.qset_set.add(organization)
+    if organization:
+        user.qset_set.add(organization)
 
 
 def send_user_an_activation_email(user, request):
