@@ -2,7 +2,6 @@ from .base import * # noqa F403
 
 
 DEBUG = False
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'nginx']
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
