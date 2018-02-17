@@ -12,14 +12,14 @@ from django.contrib.auth.models import Group, User
 from django.db import models
 from django.urls import reverse
 
-from askup.mixins.forms import InitFormWithCancelButtonMixIn
+from askup.mixins.forms import InitFormWithCancelButtonMixIn, UsernameCleanMixIn
 from askup.models import Organization, Qset, Question
 
 
 log = logging.getLogger(__name__)
 
 
-class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
+class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreationForm):
     organization = forms.ModelChoiceField(
         queryset=Organization.objects.all().order_by('name'),
         empty_label='apply to organization...',
@@ -42,6 +42,7 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
             email_restricted=models.Sum('domain__id')
         )
         self.fields['email'].required = True
+        self.fields['username'].help_text = ''
         self.fields['organization'].required = True
         self.fields['organization'].queryset = queryset
         self.fields['organization'].choices = self.compose_organization_choices(queryset)
@@ -116,7 +117,7 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
         return False
 
 
-class UserLoginForm(forms.Form):
+class UserLoginForm(UsernameCleanMixIn, forms.Form):
     """Handles the user login form behaviour."""
 
     username = forms.CharField()
@@ -152,7 +153,7 @@ class UserLoginForm(forms.Form):
         return super().clean(*args, **kwargs)
 
 
-class UserForm(forms.ModelForm):
+class UserForm(UsernameCleanMixIn, forms.ModelForm):
     """Handles the user create/edit form behaviour."""
 
     password = forms.CharField(widget=forms.PasswordInput)
@@ -186,6 +187,7 @@ class UserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.fields['username'].required = True
+        self.fields['username'].help_text = ''
         self.fields['email'].required = True
         self.fields['password'].required = self.instance.id is None  # Required on user creation
 
@@ -200,16 +202,6 @@ class UserForm(forms.ModelForm):
 
         if self.instance.id:
             self.fields['organizations'].initial = self.instance.qset_set.all()
-
-    def clean_username(self):
-        """Check username for non matching with other user's email."""
-        user = self.instance
-        queryset = User.objects.filter(email=self.cleaned_data['username']).exclude(id=user.id)
-
-        if user and queryset.first():
-            raise forms.ValidationError("This username or email is already exists.")
-
-        return self.cleaned_data['username']
 
     def clean_email(self):
         """Check email for non matching with other user's username."""
