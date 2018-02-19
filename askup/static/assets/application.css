@@ -9253,3 +9253,11 @@ select.form-control, input.form-control {
 #sign_up_form_container label {
     margin-top: 10px;
 }
+
+#hint_id_organization a {
+    color: #00b3fe;
+}
+
+#hint_id_organization a:hover {
+    color: #23527c;
+}
