@@ -1,4 +1,7 @@
+import re
+
 from crispy_forms.layout import ButtonHolder, HTML, Submit
+from django import forms
 from django.urls import reverse
 
 
@@ -51,3 +54,22 @@ class InitFormWithCancelButtonMixIn(object):
             'Cancel' +
             '</a>'
         )
+
+
+class UsernameCleanMixIn(object):
+    """
+    Provides the method that makes an additional validates on username field of User.
+    """
+
+    _username_pattern = re.compile(r'^[\w-]+$')
+
+    def clean_username(self):
+        """
+        Validate the username field.
+        """
+        if not self._username_pattern.match(self.cleaned_data['username']):
+            raise forms.ValidationError(
+                'Can contain only latin characters, digits, - or _'
+            )
+
+        return self.cleaned_data['username']

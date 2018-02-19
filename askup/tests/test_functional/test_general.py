@@ -978,3 +978,35 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         )
         user = User.objects.filter(username='testuser01').first()
         self.assertEqual(user, None)
+
+    def test_sign_up_fail_username_has_at(self):
+        """
+        Test sign up fail on username contained @ symbol.
+        """
+        self.user_sign_up(
+            'testuser01@test',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '3',
+            'testuser01',
+            'testuser01',
+        )
+        user = User.objects.filter(username='testuser01@test').first()
+        self.assertEqual(user, None)
+
+    def test_sign_up_fail_username_has_non_latin_character(self):
+        """
+        Test sign up fail on username contained @ symbol.
+        """
+        self.user_sign_up(
+            'Átestuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '3',
+            'testuser01',
+            'testuser01',
+        )
+        user = User.objects.filter(username='Átestuser01').first()
+        self.assertEqual(user, None)
