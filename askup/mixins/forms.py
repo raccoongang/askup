@@ -61,7 +61,7 @@ class UsernameCleanMixIn(object):
     Provides the method that makes an additional validates on username field of User.
     """
 
-    _username_pattern = re.compile(r'^[a-zA-Z0-9_-]+$')
+    _username_pattern = re.compile(r'^[\w-]+$')
 
     def clean_username(self):
         """
