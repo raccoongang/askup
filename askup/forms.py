@@ -20,14 +20,15 @@ log = logging.getLogger(__name__)
 
 
 class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreationForm):
+    """
+    Form for the User Sign Up process.
+    """
+
     organization = forms.ModelChoiceField(
         queryset=Organization.objects.all().order_by('name'),
         empty_label='apply to organization...',
         required=False,
-        help_text=(
-            'Organization you will be applied to, after the registration' +
-            '<ul><li>Email restricted organizations are applied automatically.</li></ul>'
-        ),
+        help_text='',
     )
 
     class Meta:
@@ -46,6 +47,15 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
         self.fields['organization'].required = True
         self.fields['organization'].queryset = queryset
         self.fields['organization'].choices = self.compose_organization_choices(queryset)
+        help_text = (
+            'Organization you will be applied to, after the registration<br/>' +
+            '<a href="{}?next={}&subject={}">I want to become a teacher</a>'
+        )
+        self.fields['organization'].help_text = help_text.format(
+            reverse('askup:feedback'),
+            reverse('askup:sign_up'),
+            'I want to become a teacher...'
+        )
 
     def compose_organization_choices(self, queryset):
         """
@@ -465,6 +475,7 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
     message = forms.CharField(min_length=10, max_length=2000, widget=forms.Textarea)
 
     def __init__(self, *args, **kwargs):
+        subject = kwargs.pop('subject', None)
         super().__init__(*args, **kwargs)
         user = kwargs.pop('user', None)
         self.fields['email'].widget.attrs['placeholder'] = 'Your email...'
@@ -472,6 +483,9 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
         if user and user.id:
             self.fields['email'].initial = user.email
             self.fields['email'].widget.attrs['readonly'] = True
+
+        if subject:
+            self.fields['subject'].initial = subject
 
         self.fields['subject'].widget.attrs['placeholder'] = 'Feadback subject...'
         self.fields['message'].widget.attrs['placeholder'] = 'Feadback message...'

@@ -245,9 +245,11 @@ def validate_answer_form_and_create(form, request, question):
 def validate_and_send_feedback_form(request, next_page):
     """Compose form and create question on validation success."""
     user = request.user
+    subject = request.GET.get('subject', '')
     form = FeedbackForm(
         request.POST or None,
         user=user,
+        subject=subject,
     )
 
     if request.method == 'POST':
