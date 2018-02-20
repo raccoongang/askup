@@ -2,15 +2,16 @@ FROM python:3.6
 
 MAINTAINER Michael Khaimov <khaimovmr@gmail.com>
 
+ENV LOADMOCKUPDATA $LOADMOCKUPDATA
 RUN apt-get update && apt-get install -y postgresql-client netcat
 
 WORKDIR /askup
-COPY . /askup
+COPY requirements.txt /askup/requirements.txt
 RUN pip install -r requirements.txt
 
 VOLUME /var/log
-VOLUME /askup/askup/static
+VOLUME /askup
 
 EXPOSE 8001
 
-cmd until nc -w 3 postgres 5432; do sleep 1; done && /askup/init-prod-env.sh && python manage.py runserver 0.0.0.0:8001
+cmd until nc -w 3 postgres 5432; do echo "Trying to connect to the postgres...\n"; sleep 1; done && /askup/init-django.sh && while true; do python manage.py runserver 0.0.0.0:8001; sleep 5; done

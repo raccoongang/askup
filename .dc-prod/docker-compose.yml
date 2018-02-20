@@ -2,40 +2,36 @@ version: '3.4'
 services:
   postgres:
     image: postgres:10.1
-    restart: always
+    restart: $RESTARTPOLICY
     environment:
-      POSTGRES_PASSWORD: $PGPASSWORD
-      POSTGRES_DB: $PGDBNAME
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: askup
     volumes:
       - ./.volumes/postgres/data:/var/lib/postgresql/data
-  postfix:
-    image: khaimovmr/postfix
-    restart: always
-    environment:
-      MYHOSTNAME: $MYHOSTNAME
-      myhostname: $MYHOSTNAME
-    volumes:
-      - ./.volumes/postfix/log:/var/log
   django:
-    build: 
+    build:
       context: ..
       dockerfile: .dc-prod/django/Dockerfile
-    restart: always
+    restart: $RESTARTPOLICY
+    stdin_open: $STDINOPEN
     environment:
-      PGPASSWORD: $PGPASSWORD
-      MOCKUPDATA: $MOCKUPDATA # set to any non-empty string if the app should be filled with the mockup data
+      ASKUPENV: $ASKUPENV
+      DJANGO_SETTINGS_MODULE: config.settings.$ASKUPENV
+      PGPASSWORD: pass
+      LOADMOCKUPDATA: $LOADMOCKUPDATA
     volumes:
       - /opt/docker-volumes/askup/askup/log:/var/log
-      - ../askup/static:/askup/askup/static
+      - ..:/askup
     depends_on:
       - postgres
-      - postfix
   nginx:
     image: nginx:1.9.12
     depends_on:
       - django
+    restart: $RESTARTPOLICY
     ports:
       - 80:80
+      - 443:443
     volumes:
       - ../askup/static:/var/www/sites/static
       - ./.volumes/nginx/logs:/var/logs
