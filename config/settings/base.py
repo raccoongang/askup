@@ -136,18 +136,17 @@ INTERNAL_IPS = [
 LOGIN_URL = '/askup/sign-in'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-DEFAULT_FROM_EMAIL = 'AskUp mailer <mailer@askup.net>'
 
-# Default secure settings
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 25
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-EMAIL_USE_TLS = False
-
-SECRET_KEY = '(+wig4^c1749^^(23rp3$8y8r8_9o%-=#ujjfkasbjl=)-#b&o'
-
+# Processing the secure settings below
 try:
-    from .secure import *  # noqa F403
+    import config.settings.secure as secure
 except ImportError:
-    pass
+    import config.settings.secure_example as secure
+
+EMAIL_HOST = secure.EMAIL_HOST
+EMAIL_PORT = secure.EMAIL_PORT
+EMAIL_HOST_USER = secure.EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = secure.EMAIL_HOST_PASSWORD
+EMAIL_USE_TLS = secure.EMAIL_USE_TLS
+DEFAULT_FROM_EMAIL = secure.DEFAULT_FROM_EMAIL
+SECRET_KEY = secure.SECRET_KEY

@@ -4,5 +4,4 @@ EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 EMAIL_USE_TLS = False
 DEFAULT_FROM_EMAIL = 'AskUp mailer <mailer@askup.net>'
-
-SECRET_KEY = '(+wig4^c1749^^(23rp3$8y8r8_9o%-=#ujjfkasbjl=)-#b&o'
+SECRET_KEY = 'default key'

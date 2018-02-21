@@ -14,4 +14,4 @@ VOLUME /askup
 
 EXPOSE 8001
 
-cmd until nc -w 3 postgres 5432; do echo "Trying to connect to the postgres...\n"; sleep 1; done && /askup/init-django.sh && while true; do python manage.py runserver 0.0.0.0:8001; sleep 5; done
+cmd until nc -w 3 postgres 5432; do echo "Trying to connect to the postgres...\n"; sleep 1; done && /askup/init-django.sh && /askup/start-server.sh

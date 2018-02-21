@@ -6,8 +6,8 @@ else
     DCENV="$1"
 fi
 
-ASKUP_REPO_PATH=`dirname $(readlink -f $0)`
-cd $ASKUP_REPO_PATH/.dc-$DCENV &&
-    docker-compose down &&
-    rm -rf .volumes &&
-    docker-compose build && docker-compose up -d
+docker-compose down
+cd `dirname $(readlink -f $0)`/.dc-$DCENV &&
+    sudo rm -rf .volumes &&
+    sudo docker-compose build &&
+    sudo docker-compose up -d

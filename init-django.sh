@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# Run the initiation below only at the first container run
+[[ -e /.initiated ]] && exit
+touch /.initiated
+
 python manage.py migrate
 python manage.py collectstatic --noinput
 python manage.py loaddata askup/fixtures/groups.json
