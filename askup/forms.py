@@ -12,22 +12,23 @@ from django.contrib.auth.models import Group, User
 from django.db import models
 from django.urls import reverse
 
-from askup.mixins.forms import InitFormWithCancelButtonMixIn
+from askup.mixins.forms import InitFormWithCancelButtonMixIn, UsernameCleanMixIn
 from askup.models import Organization, Qset, Question
 
 
 log = logging.getLogger(__name__)
 
 
-class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
+class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreationForm):
+    """
+    Form for the User Sign Up process.
+    """
+
     organization = forms.ModelChoiceField(
         queryset=Organization.objects.all().order_by('name'),
         empty_label='apply to organization...',
         required=False,
-        help_text=(
-            'Organization you will be applied to, after the registration' +
-            '<ul><li>Email restricted organizations are applied automatically.</li></ul>'
-        ),
+        help_text='',
     )
 
     class Meta:
@@ -42,9 +43,19 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
             email_restricted=models.Sum('domain__id')
         )
         self.fields['email'].required = True
+        self.fields['username'].help_text = ''
         self.fields['organization'].required = True
         self.fields['organization'].queryset = queryset
         self.fields['organization'].choices = self.compose_organization_choices(queryset)
+        help_text = (
+            'Organization you will be applied to, after the registration<br/>' +
+            '<a href="{}?next={}&subject={}">I want to become a teacher</a>'
+        )
+        self.fields['organization'].help_text = help_text.format(
+            reverse('askup:feedback'),
+            reverse('askup:sign_up'),
+            'I want to become a teacher...'
+        )
 
     def compose_organization_choices(self, queryset):
         """
@@ -116,7 +127,7 @@ class SignUpForm(InitFormWithCancelButtonMixIn, UserCreationForm):
         return False
 
 
-class UserLoginForm(forms.Form):
+class UserLoginForm(UsernameCleanMixIn, forms.Form):
     """Handles the user login form behaviour."""
 
     username = forms.CharField()
@@ -152,7 +163,7 @@ class UserLoginForm(forms.Form):
         return super().clean(*args, **kwargs)
 
 
-class UserForm(forms.ModelForm):
+class UserForm(UsernameCleanMixIn, forms.ModelForm):
     """Handles the user create/edit form behaviour."""
 
     password = forms.CharField(widget=forms.PasswordInput)
@@ -186,6 +197,7 @@ class UserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.fields['username'].required = True
+        self.fields['username'].help_text = ''
         self.fields['email'].required = True
         self.fields['password'].required = self.instance.id is None  # Required on user creation
 
@@ -200,16 +212,6 @@ class UserForm(forms.ModelForm):
 
         if self.instance.id:
             self.fields['organizations'].initial = self.instance.qset_set.all()
-
-    def clean_username(self):
-        """Check username for non matching with other user's email."""
-        user = self.instance
-        queryset = User.objects.filter(email=self.cleaned_data['username']).exclude(id=user.id)
-
-        if user and queryset.first():
-            raise forms.ValidationError("This username or email is already exists.")
-
-        return self.cleaned_data['username']
 
     def clean_email(self):
         """Check email for non matching with other user's username."""
@@ -473,6 +475,7 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
     message = forms.CharField(min_length=10, max_length=2000, widget=forms.Textarea)
 
     def __init__(self, *args, **kwargs):
+        subject = kwargs.pop('subject', None)
         super().__init__(*args, **kwargs)
         user = kwargs.pop('user', None)
         self.fields['email'].widget.attrs['placeholder'] = 'Your email...'
@@ -480,6 +483,9 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
         if user and user.id:
             self.fields['email'].initial = user.email
             self.fields['email'].widget.attrs['readonly'] = True
+
+        if subject:
+            self.fields['subject'].initial = subject
 
         self.fields['subject'].widget.attrs['placeholder'] = 'Feadback subject...'
         self.fields['message'].widget.attrs['placeholder'] = 'Feadback message...'

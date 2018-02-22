@@ -107,3 +107,4 @@ ENV/
 # Django non-deployable static
 askup/static/admin
 askup/static/debug_toolbar
+config/settings/secure.py
