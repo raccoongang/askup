@@ -19,9 +19,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '(+wig4^c1749^^(23rp3$8y8r8_9o%-=#ujjfkasbjl=)-#b&o'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -139,9 +136,17 @@ INTERNAL_IPS = [
 LOGIN_URL = '/askup/sign-in'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'postfix'
-EMAIL_PORT = 25
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-EMAIL_USE_TLS = False
-DEFAULT_FROM_EMAIL = 'AskUp mailer <mailer@askup.net>'
+
+# Processing the secure settings below
+try:
+    import config.settings.secure as secure
+except ImportError:
+    import config.settings.secure_example as secure
+
+EMAIL_HOST = secure.EMAIL_HOST
+EMAIL_PORT = secure.EMAIL_PORT
+EMAIL_HOST_USER = secure.EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = secure.EMAIL_HOST_PASSWORD
+EMAIL_USE_TLS = secure.EMAIL_USE_TLS
+DEFAULT_FROM_EMAIL = secure.DEFAULT_FROM_EMAIL
+SECRET_KEY = secure.SECRET_KEY

@@ -174,10 +174,18 @@ def send_feedback_to_recipient(admins, body, from_email):
                 body,
                 'AskUp Mailer <mailer@askup.net>',
                 (to_email,),
-                reply_to=('AskUp mailer {0}'.format(from_email),)
+                reply_to=('AskUp mailer <{}>'.format(from_email),)
             )
         except SMTPException:
-            log.exception("Exception caught on email send:\n%s\n\n", (body, from_email, to_email))
+            log.exception(
+                "Exception caught on email send:\n{}\n{}\n{}\n{}\n{}\n".format(
+                    "Feedback from the web-site",
+                    body,
+                    'AskUp Mailer <mailer@askup.net>',
+                    (to_email,),
+                    ('AskUp mailer {}'.format(from_email),)
+                )
+            )
 
 
 def send_mail(subject, message, from_email, recipient_list, reply_to=None):
