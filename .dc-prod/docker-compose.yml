@@ -20,7 +20,7 @@ services:
       PGPASSWORD: pass
       LOADMOCKUPDATA: $LOADMOCKUPDATA
     volumes:
-      - /opt/docker-volumes/askup/askup/log:/var/log
+      - ./.volumes/askup/log:/var/log
       - ..:/askup
     depends_on:
       - postgres
