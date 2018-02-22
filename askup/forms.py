@@ -392,10 +392,14 @@ class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
                     Div('answer_text', css_class='col-sm-12'),
                     css_class='row'
                 ),
-                InlineRadios(
-                    'blooms_tag',
-                    template='askup/layout/radioselect_inline.html',
-                    hide='true'
+                Div(
+                    InlineRadios(
+                        'blooms_tag',
+                        template='askup/layout/radioselect_inline.html',
+                        hide='true'
+                    ),
+                    HTML('<div class="row blooms-taxonomy-hints center"></div><br/>'),
+                    css_class='row blooms-taxonomy'
                 ),
                 Div('qset'),
             ),
