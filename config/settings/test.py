@@ -4,9 +4,8 @@ DATABASES['default']['USER'] = 'test'  # noqa: F405
 DATABASES['default']['NAME'] = 'travis_test_db'  # noqa: F405
 
 try:
-    import config.settings.secure as secure
+    import config.settings.secure as secure  # noqa: F401
 except ImportError:
-    import config.settings.secure_example as secure
     DATABASES['default']['HOST'] = 'localhost'  # noqa: F405
 
 SECRET_KEY = 'KEY'
