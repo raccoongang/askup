@@ -38,8 +38,7 @@ services:
       - django
     restart: $RESTARTPOLICY
     ports:
-      - 80:80
-      - 443:443
+      - 8000:80
     volumes:
       - ../askup/static:/var/www/sites/static
       - ./.volumes/nginx/logs:/var/logs
