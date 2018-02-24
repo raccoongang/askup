@@ -6,8 +6,10 @@ else
     DCENV="$1"
 fi
 
+cd `dirname $(readlink -f $0)`/.dc-$DCENV
+
+[[ $? != 0 ]] && echo "Such environment isn't defined" && exit 1
+
 docker-compose down
-cd `dirname $(readlink -f $0)`/.dc-$DCENV &&
-    sudo rm -rf .volumes &&
-    sudo docker-compose build &&
-    sudo docker-compose up -d
+sudo rm -rf .volumes
+sudo docker-compose build && sudo docker-compose up -d
