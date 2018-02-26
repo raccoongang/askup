@@ -55,9 +55,63 @@ def get_user_questions_count(user_id):
 
 
 def get_student_questions_count(user_id):
-    """Return total questions number of the student."""
+    """Return total questions count of the student."""
     with connection.cursor() as cursor:
         cursor.execute('select count(id) from askup_question where user_id = %s', (user_id,))
+        return cursor.fetchone()[0] or 0
+
+    return 0
+
+
+def get_user_place_in_rank_list(user_id):
+    """
+    Return a rank list place of the user by id.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            '''
+                select rank from
+                    (
+                        select
+                            aq.user_id as user_id,
+                            rank() over (
+                                order by sum(aq.vote_value) desc,
+                                min(aq.created_at) asc
+                            ) as rank
+                        from auth_user as au
+                        inner join askup_question aq on aq.user_id = au.id
+                        group by aq.user_id
+                    ) as ranked
+                    where ranked.user_id = %s
+            ''',
+            (user_id,)
+        )
+        result = cursor.fetchone()
+        return (result and result[0]) or 0
+
+    return 0
+
+
+def get_user_correct_answers_count(user_id):
+    """
+    Return total amount of the correct answers of the user by id.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute('select count(id) from askup_answer where self_evaluation = 2 and user_id = %s', (user_id,))
+        return cursor.fetchone()[0] or 0
+
+    return 0
+
+
+def get_user_incorrect_answers_count(user_id):
+    """
+    Return total amount of the incorrect answers of the user by id.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            'select count(id) from askup_answer where self_evaluation in (0, 1) and user_id = %s',
+            (user_id,)
+        )
         return cursor.fetchone()[0] or 0
 
     return 0
@@ -243,3 +297,75 @@ def parse_response_url_to_parameters(response):
     query_string = url_parts[1] if len(url_parts) > 1 else ''
     parameters = query_string.split('&') if query_string else []
     return url_parts[0], parameters
+
+
+def get_student_last_week_questions_count(user_id):
+    """Return last week questions count of the student."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+                select count(id)
+                from askup_question
+                where user_id = %s and created_at >= now() - interval '1 week'
+            """,
+            (user_id,)
+        )
+        return cursor.fetchone()[0] or 0
+
+    return 0
+
+
+def get_student_last_week_votes_value(user_id):
+    """Return last week thumbs ups student received."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+                select sum(av.value)
+                from askup_question as aq
+                inner join askup_vote as av on av.question_id = aq.id
+                where
+                    aq.user_id = %s and
+                    av.created_at >= now() - interval '1 week'
+            """,
+            (user_id,)
+        )
+        return cursor.fetchone()[0] or 0
+
+    return 0
+
+
+def get_student_last_week_correct_answers_count(user_id):
+    """Return last week correct answers of the student."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+                select count(id)
+                from askup_answer
+                where
+                    self_evaluation = 2 and
+                    user_id = %s and
+                    created_at >= now() - interval '1 week'
+            """,
+            (user_id,)
+        )
+        return cursor.fetchone()[0] or 0
+
+    return 0
+
+
+def get_student_last_week_incorrect_answers_count(user_id):
+    """Return last week correct answers of the student."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+                select count(id)
+                from askup_answer
+                where self_evaluation in (0, 1)
+                    and user_id = %s
+                    and created_at >= now() - interval '1 week'
+            """,
+            (user_id,)
+        )
+        return cursor.fetchone()[0] or 0
+
+    return 0
