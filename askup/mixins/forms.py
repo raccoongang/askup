@@ -2,6 +2,7 @@ import re
 
 from crispy_forms.layout import ButtonHolder, HTML, Submit
 from django import forms
+from django.contrib.auth.models import User
 from django.urls import reverse
 
 
@@ -58,7 +59,7 @@ class InitFormWithCancelButtonMixIn(object):
 
 class UsernameCleanMixIn(object):
     """
-    Provides the method that makes an additional validates on username field of User.
+    Provides the method that makes an additional validates on username field of User model.
     """
 
     _username_pattern = re.compile(r'^[\w-]+$')
@@ -71,5 +72,8 @@ class UsernameCleanMixIn(object):
             raise forms.ValidationError(
                 'Can contain only latin characters, digits, - or _'
             )
+
+        if User.objects.filter(username__iexact=self.cleaned_data['username']).exists():
+            raise forms.ValidationError("This username is already used")
 
         return self.cleaned_data['username']
