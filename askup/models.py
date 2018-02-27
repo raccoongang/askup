@@ -375,7 +375,10 @@ class Question(models.Model):
             voter_id=user_id,
         )
         self.vote_value = F('vote_value') + value
-        self.save()
+
+        # Saves an object and replaces the F() expression with an actual value
+        self.refresh_from_db()
+
         return self.vote_value, 'Thank you for your vote!'
 
     def get_votes_aggregated(self):
