@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import F
 from django.db.models.expressions import RawSQL
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -373,7 +374,7 @@ class Question(models.Model):
             question_id=self.id,
             voter_id=user_id,
         )
-        self.vote_value += value
+        self.vote_value = F('vote_value') + value
         self.save()
         return self.vote_value, 'Thank you for your vote!'
 
