@@ -16,12 +16,12 @@
                 <div class="row col-xs-12 margin-bottom-10">
                     <div class="user-points-cell col-xs-3">
                         <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
-                            data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                            data-trigger="click focus hover" title="" data-original-title="User's place in the Rank List">
                             <h2 class="vcenter">{{ user_rank_place }}</h2>
                         </div>
                     </div>
                     <div class="user-points-label col-xs-9">
-                        <h2>Your place in the Rank List</h2>
+                        <h2>{% if own_profile %}Your{% else %}User's{% endif %} place in the Rank List</h2>
                     </div>
                 </div>
                 <div class="clearfix"></div>

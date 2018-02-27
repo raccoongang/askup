@@ -11,28 +11,21 @@ from django.urls import reverse
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
 from askup.models import Answer, Qset, Question, Vote
+from askup.utils.tests import client_user
 from askup.views import login_view
 
+from askup.utils.general import (
+    get_user_place_in_rank_list,
+    get_user_score_by_id,
+    get_user_correct_answers_count,
+    get_user_incorrect_answers_count,
+    get_student_last_week_questions_count,
+    get_student_last_week_votes_value,
+    get_student_last_week_correct_answers_count,
+    get_student_last_week_incorrect_answers_count,
+)
 
 log = logging.getLogger(__name__)
-
-
-def client_user(username, password=None):
-    """Decorate a TestCase class method to login client by username and password provided."""
-    def client_wrapper(func):
-        def wrapping_function(*args, **kwargs):
-            if username is None:
-                args[0].client.logout()
-            else:
-                args[0].client.login(username=username, password=password)
-
-            result = func(*args, **kwargs)
-            args[0].default_login()
-            return result
-
-        return wrapping_function
-
-    return client_wrapper
 
 
 class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
@@ -404,7 +397,7 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
 
     def create_question(self, text, answer_text, qset_id):
         """Create question by general "Generate question" form."""
-        self.client.post(
+        return self.client.post(
             reverse(
                 'askup:question_create',
             ),
@@ -649,7 +642,7 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         )
 
 
-class AnswerModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+class AnswerModelFormCase(LoginAdminByDefaultMixIn, TestCase):
     """Tests the Answer model related forms."""
 
     fixtures = ['groups', 'mockup_data']
@@ -814,7 +807,7 @@ class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
 
 
-class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
+class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
     """Tests the user sign up process."""
 
     fixtures = ['groups', 'mockup_data']
@@ -1010,3 +1003,104 @@ class TestUserSignUp(LoginAdminByDefaultMixIn, TestCase):
         )
         user = User.objects.filter(username='Átestuser01').first()
         self.assertEqual(user, None)
+
+class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
+    """Tests the student dashboard statistics."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """Set up the test assets."""
+        settings.DEBUG = False
+
+    def get_user_profile(self, user_id):
+        """Return user profile response."""
+        return self.client.get(reverse('askup:user_profile', kwargs={'user_id': user_id}))
+
+    def test_user_statistics(self):
+        """Test the user authentication."""
+        response = UserSignUpCase.user_sign_up(
+            self,
+            'testuser_stat',
+            'testuser_stat@maildomain1.com',
+            'Test',
+            'User',
+            '1',
+            'tu_stat01',
+            'tu_stat01',
+        )
+        user = User.objects.filter(username='testuser_stat').first()
+        self.assertIsNotNone(user)
+        user.is_active = True
+        user.save()
+
+        self.initial_user_stats_assertions(user.id)
+        self.active_user_stats_assertions(user.id)
+
+    def initial_user_stats_assertions(self, user_id):
+        """Check freshly created user stats."""
+        rank_place = get_user_place_in_rank_list(user_id)
+        user_score = get_user_score_by_id(user_id)
+        correct_answers = get_user_correct_answers_count(user_id)
+        incorrect_answers = get_user_incorrect_answers_count(user_id)
+        week_questions = get_student_last_week_questions_count(user_id)
+        week_thumbs_ups = get_student_last_week_votes_value(user_id)
+        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
+        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+
+        self.assertEqual(rank_place, 0)
+        self.assertEqual(user_score, 0)
+        self.assertEqual(correct_answers, 0)
+        self.assertEqual(incorrect_answers, 0)
+        self.assertEqual(week_questions, 0)
+        self.assertEqual(week_thumbs_ups, 0)
+        self.assertEqual(week_correct_answers, 0)
+        self.assertEqual(week_incorrect_answers, 0)
+
+    def active_user_stats_assertions(self, user_id):
+        """Check an active user stats."""
+        self.client.login(username='testuser_stat', password='tu_stat01')
+        question_text = 'Question text'
+        question_answer = 'Question answer'
+        question_response = QuestionModelFormTest.create_question(
+            self, question_text, question_answer, 4
+        )
+        question = Question.objects.filter(text=question_text, user_id=user_id).first()
+
+        self.client.login(username='student01', password='student01')
+        VoteModelFormTest.upvote_question(self, question.id)
+
+        self.client.login(username='teacher01', password='teacher01')
+        VoteModelFormTest.upvote_question(self, question.id)
+
+        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 0)  # wrong
+        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 1)  # counts as wrong
+        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 2)  # Correct
+
+        self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
+
+        rank_place = get_user_place_in_rank_list(user_id)
+        user_score = get_user_score_by_id(user_id)
+        correct_answers = get_user_correct_answers_count(user_id)
+        incorrect_answers = get_user_incorrect_answers_count(user_id)
+        week_questions = get_student_last_week_questions_count(user_id)
+        week_thumbs_ups = get_student_last_week_votes_value(user_id)
+        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
+        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+
+        self.assertEqual(rank_place, 1)
+        self.assertEqual(user_score, 3)
+        self.assertEqual(correct_answers, 1)
+        self.assertEqual(incorrect_answers, 2)
+        self.assertEqual(week_questions, 1)
+        self.assertEqual(week_thumbs_ups, 3)
+        self.assertEqual(week_correct_answers, 1)
+        self.assertEqual(week_incorrect_answers, 2)
+
+    def answer_and_evaluate(self, username, password, question_id, evaluation):
+        self.client.login(username=username, password=password)
+        answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
+        AnswerModelFormCase.evaluate_answer(self, answer_response['answer_id'], evaluation)
+        answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
+        self.assertIsNotNone(answer)
+        self.assertEqual(answer.self_evaluation, evaluation)

@@ -313,7 +313,7 @@ class Question(models.Model):
         blank=True,
         default=None
     )
-    vote_value = models.IntegerField(default=1)
+    vote_value = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ('text', 'qset')
@@ -335,6 +335,7 @@ class Question(models.Model):
 
         if is_new:
             self.qset.iterate_questions_count(1)
+            self.vote(self.user_id, 1)
         elif self.qset_id != self._previous_qset_id:
             # Process the case when the question is just created
             if self._previous_qset_id:
@@ -372,8 +373,9 @@ class Question(models.Model):
             question_id=self.id,
             voter_id=user_id,
         )
-        vote_value = self.vote_value + value
-        return vote_value, 'Thank you for your vote!'
+        self.vote_value += value
+        self.save()
+        return self.vote_value, 'Thank you for your vote!'
 
     def get_votes_aggregated(self):
         """Return votes value of this question aggregated from the askup_vote table."""
