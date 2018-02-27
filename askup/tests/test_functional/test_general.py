@@ -11,19 +11,18 @@ from django.urls import reverse
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
 from askup.models import Answer, Qset, Question, Vote
-from askup.utils.tests import client_user
-from askup.views import login_view
-
 from askup.utils.general import (
-    get_user_place_in_rank_list,
-    get_user_score_by_id,
-    get_user_correct_answers_count,
-    get_user_incorrect_answers_count,
-    get_student_last_week_questions_count,
-    get_student_last_week_votes_value,
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
+    get_student_last_week_questions_count,
+    get_student_last_week_votes_value,
+    get_user_correct_answers_count,
+    get_user_incorrect_answers_count,
+    get_user_place_in_rank_list,
+    get_user_score_by_id,
 )
+from askup.utils.tests import client_user
+from askup.views import login_view
 
 log = logging.getLogger(__name__)
 
@@ -1004,22 +1003,29 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
         user = User.objects.filter(username='Átestuser01').first()
         self.assertEqual(user, None)
 
+
 class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
     """Tests the student dashboard statistics."""
 
     fixtures = ['groups', 'mockup_data']
 
     def setUp(self):
-        """Set up the test assets."""
+        """
+        Set up the test assets.
+        """
         settings.DEBUG = False
 
     def get_user_profile(self, user_id):
-        """Return user profile response."""
+        """
+        Return user profile response.
+        """
         return self.client.get(reverse('askup:user_profile', kwargs={'user_id': user_id}))
 
     def test_user_statistics(self):
-        """Test the user authentication."""
-        response = UserSignUpCase.user_sign_up(
+        """
+        Test the user authentication.
+        """
+        UserSignUpCase.user_sign_up(
             self,
             'testuser_stat',
             'testuser_stat@maildomain1.com',
@@ -1038,7 +1044,9 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
         self.active_user_stats_assertions(user.id)
 
     def initial_user_stats_assertions(self, user_id):
-        """Check freshly created user stats."""
+        """
+        Check freshly created user stats.
+        """
         rank_place = get_user_place_in_rank_list(user_id)
         user_score = get_user_score_by_id(user_id)
         correct_answers = get_user_correct_answers_count(user_id)
@@ -1058,11 +1066,13 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(week_incorrect_answers, 0)
 
     def active_user_stats_assertions(self, user_id):
-        """Check an active user stats."""
+        """
+        Check an active user stats.
+        """
         self.client.login(username='testuser_stat', password='tu_stat01')
         question_text = 'Question text'
         question_answer = 'Question answer'
-        question_response = QuestionModelFormTest.create_question(
+        QuestionModelFormTest.create_question(
             self, question_text, question_answer, 4
         )
         question = Question.objects.filter(text=question_text, user_id=user_id).first()
@@ -1098,6 +1108,9 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(week_incorrect_answers, 2)
 
     def answer_and_evaluate(self, username, password, question_id, evaluation):
+        """
+        Answer and evaluate question by a specified user.
+        """
         self.client.login(username=username, password=password)
         answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
         AnswerModelFormCase.evaluate_answer(self, answer_response['answer_id'], evaluation)
