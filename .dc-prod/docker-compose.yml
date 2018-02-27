@@ -8,6 +8,10 @@ services:
       POSTGRES_DB: askup
     volumes:
       - ./.volumes/postgres/data:/var/lib/postgresql/data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
   django:
     build:
       context: ..
@@ -20,20 +24,27 @@ services:
       PGPASSWORD: pass
       LOADMOCKUPDATA: $LOADMOCKUPDATA
     volumes:
-      - /opt/docker-volumes/askup/askup/log:/var/log
+      - ./.volumes/askup/log:/var/log
       - ..:/askup
     depends_on:
       - postgres
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
   nginx:
     image: nginx:1.9.12
     depends_on:
       - django
     restart: $RESTARTPOLICY
     ports:
-      - 80:80
-      - 443:443
+      - 8000:80
     volumes:
       - ../askup/static:/var/www/sites/static
       - ./.volumes/nginx/logs:/var/logs
       - ./.volumes/nginx/tmp:/tmp
       - ./nginx/conf.d:/etc/nginx/conf.d
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"

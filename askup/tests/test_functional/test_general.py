@@ -834,6 +834,27 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
             }
         )
 
+    def test_sign_up_success_some_spaces_inside_password(self):
+        """
+        Test sign up success with selected organization but not email restricted one.
+        """
+        response = self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '3',
+            'Password  String',
+            'Password  String',
+        )
+        self.assertRedirects(response, reverse('askup:sign_up_activation_sent'))
+        user = User.objects.filter(username='testuser01').first()
+        self.assertNotEqual(user, None)
+        user.is_active = True
+        user.save()
+        login_result = self.client.login(username='testuser01', password='Password  String')
+        self.assertEquals(login_result, True)
+
     def test_sign_up_success_selected_organization(self):
         """
         Test sign up success with selected organization but not email restricted one.
@@ -873,6 +894,25 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
         orgs = user.qset_set.all().order_by('id')
         self.assertEqual(orgs.count(), 1)
         self.assertEqual(orgs[0].id, 3)
+
+    def test_sign_up_fail_empty_password(self):
+        """
+        Test sign up fails with empty password.
+        """
+        empty_pass = '      '
+        self.user_sign_up(
+            'testuser01',
+            'testuser01@testuser01.com',
+            'Test',
+            'User',
+            '3',
+            empty_pass,
+            empty_pass,
+        )
+        user = User.objects.filter(username='testuser01').first()
+        self.assertIs(user, None)
+        login_result = self.client.login(username='testuser01', password=empty_pass)
+        self.assertIs(login_result, False)
 
     def test_sign_up_fail_unmatched_email_restricted_selected(self):
         """
