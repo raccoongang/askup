@@ -76,7 +76,6 @@ def get_user_place_in_rank_list(user_id):
                             au.id as user_id,
                             rank() over (
                                 order by sum(coalesce(aq.vote_value, 0)) desc,
-                                min(coalesce(aq.created_at, au.date_joined)) asc,
                                 min(au.id) asc
                             ) as rank
                         from auth_user as au
