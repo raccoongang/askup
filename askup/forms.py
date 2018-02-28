@@ -139,6 +139,17 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
 
         return password2
 
+    def clean_email(self):
+        """
+        Validate the email field.
+        """
+        email = self.cleaned_data['email']
+
+        if User.objects.filter(email__iexact=self.cleaned_data['email']).exists():
+            raise forms.ValidationError("This email is already used")
+
+        return email
+
 
 class UserLoginForm(forms.Form):
     """Handles the user login form behaviour."""
@@ -227,12 +238,16 @@ class UserForm(UsernameCleanMixIn, forms.ModelForm):
             self.fields['organizations'].initial = self.instance.qset_set.all()
 
     def clean_email(self):
-        """Check email for non matching with other user's username."""
-        user = self.instance
-        queryset = User.objects.filter(username=self.cleaned_data['email']).exclude(id=user.id)
+        """
+        Validate the email field.
+        """
+        email_queryset = User.objects.filter(email__iexact=self.cleaned_data['email'])
 
-        if user and queryset.first():
-            raise forms.ValidationError("This username or email is already exists.")
+        if self.instance.id:
+            email_queryset = email_queryset.exclude(id=self.instance.id)
+
+        if email_queryset.exists():
+            raise forms.ValidationError("This email is already used")
 
         return self.cleaned_data['email']
 
