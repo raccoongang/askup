@@ -9296,3 +9296,7 @@ select.form-control, input.form-control {
 .pastel-red {
     background-color: #ef8599;
 }
+
+.blooms-taxonomy-hints {
+    margin-top: -10px;
+}

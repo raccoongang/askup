@@ -126,8 +126,21 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
 
         return False
 
+    def clean_password2(self, *args, **kwargs):
+        """
+        Validate the password1 field.
 
-class UserLoginForm(UsernameCleanMixIn, forms.Form):
+        Used in the SignUpForm.
+        """
+        password2 = super().clean_password2()
+
+        if not password2.strip():
+            raise forms.ValidationError("Password contains all spaces")
+
+        return password2
+
+
+class UserLoginForm(forms.Form):
     """Handles the user login form behaviour."""
 
     username = forms.CharField()
@@ -223,8 +236,12 @@ class UserForm(UsernameCleanMixIn, forms.ModelForm):
 
         return self.cleaned_data['email']
 
-    def clean_password(self, *args, **kwargs):
-        """Clean the password field data received."""
+    def clean_password(self):
+        """
+        Validate the password field.
+
+        Used in the UserForm (admin panel).
+        """
         if self.instance.id and not self.cleaned_data['password']:
             return self.instance.password
 
@@ -392,10 +409,14 @@ class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
                     Div('answer_text', css_class='col-sm-12'),
                     css_class='row'
                 ),
-                InlineRadios(
-                    'blooms_tag',
-                    template='askup/layout/radioselect_inline.html',
-                    hide='true'
+                Div(
+                    InlineRadios(
+                        'blooms_tag',
+                        template='askup/layout/radioselect_inline.html',
+                        hide='true'
+                    ),
+                    HTML('<div class="row blooms-taxonomy-hints center"></div><br/>'),
+                    css_class='row blooms-taxonomy'
                 ),
                 Div('qset'),
             ),

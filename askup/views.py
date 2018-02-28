@@ -35,11 +35,9 @@ from .utils.general import (
     get_student_last_week_incorrect_answers_count,
     get_student_last_week_questions_count,
     get_student_last_week_votes_value,
-    get_user_answers_count,
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
     get_user_place_in_rank_list,
-    get_user_questions_count,
     get_user_score_by_id,
 )
 from .utils.views import (
