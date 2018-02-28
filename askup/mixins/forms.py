@@ -73,7 +73,12 @@ class UsernameCleanMixIn(object):
                 'Can contain only latin characters, digits, - or _'
             )
 
-        if User.objects.filter(username__iexact=self.cleaned_data['username']).exists():
+        username_queryset = User.objects.filter(username__iexact=self.cleaned_data['username'])
+
+        if self.instance.id:
+            username_queryset = username_queryset.exclude(id=self.instance.id)
+
+        if username_queryset.exists():
             raise forms.ValidationError("This username is already used")
 
         return self.cleaned_data['username']
