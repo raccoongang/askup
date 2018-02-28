@@ -1096,7 +1096,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
         week_correct_answers = get_student_last_week_correct_answers_count(user_id)
         week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
 
-        self.assertEqual(rank_place, 0)
+        self.assertEqual(rank_place, 6)  # 6-th user after the mockup ones
         self.assertEqual(user_score, 0)
         self.assertEqual(correct_answers, 0)
         self.assertEqual(incorrect_answers, 0)
