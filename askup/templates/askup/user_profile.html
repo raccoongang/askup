@@ -67,7 +67,7 @@
                         <div class="row user-points-cell">
                             <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
-                                <h2 class="vcenter">{{ own_last_week_questions|stringformat:"+d" }}</h2>
+                                <h2 class="vcenter">{% if own_last_week_questions == 0 %}0{% else %}{{ own_last_week_questions|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
                         <div class="row user-points-label">
@@ -78,7 +78,7 @@
                         <div class="row user-points-cell">
                             <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
-                                <h2 class="vcenter">{{ own_last_week_thumbs_up|stringformat:"+d" }}</h2>
+                                <h2 class="vcenter">{% if own_last_week_thumbs_up == 0 %}0{% else %}{{ own_last_week_thumbs_up|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
                         <div class="row user-points-label">
@@ -89,7 +89,7 @@
                         <div class="row user-points-cell">
                             <div class="user-points pastel-green" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
-                                <h2 class="vcenter">{{ own_last_week_correct_answers|stringformat:"+d" }}</h2>
+                                <h2 class="vcenter">{% if own_last_week_correct_answers == 0 %}0{% else %}{{ own_last_week_correct_answers|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
                         <div class="row user-points-label">
@@ -100,7 +100,7 @@
                         <div class="row user-points-cell">
                             <div class="user-points pastel-red" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
-                                <h2 class="vcenter">{{ own_last_week_incorrect_answers|stringformat:"+d" }}</h2>
+                                <h2 class="vcenter">{% if own_last_week_incorrect_answers == 0 %}0{% else %}{{ own_last_week_incorrect_answers|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
                         <div class="row user-points-label">
