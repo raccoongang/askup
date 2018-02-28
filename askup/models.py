@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import F
 from django.db.models.expressions import RawSQL
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -313,7 +314,7 @@ class Question(models.Model):
         blank=True,
         default=None
     )
-    vote_value = models.IntegerField(default=1)
+    vote_value = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ('text', 'qset')
@@ -335,6 +336,7 @@ class Question(models.Model):
 
         if is_new:
             self.qset.iterate_questions_count(1)
+            self.vote(self.user_id, 1)
         elif self.qset_id != self._previous_qset_id:
             # Process the case when the question is just created
             if self._previous_qset_id:
@@ -372,8 +374,12 @@ class Question(models.Model):
             question_id=self.id,
             voter_id=user_id,
         )
-        vote_value = self.vote_value + value
-        return vote_value, 'Thank you for your vote!'
+        self.vote_value = F('vote_value') + value
+
+        # Saves an object and replaces the F() expression with an actual value
+        self.refresh_from_db()
+
+        return self.vote_value, 'Thank you for your vote!'
 
     def get_votes_aggregated(self):
         """Return votes value of this question aggregated from the askup_vote table."""

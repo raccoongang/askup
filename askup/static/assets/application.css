@@ -1660,7 +1660,7 @@ pre code {
     position: relative;
     min-height: 1px;
     padding-left: 15px;
-    padding-right: 15px
+    padding-right: 15px;
 }
 .col-xs-1,
 .col-xs-2,
@@ -9161,11 +9161,12 @@ ul.qset-list-compressed {
     background-color: darkorange;
     color: white;
     border-radius: 50%;
-    width: 100px;
-    height: 100px
+    width: 80px;
+    height: 80px;
 }
 .total-points h2 {
-    margin-top: 30px
+    margin-top: 30px;
+    font-size: 20px;
 }
 .no-qset-chosen {
     color: gray;
@@ -9260,6 +9261,40 @@ select.form-control, input.form-control {
 
 #hint_id_organization a:hover {
     color: #23527c;
+}
+
+.user-points-cell {
+    text-align: center;
+}
+
+.user-points {
+    padding: 0;
+    display: inline-block;
+    color: black;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+}
+
+.user-points h2, .user-points-label h2  {
+    margin-top: 20px;
+    font-size: 18px;
+}
+
+.margin-bottom-10 {
+    margin-bottom: 10px;
+}
+
+.pastel-orange {
+    background-color: #ffc965;
+}
+
+.pastel-green {
+    background-color: #b8eb96;
+}
+
+.pastel-red {
+    background-color: #ef8599;
 }
 
 .blooms-taxonomy-hints {
