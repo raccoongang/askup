@@ -241,7 +241,8 @@
             "created_at": "2017-12-20T12:40:05.950Z",
             "updated_at": "2017-12-22T12:37:25.448Z",
             "user": 3,
-            "blooms_tag": 0
+            "blooms_tag": 0,
+            "vote_value": 1
         }
     },
     {
@@ -254,7 +255,8 @@
             "created_at": "2017-12-20T12:40:17.130Z",
             "updated_at": "2017-12-22T12:38:10.890Z",
             "user": 2,
-            "blooms_tag": null
+            "blooms_tag": null,
+            "vote_value": 1
         }
     },
     {
@@ -267,7 +269,8 @@
             "created_at": "2017-12-20T12:48:54.975Z",
             "updated_at": "2017-12-22T12:38:23.867Z",
             "user": 2,
-            "blooms_tag": null
+            "blooms_tag": null,
+            "vote_value": 1
         }
     },
     {
@@ -280,7 +283,8 @@
             "created_at": "2017-12-20T12:49:52.814Z",
             "updated_at": "2017-12-22T12:38:15.646Z",
             "user": 3,
-            "blooms_tag": null
+            "blooms_tag": null,
+            "vote_value": 1
         }
     },
     {
