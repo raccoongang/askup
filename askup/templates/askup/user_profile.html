@@ -2,9 +2,12 @@
 
 {% block body %}
 <div class="container-fluid">
+    <div class="row center">
+        <h3>{{ user_organizations|default:"No organizations assigned to the user" }}</h3>
+    </div>
     <div class="row">
         <div class="col-sm-3">
-            <div class="box center dash-profile">
+            <div class="box center dash-profile rounded-10">
                 <img alt="Person" src="/static/assets/default-avatar.png">
                 <br><br>
                 <h3 class="center">{{ first_name }} {{ last_name }}</h3>
@@ -21,7 +24,7 @@
                         </div>
                     </div>
                     <div class="user-points-label col-xs-9">
-                        <h2>{% if own_profile %}Your{% else %}User's{% endif %} place in the Rank List</h2>
+                        <h2>{% if is_owner %}Your{% else %}User's{% endif %} place in the Rank List</h2>
                     </div>
                 </div>
                 <div class="clearfix"></div>
@@ -111,17 +114,27 @@
                 <div class="clearfix"></div>
             </div>
         </div>
-    </div>
-    <div class="col-sm-9">
-        <!--            <h3>Your recent questions</h3>
-
-            <form accept-charset="UTF-8" action="" class="edit_user" id="edit_user_1" method="post">
-                <div style="display:none"><input name="utf8" type="hidden" value="✓">{% csrf_token %}</div>
-                <div class="form-group">
+        <div class="col-sm-9">
+            <div class="row" style="margin: 0 25px">
+            {% if is_student %}
+                <div class="profile-nav-bar">
+                    <div>
+                            <a href="{% url 'askup:user_profile' user_id %}"
+                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile" %} active{% endif %}">My questions</a>
+                            <a href="{% url 'askup:user_profile_rank_list' user_id %}"
+                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile_rank_list" %} active{% endif %}">Rank list</a>
+                    </div>
                 </div>
-                <input class="btn btn-theme" data-disable-with="Saving..." id="user-save" name="commit"
-                    type="submit" value="Save">
-            </form>-->
+                <div class="list">
+                    {% if request.resolver_match.url_name == "user_profile" %}
+                        {% include "askup/user_profile_my_questions.html" %}
+                    {% else %}
+                        {% include "askup/user_profile_rank_list.html" %}
+                    {% endif %}
+                </div>
+            {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 </div>

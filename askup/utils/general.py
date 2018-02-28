@@ -92,6 +92,75 @@ def get_user_place_in_rank_list(user_id):
     return 0
 
 
+def get_user_profile_rank_list(user_id):
+    """
+    Aquire and return a list of rows for the user profile rank list.
+    """
+    first_items = get_user_profile_rank_list_elements(args=(user_id,))
+    result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(first_items, user_id)
+
+    if user_is_present:
+        return result_row_datas
+    
+    result_row_datas += [(0, 0, '', 0, 0)]  # adding an ellipsis row
+    user_item = get_user_profile_rank_list_elements('ranked.id = %s', (user_id,))
+    user_row_data, _ = compose_user_profile_rank_list_row_data(user_item)
+    result_row_datas += user_row_data
+    return result_row_datas
+
+
+def compose_user_profile_rank_list_row_data(row, user_id_to_check=None):
+    """
+    Compose user profile rank list single row data from the query result row.
+    """
+    items = []
+    user_is_present = False
+
+    for place, id, username, first_name, last_name, questions, thumbs_up in row:
+        if user_id_to_check == id:
+            user_is_present = True
+
+        name = ' '.join((first_name, last_name))
+        name = '{} ({})'.format(name, username) if name else username
+        items.append((place, id, name, questions, thumbs_up))
+
+    return items, user_is_present
+
+    
+def get_user_profile_rank_list_elements(expression='ranked.place < 10', args=[]):
+    """
+    Return a rank list place of the user by id.
+    """
+    with connection.cursor() as cursor:
+        query = '''select * from
+                    (
+                        select
+                            rank() over (
+                                order by sum(coalesce(aq.vote_value, 0)) desc,
+                                min(au.id) asc
+                            ) as place,
+                            au.id as id,
+                            au.username as username,
+                            au.first_name as first_name,
+                            au.last_name as first_name,
+                            count(aq.id) as questions,
+                            sum(coalesce(aq.vote_value, 0)) as thumbs_up
+                        from auth_user as au
+                        left join askup_question aq on aq.user_id = au.id
+                        group by au.id
+                        order by place
+                    ) as ranked
+                    where {}'''.format(expression)
+        cursor.execute(
+            query,
+            args
+        )
+        result = cursor.fetchall()
+        return result
+
+    return []
+
+
 def get_user_correct_answers_count(user_id):
     """
     Return total amount of the correct answers of the user by id.

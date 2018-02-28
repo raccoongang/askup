@@ -1,0 +1,17 @@
+{% if place == 0 %}
+<div class="center">
+    <h4>&bull;&bull;&bull;</h4>
+</div>
+{% else %}
+<div class="row row-box white-box rounded-5 margin-top-10 {% if user_id == row_user_id %}current-user{% endif %}">
+    <div class="col-sm-1 row-box blue-box rounded-5">{{ place }} place</div>
+    <div class="col-sm-10 line-height-31 center">
+        <div class="col-sm-6"><a href="{% url 'askup:user_profile_rank_list' row_user_id %}">{{ name }}</a></div>
+
+    
+        <div class="col-sm-2 grey-box rounded-5 margin-left-10">{{ questions }} question{{ questions|pluralize }}</div>
+        <div class="col-sm-1"></div>
+        <div class="col-sm-2 grey-box rounded-5 margin-left-10">{{ thumbs_up }} thumbs up</div>
+    </div>
+</div>
+{% endif %}
