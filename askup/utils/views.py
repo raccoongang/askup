@@ -143,7 +143,7 @@ def compose_question_creation_notification(obj, form):
         message = (
             'Your question has been submitted! ' +
             'View it <a href="{0}" class="bu">here</a> ' +
-            'or create a next one'
+            'or create a new question below'
         )
         notification = ('success', message.format(url))
     else:
@@ -187,7 +187,7 @@ def question_vote(user, question_id, value):
     if user.id == question.user_id:
         response = {
             'result': 'error',
-            'message': 'You can not vote for your own questions'
+            'message': 'You cannot vote for your own questions'
         }
         return JsonResponse(response)
 

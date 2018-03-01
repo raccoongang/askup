@@ -4,11 +4,11 @@ import json
 import logging
 from smtplib import SMTPException
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail.message import EmailMessage
 from django.db import connection
 from django.shortcuts import get_object_or_404
-
 
 log = logging.getLogger(__name__)
 
@@ -215,6 +215,7 @@ def send_feedback(from_email, subject, message):
         send_feedback_to_recipient(admins, body, from_email)
         return True
 
+    send_feedback_received_notification(from_email)
     logging.warning("The system didn't find any of admins to send a feedback form to.")
     return False
 
@@ -226,20 +227,44 @@ def send_feedback_to_recipient(admins, body, from_email):
             send_mail(
                 "Feedback from the web-site",
                 body,
-                'AskUp Mailer <mailer@askup.net>',
+                settings.DEFAULT_FROM_EMAIL,
                 (to_email,),
-                reply_to=('AskUp mailer <{}>'.format(from_email),)
+                reply_to=('AskUp support <{}>'.format(from_email),)
             )
         except SMTPException:
             log.exception(
                 "Exception caught on email send:\n{}\n{}\n{}\n{}\n{}\n".format(
                     "Feedback from the web-site",
                     body,
-                    'AskUp Mailer <mailer@askup.net>',
+                    settings.DEFAULT_FROM_EMAIL,
                     (to_email,),
-                    ('AskUp mailer {}'.format(from_email),)
+                    ('AskUp support {}'.format(from_email),)
                 )
             )
+
+
+def send_feedback_received_notification(user_email):
+    """
+    Send a feedback notification email to the user.
+    """
+    body = "Hello.\n\nWe have received a message from you and will reply soon.\n\nThank you!"
+
+    try:
+        send_mail(
+            "We have received your feedback",
+            body,
+            settings.DEFAULT_FROM_EMAIL,
+            (user_email,),
+        )
+    except SMTPException:
+        log.exception(
+            "Exception caught on email send:\n{}\n{}\n{}\n{}\n".format(
+                "We have received your feedback",
+                body,
+                settings.DEFAULT_FROM_EMAIL,
+                (user_email,),
+            )
+        )
 
 
 def send_mail(subject, message, from_email, recipient_list, reply_to=None):
