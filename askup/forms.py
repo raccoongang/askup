@@ -48,13 +48,12 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
         self.fields['organization'].queryset = queryset
         self.fields['organization'].choices = self.compose_organization_choices(queryset)
         help_text = (
-            'Organization you will be applied to, after the registration<br/>' +
-            '<a href="{}?next={}&subject={}">I want to become a teacher</a>'
+            '<a href="{}?next={}&subject={}">I want to create my own group</a>'
         )
         self.fields['organization'].help_text = help_text.format(
             reverse('askup:feedback'),
             reverse('askup:sign_up'),
-            'I want to become a teacher...'
+            'I want to create my own group'
         )
 
     def compose_organization_choices(self, queryset):
@@ -101,7 +100,7 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
         Validate the organization field.
         """
         organization = self.cleaned_data['organization']
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get('email', '')
 
         if not self.check_if_organization_is_permitted(organization, email):
             raise forms.ValidationError(
@@ -138,6 +137,17 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
             raise forms.ValidationError("Password contains all spaces")
 
         return password2
+
+    def clean_email(self):
+        """
+        Validate the email field.
+        """
+        email = self.cleaned_data['email']
+
+        if User.objects.filter(email__iexact=self.cleaned_data['email']).exists():
+            raise forms.ValidationError("This email is already used")
+
+        return email
 
 
 class UserLoginForm(forms.Form):
@@ -227,12 +237,16 @@ class UserForm(UsernameCleanMixIn, forms.ModelForm):
             self.fields['organizations'].initial = self.instance.qset_set.all()
 
     def clean_email(self):
-        """Check email for non matching with other user's username."""
-        user = self.instance
-        queryset = User.objects.filter(username=self.cleaned_data['email']).exclude(id=user.id)
+        """
+        Validate the email field.
+        """
+        email_queryset = User.objects.filter(email__iexact=self.cleaned_data['email'])
 
-        if user and queryset.first():
-            raise forms.ValidationError("This username or email is already exists.")
+        if self.instance.id:
+            email_queryset = email_queryset.exclude(id=self.instance.id)
+
+        if email_queryset.exists():
+            raise forms.ValidationError("This email is already used")
 
         return self.cleaned_data['email']
 
@@ -409,10 +423,14 @@ class QuestionModelForm(InitFormWithCancelButtonMixIn, forms.ModelForm):
                     Div('answer_text', css_class='col-sm-12'),
                     css_class='row'
                 ),
-                InlineRadios(
-                    'blooms_tag',
-                    template='askup/layout/radioselect_inline.html',
-                    hide='true'
+                Div(
+                    InlineRadios(
+                        'blooms_tag',
+                        template='askup/layout/radioselect_inline.html',
+                        hide='true'
+                    ),
+                    HTML('<div class="row blooms-taxonomy-hints center"></div><br/>'),
+                    css_class='row blooms-taxonomy'
                 ),
                 Div('qset'),
             ),

@@ -26,7 +26,16 @@ $(document).ready(function(){
             $($(this).parent().children()[0]).trigger('click');
             return false;
         }
+
+        var radio = $(this).find('input').first();
+
+        if (radio.length == 0) {
+            return;
+        }
+
+        show_blooms_taxonomy_hint(radio);
     });
+
     $('.upvote-button, .downvote-button').click(function(e){
         if ($(this).attr('data-vote') == 'upvote') {
             url_base = '/askup/question/upvote/';
@@ -63,6 +72,8 @@ $(document).ready(function(){
             event.preventDefault()
         }
     });
+
+    check_active_blooms_taxonomy();
 });
 
 function alert_init() {
@@ -161,5 +172,34 @@ function on_answer_success(data) {
         });
         $('.show-on-answered').slideDown();
         $('.hide-on-answered').slideUp();
+    }
+}
+
+var blooms_taxonomy_hints = {
+    '0': "Retrieving relevant knowledge from long-term memory",
+    '1': "Determining the meaning of facts by building connections between new and prior knowledge",
+    '2': "Carry out a procedure in a given situation or predict an outcome given a perturbation in the system",
+    '3': "Interpreting data and selecting the best conclusion, making a diagnosis",
+    '4': "Making judgements based on criteria and standards",
+    '5': "Developing new ideas, combining elements into new patterns"
+};
+
+function check_active_blooms_taxonomy() {
+    var radios = $('.blooms-taxonomy .btn-toggleable').find('input[type=radio]:checked');
+
+    if (radios.length == 0) {
+        return;
+    }
+
+    show_blooms_taxonomy_hint(radios.first());
+}
+
+function show_blooms_taxonomy_hint(taxonomy_element) {
+    if (taxonomy_element.val() === '') {
+        $('.blooms-taxonomy .blooms-taxonomy-hints').html('');
+    } else {
+        $('.blooms-taxonomy .blooms-taxonomy-hints').html(
+            blooms_taxonomy_hints[parseInt(taxonomy_element.val())]
+        );
     }
 }
