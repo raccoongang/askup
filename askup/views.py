@@ -374,7 +374,7 @@ def login_view(request):
         if request.user.is_authenticated():
             return redirect(
                 add_notification_to_url(
-                    ('success', 'You\'ve successfuly signed in'),
+                    ('success', 'You\'ve successfuly logged in'),
                     next_page,
                 )
             )
@@ -387,7 +387,7 @@ def logout_view(request):
     logout(request)
     return redirect(
         add_notification_to_url(
-            ('danger', 'You were signed out'),
+            ('danger', 'You were logged out'),
             '/',
         ),
     )

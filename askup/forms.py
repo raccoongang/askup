@@ -53,7 +53,7 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
         self.fields['organization'].help_text = help_text.format(
             reverse('askup:feedback'),
             reverse('askup:sign_up'),
-            'I want to create ny own group'
+            'I want to create my own group'
         )
 
     def compose_organization_choices(self, queryset):
