@@ -100,7 +100,7 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
         Validate the organization field.
         """
         organization = self.cleaned_data['organization']
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get('email', '')
 
         if not self.check_if_organization_is_permitted(organization, email):
             raise forms.ValidationError(
