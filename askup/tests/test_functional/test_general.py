@@ -19,6 +19,7 @@ from askup.utils.general import (
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
     get_user_place_in_rank_list,
+    get_user_profile_rank_list,
     get_user_score_by_id,
 )
 from askup.utils.tests import client_user
@@ -817,7 +818,7 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
         """
         settings.DEBUG = False
 
-    def user_sign_up(self, username, email, first_name, second_name, org, password1, password2):
+    def user_sign_up(self, username, email, first_name, last_name, org, password1, password2):
         """
         Send the Sign Up form and return a response.
         """
@@ -827,7 +828,7 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
                 'username': username,
                 'email': email,
                 'first_name': first_name,
-                'last_name': second_name,
+                'last_name': last_name,
                 'organization': org,
                 'password1': password1,
                 'password2': password2,
@@ -1176,27 +1177,50 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         """
         return self.client.get(reverse('askup:user_profile_rank_list', kwargs={'user_id': user_id}))
 
+    def create_dummy_users(self):
+        """
+        Create 20 dummy users to fill over a rank list.
+        """
+        username = 'testuser_rank_list{}'
+        first_name = 'Test {}'
+        last_name = 'User {}'
+
+        for i in range(20):
+            UserSignUpCase.user_sign_up(
+                self,
+                username.format(i),
+                'testuser_rank_list{}@maildomain1.com'.format(),
+                first_name.format(i),
+                last_name.format(i),
+                '1',
+                'tu_rlist01',
+                'tu_rlist01',
+            )
+
     def test_user_statistics(self):
         """
         Test the user authentication.
         """
+        username = 'testuser_rank_list'
+        first_name = 'Test'
+        last_name = 'User'
         UserSignUpCase.user_sign_up(
             self,
-            'testuser_stat',
-            'testuser_stat@maildomain1.com',
-            'Test',
-            'User',
+            username,
+            'testuser_rank_list@maildomain1.com',
+            first_name,
+            last_name,
             '1',
-            'tu_stat01',
-            'tu_stat01',
+            'tu_rlist01',
+            'tu_rlist01',
         )
-        user = User.objects.filter(username='testuser_stat').first()
+        user = User.objects.filter(username='testuser_rank_list').first()
         self.assertIsNotNone(user)
         user.is_active = True
         user.save()
 
         self.initial_user_stats_assertions(user.id)
-        self.active_user_stats_assertions(user.id)
+        self.active_user_stats_assertions(user.id, username, first_name, last_name)
 
     def initial_user_stats_assertions(self, user_id):
         """
@@ -1220,11 +1244,11 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(week_correct_answers, 0)
         self.assertEqual(week_incorrect_answers, 0)
 
-    def active_user_stats_assertions(self, user_id):
+    def active_user_stats_assertions(self, user_id, username, first_name, last_name):
         """
         Check an active user stats.
         """
-        self.client.login(username='testuser_stat', password='tu_stat01')
+        self.client.login(username='testuser_rank_list', password='tu_rlist01')
         question_text = 'Question text'
         question_answer = 'Question answer'
         QuestionModelFormTest.create_question(
@@ -1238,29 +1262,22 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.client.login(username='teacher01', password='teacher01')
         VoteModelFormTest.upvote_question(self, question.id)
 
-        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 0)  # wrong
-        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 1)  # counts as wrong
-        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 2)  # Correct
-
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 0)  # wrong
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 1)  # counts as wrong
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
         self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
 
-        rank_place = get_user_place_in_rank_list(user_id)
-        user_score = get_user_score_by_id(user_id)
-        correct_answers = get_user_correct_answers_count(user_id)
-        incorrect_answers = get_user_incorrect_answers_count(user_id)
-        week_questions = get_student_last_week_questions_count(user_id)
-        week_thumbs_ups = get_student_last_week_votes_value(user_id)
-        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
-        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+        __import__('pdb').set_trace()
+        for row in get_user_profile_rank_list(user_id):
+            place, return_user_id, name, questions, thumbs_up = row
 
-        self.assertEqual(rank_place, 1)
-        self.assertEqual(user_score, 3)
-        self.assertEqual(correct_answers, 1)
-        self.assertEqual(incorrect_answers, 2)
-        self.assertEqual(week_questions, 1)
-        self.assertEqual(week_thumbs_ups, 3)
-        self.assertEqual(week_correct_answers, 1)
-        self.assertEqual(week_incorrect_answers, 2)
+            if row ==
+
+        self.assertEqual(place, 1)
+        self.assertEquea(return_user_id, 6)
+        self.assertEquea(name, '{} {} ({})'.format(first_name, last_name, username))
+        self.assertEqual(thumbs_up, 3)
+        self.assertEqual(questions, 1)
 
     def answer_and_evaluate(self, username, password, question_id, evaluation):
         """
