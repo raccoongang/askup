@@ -29,8 +29,9 @@ class TestAdminPanelGroupQuestionsDeleting(TestCase):
         """
         qset = Qset.objects.get(id=4)
         questions_count_before = qset.questions_count  # 3 questions in this qset initially
+        self.assertEqual(questions_count_before, 3)
         questions = Question.objects.filter(qset_id=qset.id)
         questions.delete()
         qset.refresh_from_db()
         questions_count_after = qset.questions_count  # 0 questions so far, after the deletion
-        self.assertEqual(questions_count_before, questions_count_after + 3)
+        self.assertEqual(questions_count_after, 0)
