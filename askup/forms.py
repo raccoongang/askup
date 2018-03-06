@@ -48,13 +48,12 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
         self.fields['organization'].queryset = queryset
         self.fields['organization'].choices = self.compose_organization_choices(queryset)
         help_text = (
-            'Organization you will be applied to, after the registration<br/>' +
-            '<a href="{}?next={}&subject={}">I want to become a teacher</a>'
+            '<a href="{}?next={}&subject={}">I want to create my own group</a>'
         )
         self.fields['organization'].help_text = help_text.format(
             reverse('askup:feedback'),
             reverse('askup:sign_up'),
-            'I want to become a teacher...'
+            'I want to create my own group'
         )
 
     def compose_organization_choices(self, queryset):
@@ -101,7 +100,7 @@ class SignUpForm(UsernameCleanMixIn, InitFormWithCancelButtonMixIn, UserCreation
         Validate the organization field.
         """
         organization = self.cleaned_data['organization']
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get('email', '')
 
         if not self.check_if_organization_is_permitted(organization, email):
             raise forms.ValidationError(

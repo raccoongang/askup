@@ -28,6 +28,21 @@ from askup.views import login_view
 log = logging.getLogger(__name__)
 
 
+class GeneralTestCase(TestCase):
+    """
+    General test case class inherited by all the functional test cases below.
+    """
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """
+        Set up the default test assets.
+        """
+        settings.DEBUG = False
+        self.default_login()
+
+
 class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
     """Tests the user authentication."""
 
@@ -53,15 +68,8 @@ class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertIs(isinstance(response, HttpResponseRedirect), True)
 
 
-class OrganizationsListView(LoginAdminByDefaultMixIn, TestCase):
+class OrganizationsListView(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Organizations view."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     @client_user('teacher01', 'teacher01')
     def test_has_many_organizations(self):
@@ -84,15 +92,8 @@ class OrganizationsListView(LoginAdminByDefaultMixIn, TestCase):
         self.client.login(username='admin', password='admin')
 
 
-class OrganizationListView(LoginAdminByDefaultMixIn, TestCase):
+class OrganizationListView(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Organization view."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def test_has_subjects(self):
         """Test an Organization view with the subjects."""
@@ -119,15 +120,8 @@ class OrganizationListView(LoginAdminByDefaultMixIn, TestCase):
         self.assertNotContains(response, 'data-target="#modal-edit-qset"')
 
 
-class QsetListView(LoginAdminByDefaultMixIn, TestCase):
+class QsetListView(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Qset views (for questions only type)."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def test_type_2_has_questions(self):
         """Test Qset list view with the subjects."""
@@ -206,15 +200,8 @@ class QsetListView(LoginAdminByDefaultMixIn, TestCase):
         )
 
 
-class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+class QsetModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Qset model form (CRUD etc.)."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def create_qset(self, name, parent_qset_id):
         """Create qset with the parameters."""
@@ -370,15 +357,8 @@ class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         )
 
 
-class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+class QuestionModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Question model form (CRUD etc.)."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def qset_create_question(self, text, answer_text, qset_id, form_qset_id=None):
         """Create question by qset's "Generate question" form."""
@@ -642,15 +622,8 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         )
 
 
-class AnswerModelFormCase(LoginAdminByDefaultMixIn, TestCase):
+class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Answer model related forms."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def create_answer(self, question_id, answer_text):
         """create_answer."""
@@ -721,15 +694,8 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(answer.self_evaluation, None)
 
 
-class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+class VoteModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Vote model related functionality."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def upvote_question(self, question_id):
         """Upvote the questioon by sending a get request."""
@@ -807,16 +773,8 @@ class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
 
 
-class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
+class UserSignUpCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the user sign up process."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """
-        Set up a TestCase.
-        """
-        settings.DEBUG = False
 
     def user_sign_up(self, username, email, first_name, last_name, org, password1, password2):
         """
@@ -1045,16 +1003,8 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(user, None)
 
 
-class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
+class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the student dashboard statistics."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """
-        Set up the test assets.
-        """
-        settings.DEBUG = False
 
     def get_user_profile(self, user_id):
         """

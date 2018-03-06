@@ -47,6 +47,11 @@ class QsetViewMixIn(object):
             return redirect(reverse('askup:organizations'))
 
         self._current_qset = get_object_or_404(Qset, pk=self.kwargs.get('pk'))
+        redirect_to_do = self.check_model_accordance(pk)
+
+        if redirect_to_do:
+            return redirect_to_do
+
         applied_to_organization = self._current_qset.top_qset.users.filter(id=request.user.id)
         is_admin = check_user_has_groups(request.user, 'admin')
 
@@ -54,6 +59,18 @@ class QsetViewMixIn(object):
             return redirect(reverse('askup:organizations'))
 
         return super().dispatch(request, *args, **kwargs)
+
+    def check_model_accordance(self, pk):
+        """
+        Check model accordance to a template.
+        """
+        is_organization = self._current_qset.parent_qset_id is None
+
+        if is_organization and self.template_name != 'askup/organization.html':
+            return redirect(reverse('askup:organization', kwargs={'pk': pk}))
+
+        if not is_organization and self.model is not Qset:
+            return redirect(reverse('askup:qset', kwargs={'pk': pk}))
 
 
 class ListViewUserContextDataMixIn(object):
