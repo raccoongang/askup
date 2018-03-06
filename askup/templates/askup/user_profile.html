@@ -10,10 +10,10 @@
             <div class="box center dash-profile rounded-10">
                 <img alt="Person" src="/static/assets/default-avatar.png">
                 <br><br>
-                <h3 class="center">{{ user.first_name }} {{ user.last_name }}</h3>
+                <h3 class="center">{{ profile_user.first_name }} {{ profile_user.last_name }}</h3>
                 <br/>
                 <div class="row h4 center">
-                    <div class="center">{{ user.email }}</div>
+                    <div class="center">{{ profile_user.email }}</div>
                 </div>
                 <br/><br/>
                 <div class="row col-xs-12 margin-bottom-10">
@@ -119,10 +119,10 @@
             {% if is_student %}
                 <div class="profile-nav-bar">
                     <div>
-                            <a href="{% url 'askup:user_profile' user.id %}"
+                            <a href="{% url 'askup:user_profile' profile_user.id %}"
                                class="btn btn-info{% if request.resolver_match.url_name == "user_profile" %} active{% endif %}">My questions</a>
-                            <a href="{% url 'askup:user_profile_rank_list' user.id %}"
-                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile_rank_list" %} active{% endif %}">Rank list</a>
+                            <a href="{% url 'askup:user_profile_rank_list' profile_user.id %}"
+                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile_rank_list" %} active{% endif %}">{% if is_owner %}Me in rank{% else %}User in rank{% endif %} list</a>
                     </div>
                 </div>
                 <div class="list">

@@ -274,7 +274,7 @@ def user_profile_rank_list_view(request, user_id):
         request,
         'askup/user_profile.html',
         {
-            'user': profile_user,
+            'profile_user': profile_user,
             'own_score': get_user_score_by_id(profile_user.id),
             'is_owner': profile_user.id == request.user.id,
             'is_student': check_user_has_groups(profile_user, 'student'),
