@@ -291,6 +291,49 @@ class Domain(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
 
+class QuestionQuerySet(models.query.QuerySet):
+    """
+    Overrides a question query set class.
+
+    Overriding a question query set class to have a control over
+    QuerySet.delete operation (bunch deletion in the admin panel, for example).
+    """
+
+    @transaction.atomic
+    def delete(self):
+        """
+        Delete multiple objects.
+
+        Overrides a delete method of the QuerySet class.
+        """
+        updated_qsets = {}
+
+        for question in self.iterator():
+            qset_id = question.qset.id
+            updating_qset = updated_qsets.get(qset_id) or question.qset
+            updating_qset.iterate_questions_count(-1)
+            updated_qsets[qset_id] = updating_qset
+
+        super().delete()
+
+
+class QuestionObjectManager(models.Manager):
+    """
+    Overrides a question objects manager.
+
+    Used for the handling with the QuerySet.delete operation
+    (bunch deletion in the admin panel, for example).
+    """
+
+    def get_queryset(self):
+        """
+        Return a custom query set.
+
+        Used for the handling with the multiple questions delete operation in admin panel.
+        """
+        return QuestionQuerySet(self.model, using=self._db)
+
+
 class Question(models.Model):
     """Describes all the Qset's and the Organization's models and their behaviours."""
 
@@ -315,6 +358,8 @@ class Question(models.Model):
         default=None
     )
     vote_value = models.IntegerField(default=0)
+
+    objects = QuestionObjectManager()
 
     class Meta:
         unique_together = ('text', 'qset')
