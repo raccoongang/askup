@@ -120,7 +120,7 @@ def compose_user_profile_rank_list_row_data(row, user_id_to_check=None):
         if user_id_to_check == id:
             user_is_present = True
 
-        name = ' '.join((first_name, last_name))
+        name = ' '.join((first_name, last_name)) * bool(first_name or last_name)
         name = '{} ({})'.format(name, username) if name else username
         items.append((place, id, name, questions, thumbs_up))
 

@@ -1151,26 +1151,41 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         """
         Test the user authentication.
         """
-        username = 'testuser_rank_list'
+        username = 'testuser_rank_list01'
         first_name = 'Test'
         last_name = 'User'
         UserSignUpCase.user_sign_up(
             self,
             username,
-            'testuser_rank_list@maildomain1.com',
+            'testuser_rank_list01@maildomain1.com',
             first_name,
             last_name,
             '1',
             'tu_rlist01',
             'tu_rlist01',
         )
-        user = User.objects.filter(username='testuser_rank_list').first()
-        self.assertIsNotNone(user)
-        user.is_active = True
-        user.save()
+        user01 = User.objects.filter(username=username).first()
+        self.assertIsNotNone(user01)
+        user01.is_active = True
+        user01.save()
 
-        self.initial_user_stats_assertions(user.id)
-        self.active_user_stats_assertions(user.id, username, first_name, last_name)
+        UserSignUpCase.user_sign_up(
+            self,
+            'testuser_rank_list02',
+            'testuser_rank_list02@maildomain1.com',
+            '',
+            '',
+            '1',
+            'tu_rlist02',
+            'tu_rlist02',
+        )
+        user02 = User.objects.filter(username='testuser_rank_list02').first()
+        self.assertIsNotNone(user02)
+        user02.is_active = True
+        user02.save()
+
+        self.initial_user_stats_assertions(user01.id)
+        self.active_user_stats_assertions(user01, user02)
 
     def initial_user_stats_assertions(self, user_id):
         """
@@ -1194,17 +1209,17 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(week_correct_answers, 0)
         self.assertEqual(week_incorrect_answers, 0)
 
-    def active_user_stats_assertions(self, user_id, username, first_name, last_name):
+    def active_user_stats_assertions(self, user01, user02):
         """
         Check an active user stats.
         """
-        self.client.login(username='testuser_rank_list', password='tu_rlist01')
+        self.client.login(username='testuser_rank_list01', password='tu_rlist01')
         question_text = 'Question text'
         question_answer = 'Question answer'
         QuestionModelFormTest.create_question(
             self, question_text, question_answer, 4
         )
-        question = Question.objects.filter(text=question_text, user_id=user_id).first()
+        question = Question.objects.filter(text=question_text, user_id=user01.id).first()
 
         self.client.login(username='student01', password='student01')
         VoteModelFormTest.upvote_question(self, question.id)
@@ -1217,17 +1232,28 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
         self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
 
-        __import__('pdb').set_trace()
-        for row in get_user_profile_rank_list(user_id):
+        for row in get_user_profile_rank_list(user01.id):
             place, return_user_id, name, questions, thumbs_up = row
 
-            if row ==
+            if return_user_id == user01.id:
+                self.assertEqual(place, 1)
+                self.assertEqual(
+                    name,
+                    '{} {} ({})'.format(
+                        user01.first_name, user01.last_name, user01.username
+                    )
+                )
+                self.assertEqual(thumbs_up, 3)
+                self.assertEqual(questions, 1)
 
-        self.assertEqual(place, 1)
-        self.assertEquea(return_user_id, 6)
-        self.assertEquea(name, '{} {} ({})'.format(first_name, last_name, username))
-        self.assertEqual(thumbs_up, 3)
-        self.assertEqual(questions, 1)
+            if return_user_id == user02.id:
+                self.assertEqual(place, 7)
+                self.assertEqual(
+                    name,
+                    '{}'.format(user02.username)
+                )
+                self.assertEqual(thumbs_up, 0)
+                self.assertEqual(questions, 0)
 
     def answer_and_evaluate(self, username, password, question_id, evaluation):
         """
