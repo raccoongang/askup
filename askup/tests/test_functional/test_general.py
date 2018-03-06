@@ -1047,7 +1047,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         week_correct_answers = get_student_last_week_correct_answers_count(user_id)
         week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
 
-        self.assertEqual(rank_place, 6)  # 6-th user after the mockup ones
+        self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
         self.assertEqual(user_score, 0)
         self.assertEqual(correct_answers, 0)
         self.assertEqual(incorrect_answers, 0)
@@ -1141,7 +1141,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
                 'tu_rlist01',
             )
 
-    def test_user_statistics(self):
+    def test_user_rank_list(self):
         """
         Test the user authentication.
         """
@@ -1178,10 +1178,10 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         user02.is_active = True
         user02.save()
 
-        self.initial_user_stats_assertions(user01.id)
-        self.active_user_stats_assertions(user01, user02)
+        self.initial_user_rank_assertions(user01.id)
+        self.active_user_rank_assertions(user01, user02)
 
-    def initial_user_stats_assertions(self, user_id):
+    def initial_user_rank_assertions(self, user_id):
         """
         Check freshly created user stats.
         """
@@ -1194,7 +1194,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         week_correct_answers = get_student_last_week_correct_answers_count(user_id)
         week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
 
-        self.assertEqual(rank_place, 6)  # 6-th user after the mockup ones
+        self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
         self.assertEqual(user_score, 0)
         self.assertEqual(correct_answers, 0)
         self.assertEqual(incorrect_answers, 0)
@@ -1203,7 +1203,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(week_correct_answers, 0)
         self.assertEqual(week_incorrect_answers, 0)
 
-    def active_user_stats_assertions(self, user01, user02):
+    def active_user_rank_assertions(self, user01, user02):
         """
         Check an active user stats.
         """

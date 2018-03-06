@@ -9356,3 +9356,7 @@ select.form-control, input.form-control {
 .current-user {
     background-color: #c9f5ad;
 }
+
+.rank-no-questions-row {
+    line-height: 32px;
+}

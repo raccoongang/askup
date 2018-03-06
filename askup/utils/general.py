@@ -96,17 +96,17 @@ def get_user_place_in_rank_list(user_id):
                 select rank from
                     (
                         select
-                            au.id as user_id,
                             rank() over (
                                 order by
                                     sum(aq.vote_value) desc,
                                     count(aq.id) asc
-                            ) as rank
+                            ) as rank,
+                            au.id as id
                         from auth_user as au
                         inner join askup_question aq on aq.user_id = au.id
                         group by au.id
                     ) as ranked
-                    where ranked.user_id = %s
+                    where ranked.id = %s
             ''',
             (user_id,)
         )
