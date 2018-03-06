@@ -295,8 +295,8 @@ class QuestionQuerySet(models.query.QuerySet):
     """
     Overrides a question query set class.
 
-    Overriding a question query set class to have a control
-    over multiple deleting in admin panel.
+    Overriding a question query set class to have a control over 
+    QuerySet.delete operation (bunch deletion in the admin panel, for example).
     """
 
     @transaction.atomic
@@ -321,7 +321,8 @@ class QuestionObjectManager(models.Manager):
     """
     Overrides a question objects manager.
 
-    Used for the handling with the multiple questions delete operation in admin panel.
+    Used for the handling with the QuerySet.delete operation
+    (bunch deletion in the admin panel, for example).
     """
 
     def get_queryset(self):

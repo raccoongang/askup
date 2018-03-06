@@ -28,9 +28,9 @@ class TestAdminPanelGroupQuestionsDeleting(TestCase):
         Used in the admin panel when performing a group delete action.
         """
         qset = Qset.objects.get(id=4)
-        questions_count_before = qset.questions_count
+        questions_count_before = qset.questions_count  # 3 questions in this qset initially
         questions = Question.objects.filter(qset_id=qset.id)
         questions.delete()
         qset.refresh_from_db()
-        questions_count_after = qset.questions_count
+        questions_count_after = qset.questions_count  # 0 questions so far, after the deletion
         self.assertEqual(questions_count_before, questions_count_after + 3)
