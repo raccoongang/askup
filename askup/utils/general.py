@@ -17,8 +17,9 @@ PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
     (
         select
             rank() over (
-                order by sum(coalesce(aq.vote_value, 0)) desc,
-                min(au.id) asc
+                order by
+                    sum(aq.vote_value) desc,
+                    count(aq.id) asc
             ) as place,
             au.id as id,
             au.username as username,
@@ -27,11 +28,11 @@ PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
             count(aq.id) as questions,
             sum(coalesce(aq.vote_value, 0)) as thumbs_up
         from auth_user as au
-        left join askup_question aq on aq.user_id = au.id
+        inner join askup_question aq on aq.user_id = au.id
         group by au.id
-        order by place
+        order by place, case when au.id = {} then 1 else 0 end desc
     ) as ranked
-    where {}
+    {}
 '''
 
 
@@ -97,11 +98,12 @@ def get_user_place_in_rank_list(user_id):
                         select
                             au.id as user_id,
                             rank() over (
-                                order by sum(coalesce(aq.vote_value, 0)) desc,
-                                min(au.id) asc
+                                order by
+                                    sum(aq.vote_value) desc,
+                                    count(aq.id) asc
                             ) as rank
                         from auth_user as au
-                        left join askup_question aq on aq.user_id = au.id
+                        inner join askup_question aq on aq.user_id = au.id
                         group by au.id
                     ) as ranked
                     where ranked.user_id = %s
@@ -114,31 +116,35 @@ def get_user_place_in_rank_list(user_id):
     return 0
 
 
-def get_user_profile_rank_list(user_id):
+def get_user_profile_rank_list(rank_user_id, viewer_user_id):
     """
     Aquire and return a list of rows for the user profile rank list.
     """
-    first_items = get_user_profile_rank_list_elements(args=(user_id,))
-    result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(first_items, user_id)
+    first_items = get_user_profile_rank_list_elements(viewer_user_id, args=(rank_user_id,))
+    result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(first_items, rank_user_id)
 
     if user_is_present:
         return result_row_datas
 
-    result_row_datas += [(0, 0, '', 0, 0)]  # adding an ellipsis row
-    user_item = get_user_profile_rank_list_elements('ranked.id = %s', (user_id,))
+    result_row_datas += [(0, None, None, None, None)]  # adding an ellipsis row
+    user_item = get_user_profile_rank_list_elements(rank_user_id, 'where ranked.id = %s', (rank_user_id,))
     user_row_data, _ = compose_user_profile_rank_list_row_data(user_item)
+
+    if not user_row_data:
+        user_row_data = [(-1, rank_user_id, None, None, None)]  # adding an ellipsis row
+
     result_row_datas += user_row_data
     return result_row_datas
 
 
-def compose_user_profile_rank_list_row_data(row, user_id_to_check=None):
+def compose_user_profile_rank_list_row_data(rows, user_id_to_check=None):
     """
-    Compose user profile rank list single row data from the query result row.
+    Compose user profile rank list row datas from the query result rows.
     """
     items = []
     user_is_present = False
 
-    for place, id, username, first_name, last_name, questions, thumbs_up in row:
+    for place, id, username, first_name, last_name, questions, thumbs_up in rows:
         if user_id_to_check == id:
             user_is_present = True
 
@@ -158,13 +164,13 @@ def compose_user_full_name(username, first_name, last_name):
     return '{} ({})'.format(name, username) if name else username
 
 
-def get_user_profile_rank_list_elements(expression='ranked.place < 11', args=[]):
+def get_user_profile_rank_list_elements(viewer_user_id, expression='limit 10', args=[]):
     """
     Return a rank list place of the user by id.
     """
     with connection.cursor() as cursor:
         cursor.execute(
-            PROFILE_RANK_LIST_ELEMENTS_QUERY.format(expression),
+            PROFILE_RANK_LIST_ELEMENTS_QUERY.format(viewer_user_id, expression),
             args
         )
         result = cursor.fetchall()
