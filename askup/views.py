@@ -37,6 +37,7 @@ from .utils.general import (
     get_student_last_week_votes_value,
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
+    get_user_organizations_string,
     get_user_place_in_rank_list,
     get_user_profile_rank_list,
     get_user_score_by_id,
@@ -236,17 +237,13 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 def user_profile_view(request, user_id):
     """Provide the user profile my questions view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    user_organizations = ', '.join(
-        (str(org) for org in Organization.objects.filter(users__in=[profile_user]))
-    )
+    user_organizations = get_user_organizations_string(profile_user)
+    rank_list = get_user_profile_rank_list(profile_user.id)
     return render(
         request,
         'askup/user_profile.html',
         {
-            'user_id': profile_user.id,
-            'first_name': profile_user.first_name,
-            'last_name': profile_user.last_name,
-            'email': profile_user.email,
+            'profile_user': profile_user,
             'own_score': get_user_score_by_id(profile_user.id),
             'is_owner': profile_user.id == request.user.id,
             'is_student': check_user_has_groups(profile_user, 'student'),
@@ -262,7 +259,7 @@ def user_profile_view(request, user_id):
                 profile_user.id
             ),
             'user_organizations': user_organizations,
-            'rank_list': ((1, 'Nana Tata', 335, 700), (1, 'Jabba The Hutt', 335, 700))
+            'rank_list': rank_list
         },
     )
 
@@ -271,19 +268,13 @@ def user_profile_view(request, user_id):
 def user_profile_rank_list_view(request, user_id):
     """Provide the user profile rank list view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    user_organizations = ', '.join(
-        (str(org) for org in Organization.objects.filter(users__in=[profile_user]))
-    )
+    user_organizations = get_user_organizations_string(profile_user)
     rank_list = get_user_profile_rank_list(profile_user.id)
-# ((1, 'Nana Tata', 335, 700), (1, 'Jabba The Hutt', 335, 700))
     return render(
         request,
         'askup/user_profile.html',
         {
-            'user_id': profile_user.id,
-            'first_name': profile_user.first_name,
-            'last_name': profile_user.last_name,
-            'email': profile_user.email,
+            'user': profile_user,
             'own_score': get_user_score_by_id(profile_user.id),
             'is_owner': profile_user.id == request.user.id,
             'is_student': check_user_has_groups(profile_user, 'student'),

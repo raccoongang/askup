@@ -9,8 +9,30 @@ from django.core.mail.message import EmailMessage
 from django.db import connection
 from django.shortcuts import get_object_or_404
 
+import askup.models
 
 log = logging.getLogger(__name__)
+PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
+    select * from
+    (
+        select
+            rank() over (
+                order by sum(coalesce(aq.vote_value, 0)) desc,
+                min(au.id) asc
+            ) as place,
+            au.id as id,
+            au.username as username,
+            au.first_name as first_name,
+            au.last_name as first_name,
+            count(aq.id) as questions,
+            sum(coalesce(aq.vote_value, 0)) as thumbs_up
+        from auth_user as au
+        left join askup_question aq on aq.user_id = au.id
+        group by au.id
+        order by place
+    ) as ranked
+    where {}
+'''
 
 
 def check_user_has_groups(user, required_groups):
@@ -101,7 +123,7 @@ def get_user_profile_rank_list(user_id):
 
     if user_is_present:
         return result_row_datas
-    
+
     result_row_datas += [(0, 0, '', 0, 0)]  # adding an ellipsis row
     user_item = get_user_profile_rank_list_elements('ranked.id = %s', (user_id,))
     user_row_data, _ = compose_user_profile_rank_list_row_data(user_item)
@@ -120,39 +142,29 @@ def compose_user_profile_rank_list_row_data(row, user_id_to_check=None):
         if user_id_to_check == id:
             user_is_present = True
 
-        name = ' '.join((first_name, last_name)) * bool(first_name or last_name)
-        name = '{} ({})'.format(name, username) if name else username
+        name = compose_user_full_name(username, first_name, last_name)
         items.append((place, id, name, questions, thumbs_up))
 
     return items, user_is_present
 
-    
+
+def compose_user_full_name(username, first_name, last_name):
+    """
+    Return user's full name representation for the views.
+
+    Needed because of unrequired first and last names.
+    """
+    name = (first_name or last_name) and ' '.join((first_name, last_name))
+    return '{} ({})'.format(name, username) if name else username
+
+
 def get_user_profile_rank_list_elements(expression='ranked.place < 10', args=[]):
     """
     Return a rank list place of the user by id.
     """
     with connection.cursor() as cursor:
-        query = '''select * from
-                    (
-                        select
-                            rank() over (
-                                order by sum(coalesce(aq.vote_value, 0)) desc,
-                                min(au.id) asc
-                            ) as place,
-                            au.id as id,
-                            au.username as username,
-                            au.first_name as first_name,
-                            au.last_name as first_name,
-                            count(aq.id) as questions,
-                            sum(coalesce(aq.vote_value, 0)) as thumbs_up
-                        from auth_user as au
-                        left join askup_question aq on aq.user_id = au.id
-                        group by au.id
-                        order by place
-                    ) as ranked
-                    where {}'''.format(expression)
         cursor.execute(
-            query,
+            PROFILE_RANK_LIST_ELEMENTS_QUERY.format(expression),
             args
         )
         result = cursor.fetchall()
@@ -438,3 +450,12 @@ def get_student_last_week_incorrect_answers_count(user_id):
         return cursor.fetchone()[0] or 0
 
     return 0
+
+
+def get_user_organizations_string(user):
+    """
+    Return comma separated user organizations string.
+    """
+    return ', '.join(
+        (str(org) for org in askup.models.Organization.objects.filter(users__in=[user]))
+    )
