@@ -173,10 +173,13 @@ def compose_user_full_name(username, first_name, last_name):
     return '{} ({})'.format(name, username) if name else username
 
 
-def get_user_profile_rank_list_elements(viewer_user_id, expression='limit 10', args=[]):
+def get_user_profile_rank_list_elements(viewer_user_id, expression='limit 10', args=None):
     """
     Return a rank list place of the user by id.
     """
+    if args is None:
+        args = []
+
     with connection.cursor() as cursor:
         cursor.execute(
             PROFILE_RANK_LIST_ELEMENTS_QUERY.format(viewer_user_id, expression),
