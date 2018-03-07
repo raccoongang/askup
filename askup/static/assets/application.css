@@ -9360,3 +9360,8 @@ select.form-control, input.form-control {
 .rank-no-questions-row {
     line-height: 32px;
 }
+
+.prettyform .alert-block {
+    font-size: 18px;
+    margin-bottom: 20px;
+}

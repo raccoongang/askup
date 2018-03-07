@@ -177,7 +177,7 @@ class UserLoginForm(forms.Form):
             user = authenticate(username=real_user.username, password=password)
 
         if not user:
-            email_user = User.objects.filter(email_iexact=username).first()
+            email_user = User.objects.filter(email__iexact=username).first()
             user = email_user and authenticate(username=email_user.username, password=password)
 
         if not user:
