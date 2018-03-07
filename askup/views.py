@@ -31,13 +31,16 @@ from .tokens import account_activation_token
 from .utils.general import (
     add_notification_to_url,
     check_user_has_groups,
+    compose_user_full_name_from_object,
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
     get_student_last_week_questions_count,
     get_student_last_week_votes_value,
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
+    get_user_organizations_string,
     get_user_place_in_rank_list,
+    get_user_profile_rank_list,
     get_user_score_by_id,
 )
 from .utils.views import (
@@ -233,30 +236,60 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 
 @login_required
 def user_profile_view(request, user_id):
-    """Provide the user profile view."""
+    """Provide the user profile my questions view."""
     profile_user = get_object_or_404(User, pk=user_id)
+    rank_list = get_user_profile_rank_list(user_id, request.user.id)
     return render(
         request,
         'askup/user_profile.html',
         {
-            'first_name': profile_user.first_name,
-            'last_name': profile_user.last_name,
-            'email': profile_user.email,
-            'own_profile': int(user_id) == request.user.id,
-            'own_score': get_user_score_by_id(profile_user.id),
-            'is_owner': profile_user.id == request.user.id,
-            'is_student': check_user_has_groups(request.user, 'student'),
-            'own_correct_answers': get_user_correct_answers_count(profile_user.id),
-            'own_incorrect_answers': get_user_incorrect_answers_count(profile_user.id),
-            'user_rank_place': get_user_place_in_rank_list(profile_user.id),
-            'own_last_week_questions': get_student_last_week_questions_count(profile_user.id),
-            'own_last_week_thumbs_up': get_student_last_week_votes_value(profile_user.id),
-            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(
-                profile_user.id
-            ),
+            'profile_user': profile_user,
+            'full_name': compose_user_full_name_from_object(profile_user),
+            'viewer_user_id': request.user.id,
+            'own_score': get_user_score_by_id(user_id),
+            'is_owner': user_id == request.user.id,
+            'is_student': check_user_has_groups(profile_user, 'student'),
+            'own_correct_answers': get_user_correct_answers_count(user_id),
+            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
+            'user_rank_place': get_user_place_in_rank_list(user_id),
+            'own_last_week_questions': get_student_last_week_questions_count(user_id),
+            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
+            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
             'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(
-                profile_user.id
+                user_id
             ),
+            'user_organizations': get_user_organizations_string(profile_user),
+            'rank_list': rank_list
+        },
+    )
+
+
+@login_required
+def user_profile_rank_list_view(request, user_id):
+    """Provide the user profile rank list view."""
+    profile_user = get_object_or_404(User, pk=user_id)
+    rank_list = get_user_profile_rank_list(profile_user.id, request.user.id)
+    return render(
+        request,
+        'askup/user_profile.html',
+        {
+            'profile_user': profile_user,
+            'full_name': compose_user_full_name_from_object(profile_user),
+            'viewer_user_id': request.user.id,
+            'own_score': get_user_score_by_id(user_id),
+            'is_owner': user_id == request.user.id,
+            'is_student': check_user_has_groups(profile_user, 'student'),
+            'own_correct_answers': get_user_correct_answers_count(user_id),
+            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
+            'user_rank_place': get_user_place_in_rank_list(user_id),
+            'own_last_week_questions': get_student_last_week_questions_count(user_id),
+            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
+            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
+            'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(
+                user_id
+            ),
+            'user_organizations': get_user_organizations_string(profile_user),
+            'rank_list': rank_list,
         },
     )
 
