@@ -144,14 +144,23 @@ def compose_user_profile_rank_list_row_data(rows, user_id_to_check=None):
     items = []
     user_is_present = False
 
-    for place, id, username, first_name, last_name, questions, thumbs_up in rows:
-        if user_id_to_check == id:
+    for place, user_id, username, first_name, last_name, questions, thumbs_up in rows:
+        if user_id_to_check == user_id:
             user_is_present = True
 
         name = compose_user_full_name(username, first_name, last_name)
-        items.append((place, id, name, questions, thumbs_up))
+        items.append((place, user_id, name, questions, thumbs_up))
 
     return items, user_is_present
+
+
+def compose_user_full_name_from_object(user):
+    """
+    Return user's full name representation for the views from the user object.
+
+    Needed because of unrequired first and last names.
+    """
+    return compose_user_full_name(user.username, user.first_name, user.last_name)
 
 
 def compose_user_full_name(username, first_name, last_name):
