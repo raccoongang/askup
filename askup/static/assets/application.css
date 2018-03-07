@@ -9148,9 +9148,6 @@ ul.qset-list-compressed {
 .class-bg:hover {
     background-color: #5c6d82
 }
-.dash-profile {
-    margin-top: 20px
-}
 .prof-pic-circle {
     border-radius: 50%;
     height: 140px;
@@ -9299,4 +9296,67 @@ select.form-control, input.form-control {
 
 .blooms-taxonomy-hints {
     margin-top: -10px;
+}
+
+.profile-nav-bar {
+    margin: 11px 0 40px -15px;
+}
+
+.margin-top-10 {
+    margin-top: 10px;
+}
+
+.margin-left-10 {
+    margin-left: 10px;
+}
+
+.row-box {
+    border: solid 1px #e6e6e6;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    padding: 5px;
+    -webkit-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1)
+}
+
+.white-box {
+    background: #fff;
+    color: #384452;
+}
+
+.blue-box {
+    background-color: #70b3de;
+    color: white;
+}
+
+.grey-box {
+    background-color: #ddd;
+    color: #384452;
+}
+
+.rounded-5 {
+    border-radius: 5px;
+}
+
+.rounded-10 {
+    border-radius: 10px;
+}
+
+.valign-container {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.line-height-31 {
+    line-height: 31px;
+}
+
+.current-user {
+    background-color: #c9f5ad;
+}
+
+.rank-no-questions-row {
+    line-height: 32px;
 }

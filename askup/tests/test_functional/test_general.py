@@ -19,6 +19,7 @@ from askup.utils.general import (
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
     get_user_place_in_rank_list,
+    get_user_profile_rank_list,
     get_user_score_by_id,
 )
 from askup.utils.tests import client_user
@@ -775,7 +776,7 @@ class VoteModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
 class UserSignUpCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the user sign up process."""
 
-    def user_sign_up(self, username, email, first_name, second_name, org, password1, password2):
+    def user_sign_up(self, username, email, first_name, last_name, org, password1, password2):
         """
         Send the Sign Up form and return a response.
         """
@@ -785,7 +786,7 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, GeneralTestCase):
                 'username': username,
                 'email': email,
                 'first_name': first_name,
-                'last_name': second_name,
+                'last_name': last_name,
                 'organization': org,
                 'password1': password1,
                 'password2': password2,
@@ -1046,7 +1047,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         week_correct_answers = get_student_last_week_correct_answers_count(user_id)
         week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
 
-        self.assertEqual(rank_place, 6)  # 6-th user after the mockup ones
+        self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
         self.assertEqual(user_score, 0)
         self.assertEqual(correct_answers, 0)
         self.assertEqual(incorrect_answers, 0)
@@ -1096,6 +1097,157 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.assertEqual(week_thumbs_ups, 3)
         self.assertEqual(week_correct_answers, 1)
         self.assertEqual(week_incorrect_answers, 2)
+
+    def answer_and_evaluate(self, username, password, question_id, evaluation):
+        """
+        Answer and evaluate question by a specified user.
+        """
+        self.client.login(username=username, password=password)
+        answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
+        AnswerModelFormCase.evaluate_answer(self, answer_response['answer_id'], evaluation)
+        answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
+        self.assertIsNotNone(answer)
+        self.assertEqual(answer.self_evaluation, evaluation)
+
+
+class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
+    """Tests the student dashboard statistics."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """
+        Set up the test assets.
+        """
+        settings.DEBUG = False
+
+    def create_dummy_users(self):
+        """
+        Create 20 dummy users to fill over a rank list.
+        """
+        username = 'testuser_rank_list{}'
+        first_name = 'Test {}'
+        last_name = 'User {}'
+
+        for i in range(20):
+            UserSignUpCase.user_sign_up(
+                self,
+                username.format(i),
+                'testuser_rank_list{}@maildomain1.com'.format(),
+                first_name.format(i),
+                last_name.format(i),
+                '1',
+                'tu_rlist01',
+                'tu_rlist01',
+            )
+
+    def test_user_rank_list(self):
+        """
+        Test the user authentication.
+        """
+        username = 'testuser_rank_list01'
+        first_name = 'Test'
+        last_name = 'User'
+        UserSignUpCase.user_sign_up(
+            self,
+            username,
+            'testuser_rank_list01@maildomain1.com',
+            first_name,
+            last_name,
+            '1',
+            'tu_rlist01',
+            'tu_rlist01',
+        )
+        user01 = User.objects.filter(username=username).first()
+        self.assertIsNotNone(user01)
+        user01.is_active = True
+        user01.save()
+
+        UserSignUpCase.user_sign_up(
+            self,
+            'testuser_rank_list02',
+            'testuser_rank_list02@maildomain1.com',
+            '',
+            '',
+            '1',
+            'tu_rlist02',
+            'tu_rlist02',
+        )
+        user02 = User.objects.filter(username='testuser_rank_list02').first()
+        self.assertIsNotNone(user02)
+        user02.is_active = True
+        user02.save()
+
+        self.initial_user_rank_assertions(user01.id)
+        self.active_user_rank_assertions(user01, user02)
+
+    def initial_user_rank_assertions(self, user_id):
+        """
+        Check freshly created user stats.
+        """
+        rank_place = get_user_place_in_rank_list(user_id)
+        user_score = get_user_score_by_id(user_id)
+        correct_answers = get_user_correct_answers_count(user_id)
+        incorrect_answers = get_user_incorrect_answers_count(user_id)
+        week_questions = get_student_last_week_questions_count(user_id)
+        week_thumbs_ups = get_student_last_week_votes_value(user_id)
+        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
+        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+
+        self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
+        self.assertEqual(user_score, 0)
+        self.assertEqual(correct_answers, 0)
+        self.assertEqual(incorrect_answers, 0)
+        self.assertEqual(week_questions, 0)
+        self.assertEqual(week_thumbs_ups, 0)
+        self.assertEqual(week_correct_answers, 0)
+        self.assertEqual(week_incorrect_answers, 0)
+
+    def active_user_rank_assertions(self, user01, user02):
+        """
+        Check an active user stats.
+        """
+        self.client.login(username='testuser_rank_list01', password='tu_rlist01')
+        question_text = 'Question text'
+        question_answer = 'Question answer'
+        QuestionModelFormTest.create_question(
+            self, question_text, question_answer, 4
+        )
+        question = Question.objects.filter(text=question_text, user_id=user01.id).first()
+
+        self.client.login(username='student01', password='student01')
+        VoteModelFormTest.upvote_question(self, question.id)
+
+        self.client.login(username='teacher01', password='teacher01')
+        VoteModelFormTest.upvote_question(self, question.id)
+
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 0)  # wrong
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 1)  # counts as wrong
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
+        self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
+
+        for row in get_user_profile_rank_list(user01.id, user01.id):
+            place, return_user_id, name, questions, thumbs_up = row
+
+            if return_user_id == user01.id:
+                self.assertEqual(place, 1)
+                self.assertEqual(
+                    name,
+                    '{} {} ({})'.format(
+                        user01.first_name, user01.last_name, user01.username
+                    )
+                )
+                self.assertEqual(thumbs_up, 3)
+                self.assertEqual(questions, 1)
+
+            if return_user_id == user02.id:
+                self.assertEqual(place, 7)
+                self.assertEqual(
+                    name,
+                    '{}'.format(user02.username)
+                )
+                self.assertEqual(thumbs_up, 0)
+                self.assertEqual(questions, 0)
 
     def answer_and_evaluate(self, username, password, question_id, evaluation):
         """
