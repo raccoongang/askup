@@ -5,7 +5,7 @@
     <div class="question_list">
         {% for question in questions_list %}
         {% with question_id=question.id question_text=question.text author_id=question.user.id author_name=question.user.username user_id=user.id %}
-        <div class="box valign my-question row">
+        <div class="box valign row">
             <div class="col-xs-12">
                 <div class="row">
                     <div class="col-xs-12 question-content left-align">

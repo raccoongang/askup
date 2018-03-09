@@ -7,7 +7,12 @@ from django.urls import reverse
 
 from askup.forms import FeedbackForm, QsetModelForm, QuestionModelForm
 from askup.models import Answer, Qset, Question
-from askup.utils.general import add_notification_to_url, check_user_has_groups, send_feedback
+from askup.utils.general import (
+    add_notification_to_url,
+    check_user_has_groups,
+    get_user_subjects_queryset,
+    send_feedback,
+)
 from askup.utils.models import check_user_and_create_question
 
 
@@ -284,3 +289,36 @@ def apply_filter_to_queryset(request, filter, queryset):
         return queryset.exclude(user_id=request.user.id)
 
     return queryset
+
+
+def compose_qset_user_questions_response(queryset):
+    """
+    Compose qset user questions list from the queryset.
+    """
+    questions = []
+
+    for question in queryset:
+        questions.append([question.id, question.text, question.vote_value])
+
+    return questions
+
+
+def get_user_subjects(user_id):
+    """
+    Return a list of prepared user subjects data.
+    """
+    queryset = get_user_subjects_queryset(user_id)
+    subjects = compose_user_qsets(queryset)
+    return subjects
+
+
+def compose_user_qsets(queryset):
+    """
+    Compose user qsets list from the questions queryset.
+    """
+    qsets = []
+
+    for question in queryset:
+        qsets.append([question[0], question[1], question[2]])
+
+    return qsets

@@ -46,9 +46,11 @@ from .utils.general import (
 from .utils.views import (
     apply_filter_to_queryset,
     compose_qset_form,
+    compose_qset_user_questions_response,
     compose_question_form_and_create,
     delete_qset_by_form,
     get_clean_filter_parameter,
+    get_user_subjects,
     qset_update_form_template,
     question_vote,
     user_group_required,
@@ -238,7 +240,7 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 def user_profile_view(request, user_id):
     """Provide the user profile my questions view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    rank_list = get_user_profile_rank_list(user_id, request.user.id)
+    user_id_int = int(user_id)
     return render(
         request,
         'askup/user_profile.html',
@@ -246,20 +248,21 @@ def user_profile_view(request, user_id):
             'profile_user': profile_user,
             'full_name': compose_user_full_name_from_object(profile_user),
             'viewer_user_id': request.user.id,
-            'own_score': get_user_score_by_id(user_id),
-            'is_owner': user_id == request.user.id,
+            'own_score': get_user_score_by_id(user_id_int),
+            'is_owner': user_id_int == request.user.id,
             'is_student': check_user_has_groups(profile_user, 'student'),
-            'own_correct_answers': get_user_correct_answers_count(user_id),
-            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-            'user_rank_place': get_user_place_in_rank_list(user_id),
-            'own_last_week_questions': get_student_last_week_questions_count(user_id),
-            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
+            'own_correct_answers': get_user_correct_answers_count(user_id_int),
+            'own_incorrect_answers': get_user_incorrect_answers_count(user_id_int),
+            'user_rank_place': get_user_place_in_rank_list(user_id_int),
+            'own_last_week_questions': get_student_last_week_questions_count(user_id_int),
+            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id_int),
+            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id_int),
             'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(
-                user_id
+                user_id_int
             ),
             'user_organizations': get_user_organizations_string(profile_user),
-            'rank_list': rank_list
+            'rank_list': tuple(),
+            'own_subjects': get_user_subjects(user_id_int),
         },
     )
 
@@ -269,6 +272,7 @@ def user_profile_rank_list_view(request, user_id):
     """Provide the user profile rank list view."""
     profile_user = get_object_or_404(User, pk=user_id)
     rank_list = get_user_profile_rank_list(profile_user.id, request.user.id)
+    user_id_int = int(user_id)
     return render(
         request,
         'askup/user_profile.html',
@@ -276,20 +280,21 @@ def user_profile_rank_list_view(request, user_id):
             'profile_user': profile_user,
             'full_name': compose_user_full_name_from_object(profile_user),
             'viewer_user_id': request.user.id,
-            'own_score': get_user_score_by_id(user_id),
-            'is_owner': user_id == request.user.id,
+            'own_score': get_user_score_by_id(user_id_int),
+            'is_owner': user_id_int == request.user.id,
             'is_student': check_user_has_groups(profile_user, 'student'),
-            'own_correct_answers': get_user_correct_answers_count(user_id),
-            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-            'user_rank_place': get_user_place_in_rank_list(user_id),
-            'own_last_week_questions': get_student_last_week_questions_count(user_id),
-            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
+            'own_correct_answers': get_user_correct_answers_count(user_id_int),
+            'own_incorrect_answers': get_user_incorrect_answers_count(user_id_int),
+            'user_rank_place': get_user_place_in_rank_list(user_id_int),
+            'own_last_week_questions': get_student_last_week_questions_count(user_id_int),
+            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id_int),
+            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id_int),
             'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(
-                user_id
+                user_id_int
             ),
             'user_organizations': get_user_organizations_string(profile_user),
             'rank_list': rank_list,
+            'own_subjects': tuple(),
         },
     )
 
@@ -533,6 +538,19 @@ def qset_delete(request, pk):
             'breadcrumbs': qset.get_parents(),
         }
     )
+
+
+@login_required
+def qset_user_questions(request, qset_id, user_id):
+    """Provide a create question view for the student/teacher/admin."""
+    log.debug(
+        'Got the qset user questions request for the qset_id - %s and user_id - %s', qset_id, user_id
+    )
+    questions = Question.objects.filter(qset_id=qset_id, user_id=user_id).order_by(
+        '-vote_value', 'text'
+    )
+    response = compose_qset_user_questions_response(questions)
+    return JsonResponse(response, safe=False)
 
 
 @login_required

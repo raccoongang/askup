@@ -19,7 +19,7 @@
                 <div class="row col-xs-12 margin-bottom-10">
                     <div class="user-points-cell col-xs-3">
                         <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
-                            data-trigger="click focus hover" title="" data-original-title="User's place in the Rank List">
+                            data-trigger="click focus hover" title="" data-original-title="{% if is_owner %}Your{% else %}User's{% endif %} place in the Rank List">
                             <h2 class="vcenter">{{ user_rank_place }}</h2>
                         </div>
                     </div>
@@ -120,7 +120,7 @@
                 <div class="profile-nav-bar">
                     <div>
                             <a href="{% url 'askup:user_profile' profile_user.id %}"
-                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile" %} active{% endif %}">My questions</a>
+                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile" %} active{% endif %}">{% if is_owner %}My{% else %}User's{% endif %} questions</a>
                             <a href="{% url 'askup:user_profile_rank_list' profile_user.id %}"
                                class="btn btn-info{% if request.resolver_match.url_name == "user_profile_rank_list" %} active{% endif %}">{% if is_owner %}Me in rank{% else %}User in rank{% endif %} list</a>
                     </div>
@@ -136,6 +136,5 @@
             </div>
         </div>
     </div>
-</div>
 </div>
 {% endblock %}

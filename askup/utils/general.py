@@ -477,3 +477,25 @@ def get_user_organizations_string(user):
     return ', '.join(
         (str(org) for org in askup.models.Organization.objects.filter(users__in=[user]))
     )
+
+
+def get_user_subjects_queryset(user_id):
+    """
+    Return the list of subjects prepared data by the user_id.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+                select aqs.id, concat(aqsp.name, ': ', aqs.name) as name, count(aqu.id) as my_questions_count
+                from askup_qset as aqs
+                inner join askup_qset as aqsp on aqsp.id = aqs.parent_qset_id
+                inner join askup_question as aqu on aqu.qset_id = aqs.id
+                where user_id = %s
+                group by aqs.id, aqsp.name, aqs.name
+                order by aqsp.name, aqs.name
+            """,
+            (user_id,)
+        )
+        return cursor.fetchall()
+
+    return 0

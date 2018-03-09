@@ -5,9 +5,9 @@
 {% elif place == -1 %}
 <div class="row row-box white-box rounded-5 margin-top-10 {% if viewer_user_id == row_user_id %}current-user{% endif %} center">
     {% if viewer_user_id == row_user_id %}
-    <span class="rank-no-questions-row">You have no any question created before. Create one to obtain a rank list place.</span>
+    <span class="rank-no-questions-row">You haven't created any questions yet. Create one to obtain a rank list place.</span>
     {% else %}
-    <span class="rank-no-questions-row">User have no any question created before.</span>
+    <span class="rank-no-questions-row">This user has no created questions.</span>
     {% endif %}
 </div>
 {% else %}
