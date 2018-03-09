@@ -127,7 +127,7 @@
                 </div>
                 <div class="list">
                     {% if request.resolver_match.url_name == "user_profile" %}
-                        {% include "askup/user_profile_my_questions.html" %}
+                        {% include "askup/user_profile_own_questions.html" %}
                     {% else %}
                         {% include "askup/user_profile_rank_list.html" %}
                     {% endif %}

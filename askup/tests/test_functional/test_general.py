@@ -1143,7 +1143,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
 
     def test_user_rank_list(self):
         """
-        Test the user authentication.
+        Test user rank list.
         """
         username = 'testuser_rank_list01'
         first_name = 'Test'
@@ -1259,3 +1259,73 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, evaluation)
+
+
+class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
+    """Tests the student dashboard statistics."""
+
+    def get_user_profile(self, user_id):
+        """
+        Return user profile response.
+        """
+        return self.client.get(reverse('askup:user_profile', kwargs={'user_id': user_id}))
+
+    def get_qset_user_questions(self, qset_id, user_id):
+        """
+        Return qset user response.
+        """
+        return self.client.get(
+            reverse(
+                'askup:qset_user_questions',
+                kwargs={
+                    'qset_id': qset_id,
+                    'user_id': user_id,
+                }
+            )
+        )
+
+    @client_user('student01', 'student01')
+    def test_my_questions(self):
+        """
+        Test my questions.
+        """
+        user_id = 3  # student01 from the mockups
+        qset_id = 4  # Qset 1-1 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'Organization 1: Qset 1-1')
+        self.assertContains(response, '2 questions')
+        self.assertContains(response, 'My questions')
+
+        json_response = self.get_qset_user_questions(qset_id, user_id)
+        self.assertContains(json_response, 'Question 1-1-1')
+        self.assertContains(json_response, 'Question 1-1-3')
+        self.assertNotContains(json_response, 'Question 1-1-2')
+
+    def test_user_questions(self):
+        """
+        Test user questions.
+        """
+        user_id = 3  # student01 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'User\'s questions')
+
+    @client_user('student03', 'student03')
+    def test_you_have_not_questions(self):
+        """
+        Test you have no questions.
+        """
+        user_id = 5  # student03 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'You haven\'t created any questions yet.')
+
+    def test_user_has_no_questions(self):
+        """
+        Test user has no questions.
+        """
+        user_id = 4  # student02 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'This user has no created questions.')
