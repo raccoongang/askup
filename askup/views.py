@@ -191,12 +191,17 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
             # Empty questions queryset if rendering the "qsets only" Qset
             queryset = []
         else:
-            queryset = Question.objects.filter(
-                qset_id=self.kwargs.get('pk')
-            ).order_by('-vote_value', 'text')
+            queryset = self.get_real_questions_queryset(self.kwargs.get('pk'))
 
         queryset = self.process_user_filter(context, queryset)
         return queryset
+
+    @staticmethod
+    def get_real_questions_queryset(qset_id):
+        """
+        Get a questions queryset for the questions type qset (subject) by qset_id.
+        """
+        return Question.objects.filter(qset_id=qset_id).order_by('-vote_value', 'text')
 
     def fill_qset_context(self, context):
         """Fill qset related context extra fields."""
@@ -259,6 +264,7 @@ def user_profile_view(request, user_id):
             'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
             'user_organizations': get_user_organizations_string(profile_user),
             'rank_list': tuple(),
+            'rank_list_total_users': 0,
             'own_subjects': get_user_subjects(user_id),
         },
     )
@@ -268,7 +274,7 @@ def user_profile_view(request, user_id):
 def user_profile_rank_list_view(request, user_id):
     """Provide the user profile rank list view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    rank_list = get_user_profile_rank_list(profile_user.id, request.user.id)
+    rank_list, total_users = get_user_profile_rank_list(profile_user.id, request.user.id)
     user_id = int(user_id)
     return render(
         request,
@@ -289,6 +295,7 @@ def user_profile_rank_list_view(request, user_id):
             'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
             'user_organizations': get_user_organizations_string(profile_user),
             'rank_list': rank_list,
+            'rank_list_total_users': total_users,
             'own_subjects': tuple(),
         },
     )
@@ -686,7 +693,11 @@ def question_delete(request, pk):
     form = do_make_form_and_delete(request, question)
 
     if form is None:
-        return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
+        redirect_url = add_notification_to_url(
+            ('success', 'This question has been deleted successfuly'),
+            reverse('askup:qset', kwargs={'pk': qset_id}),
+        )
+        return redirect(redirect_url)
 
     return render(
         request,
@@ -736,19 +747,46 @@ def answer_evaluate(request, answer_id, evaluation):
     if filter:
         # If it's a Quiz
         filter = get_clean_filter_parameter(request)
-        qset_id = answer.question.qset_id
-        queryset = Question.objects.filter(
-            qset_id=qset_id,
-            vote_value__lte=answer.question.vote_value,
-            text__gt=answer.question.text,
+        previous_question = answer.question
+        qset_id = previous_question.qset_id
+        questions_queryset = QsetView.get_real_questions_queryset(qset_id)
+        questions_queryset = questions_queryset.filter(
+            vote_value__lte=previous_question.vote_value,
         )
-        queryset = apply_filter_to_queryset(request, filter, queryset)
-        next_question = queryset.order_by('-vote_value', 'text').first()
+        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
+        next_question = get_next_quiz_question(questions_queryset, previous_question)
 
         if next_question:
             return get_quiz_question_redirect(next_question.id, filter)
 
     return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
+
+
+def get_next_quiz_question(questions_queryset, previous_question):
+    """
+    Get next quiz Question object from db by the previous one.
+    """
+    for question in questions_queryset:
+        if check_question_is_next(question, previous_question):
+            return question
+
+    return None
+
+
+def check_question_is_next(question, previous_question):
+    """
+    Check if the question is the next one.
+    """
+    if question.id == previous_question.id:
+        return False
+
+    if question.vote_value != previous_question.vote_value:
+        return True
+
+    if question.text > previous_question.text:
+        return True
+
+    return False
 
 
 def do_user_checks_and_evaluate(user, answer, evaluation):

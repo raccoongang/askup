@@ -8915,7 +8915,7 @@ a:hover {
 }
 .question-voting {
     float: left;
-    margin: 12px 10px 0px 10px
+    margin: 2px 10px 0px 10px
 }
 .downvote-button,
 .upvote-button {
@@ -8930,7 +8930,7 @@ a:hover {
 .net-votes p {
     font-size: 24px;
     text-align: center;
-    margin: 12px 0 0 0
+    margin: 0;
 }
 #quizAll-smallscreen-buttonpadding {
     padding-top: 5px
@@ -9421,4 +9421,18 @@ select.form-control, input.form-control {
 
 .profile-rank-list {
     font-size: 16px;
+}
+
+.question_list .question-content {
+    margin-bottom: 0;
+}
+
+.question-voting-wrapper {
+    width: 32px;
+}
+
+.profile-rank-list-total-users {
+    margin-top: 32px;
+    font-size: 18px;
+    text-align: center;
 }

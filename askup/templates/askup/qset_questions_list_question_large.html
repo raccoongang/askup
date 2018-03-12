@@ -7,12 +7,14 @@
         {% with question_id=question.id question_text=question.text author_id=question.user.id author_name=question.user.username user_id=user.id %}
         <div class="box valign row">
             <div class="col-xs-9">
-                <div class="row">
+                <div class="row valign">
                     <div class="col-xs-4">
-                        <div class="net-votes"><p class="question-{{ question_id }}-net-votes">{{ question.vote_value }}</p><br></div>
-                        <div class="question-voting">
-                              <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
-                              <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="{{ question_id }}"></div>
+                        <div class="net-votes valign"><p class="question-{{ question_ie }}-net-votes">{{ question.vote_value }}</p><br></div>
+                        <div class="question-voting-wrapper valign">
+                            <div class="question-voting">
+                                  <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
+                                  <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="{{ question_id }}"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-xs-8">

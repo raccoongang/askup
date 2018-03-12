@@ -138,11 +138,11 @@ function show_evaluated_and_go_next(event) {
     var callback = function() {window.location.href = $(self).attr('href');};
 
     if ($(this).hasClass('btn-success')) {
-        show_alert('success', 'Got it!', 2000, callback);
+        show_alert('success', 'Nicely done!', 2000, callback);
     } else if  ($(this).hasClass('btn-maybe')) {
-        show_alert('warning', 'Sort-of', 2000, callback);
+        show_alert('warning', 'Not bad', 2000, callback);
     } else {
-        show_alert('danger', 'Missed it!', 2000, callback);
+        show_alert('danger', 'No worries, you\'ll get it next time', 2000, callback);
     }
 
     return false;

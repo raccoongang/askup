@@ -7,6 +7,7 @@ from smtplib import SMTPException
 from django.contrib.auth.models import User
 from django.core.mail.message import EmailMessage
 from django.db import connection
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
 import askup.models
@@ -33,6 +34,9 @@ PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
         order by place, case when au.id = {} then 1 else 0 end desc
     ) as ranked
     {}
+'''
+PROFILE_RANK_USERS_COUNT = '''
+    select count(distinct user_id) from askup_question
 '''
 
 
@@ -121,10 +125,13 @@ def get_user_profile_rank_list(rank_user_id, viewer_user_id):
     Aquire and return a list of rows for the user profile rank list.
     """
     first_items = get_user_profile_rank_list_elements(viewer_user_id, args=(rank_user_id,))
-    result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(first_items, rank_user_id)
+    result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(
+        first_items, rank_user_id
+    )
+    total_users = get_rank_list_users_count()
 
     if user_is_present:
-        return result_row_datas
+        return result_row_datas, total_users
 
     result_row_datas += [(0, None, None, None, None)]  # adding an ellipsis row
     user_item = get_user_profile_rank_list_elements(rank_user_id, 'where ranked.id = %s', (rank_user_id,))
@@ -134,7 +141,7 @@ def get_user_profile_rank_list(rank_user_id, viewer_user_id):
         user_row_data = [(-1, rank_user_id, None, None, None)]  # adding an ellipsis row
 
     result_row_datas += user_row_data
-    return result_row_datas
+    return result_row_datas, total_users
 
 
 def compose_user_profile_rank_list_row_data(rows, user_id_to_check=None):
@@ -189,6 +196,14 @@ def get_user_profile_rank_list_elements(viewer_user_id, expression='limit 10', a
         return result
 
     return []
+
+
+def get_rank_list_users_count():
+    """
+    Return a rank list total users count.
+    """
+    result = askup.models.Question.objects.aggregate(Count('user_id', distinct=True))
+    return result['user_id__count']
 
 
 def get_user_correct_answers_count(user_id):

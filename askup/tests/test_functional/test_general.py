@@ -1141,6 +1141,12 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
                 'tu_rlist01',
             )
 
+    def get_user_profile_rank_list_response(self, user_id):
+        """
+        Return user profile response.
+        """
+        return self.client.get(reverse('askup:user_profile_rank_list', kwargs={'user_id': user_id}))
+
     def test_user_rank_list(self):
         """
         Test user rank list.
@@ -1226,7 +1232,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
         self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
 
-        for row in get_user_profile_rank_list(user01.id, user01.id):
+        for row in get_user_profile_rank_list(user01.id, user01.id)[0]:
             place, return_user_id, name, questions, thumbs_up = row
 
             if return_user_id == user01.id:
@@ -1248,6 +1254,11 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
                 )
                 self.assertEqual(thumbs_up, 0)
                 self.assertEqual(questions, 0)
+
+        response = self.get_user_profile_rank_list_response(user01.id)
+
+        # We've got only three users that were made it into the rank list (have any questions)
+        self.assertContains(response, 'Total: 3 users')
 
     def answer_and_evaluate(self, username, password, question_id, evaluation):
         """
