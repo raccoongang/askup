@@ -32,6 +32,11 @@ urlpatterns = [
     url(r'^qset/new/$', views.qset_create, name='qset_create'),
     url(r'^qset/update/(?P<pk>\d+)/$', views.qset_update, name='qset_update'),
     url(r'^qset/delete/(?P<pk>\d+)/$', views.qset_delete, name='qset_delete'),
+    url(
+        r'^qset/user-questions/(?P<qset_id>\d+)/(?P<user_id>\d+)/$',
+        views.qset_user_questions,
+        name='qset_user_questions'
+    ),
     url(r'^qset/quiz/all/(?P<qset_id>\d+)/$', views.start_quiz_all, name='start_quiz_all'),
     url(r'^question/answer/(?P<question_id>\d+)/$', views.question_answer, name='question_answer'),
     url(r'^question/new/(?P<qset_id>\d+)/$', views.question_create, name='qset_question_create'),
