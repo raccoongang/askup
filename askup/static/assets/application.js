@@ -250,17 +250,7 @@ function on_click_my_subject() {
         subject_questions_element = $('#' + subject_element_id);
         $(glyphicon_element).removeClass('glyphicon-triangle-right');
         $(glyphicon_element).addClass('glyphicon-triangle-bottom');
-
-        $.ajax({
-            url: '/askup/qset/user-questions/' + subject_id + '/' + user_id + '/',
-            type: 'GET',
-            success: function(data) {
-                on_subject_questions_get(data, subject_id, user_id, subject_questions_element);
-            },
-            error: function(data) {
-                console.log(data);
-            }
-        });
+        do_user_questions_ajax_request(subject_id, user_id, subject_questions_element);
     } else {
         subject_questions_element.remove();
         $(glyphicon_element).removeClass('glyphicon-triangle-bottom');
@@ -268,6 +258,19 @@ function on_click_my_subject() {
     }
 
     return false;
+}
+
+function do_user_questions_ajax_request(subject_id, user_id, subject_questions_element) {
+    $.ajax({
+        url: '/askup/qset/user-questions/' + subject_id + '/' + user_id + '/',
+        type: 'GET',
+        success: function(data) {
+            on_subject_questions_get(data, subject_id, user_id, subject_questions_element);
+        },
+        error: function(data) {
+            console.log(data);
+        }
+    });
 }
 
 function on_subject_questions_get(data, subject_id, user_id, subject_questions_element) {

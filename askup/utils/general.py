@@ -479,7 +479,7 @@ def get_user_organizations_string(user):
     )
 
 
-def get_user_subjects_queryset(user_id):
+def get_user_subjects(user_id):
     """
     Return the list of subjects prepared data by the user_id.
     """
@@ -498,4 +498,4 @@ def get_user_subjects_queryset(user_id):
         )
         return cursor.fetchall()
 
-    return 0
+    return []

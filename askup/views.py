@@ -42,15 +42,14 @@ from .utils.general import (
     get_user_place_in_rank_list,
     get_user_profile_rank_list,
     get_user_score_by_id,
+    get_user_subjects,
 )
 from .utils.views import (
     apply_filter_to_queryset,
     compose_qset_form,
-    compose_qset_user_questions_response,
     compose_question_form_and_create,
     delete_qset_by_form,
     get_clean_filter_parameter,
-    get_user_subjects,
     qset_update_form_template,
     question_vote,
     user_group_required,
@@ -545,7 +544,7 @@ def qset_user_questions(request, qset_id, user_id):
     questions = Question.objects.filter(qset_id=qset_id, user_id=user_id).order_by(
         '-vote_value', 'text'
     )
-    response = compose_qset_user_questions_response(questions)
+    response = list(questions.values_list("id", "text", "vote_value"))
     return JsonResponse(response, safe=False)
 
 
