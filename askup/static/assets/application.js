@@ -239,17 +239,20 @@ function on_click_my_subject() {
     var subject_element_id = 'my-subject-' + subject_id + '-questions';
     var subject_element = $(this);
     var glyphicon_element = $(subject_element).find('.glyphicon');
-    var subject_questions_element = $('#my-subject-' + subject_id + '-questions');
-    var url_base = '/askup/qset/user-questions/';
+    var subject_questions_element = $('#' + subject_element_id);
 
     if (subject_questions_element.length === 0) {
-        $(this).after('<div class="row my-subject-questions margin-right-15" id="' + subject_element_id + '"><div class="center"><img src="/static/assets/loader.svg"/></div></div>');
-        subject_questions_element = $('#my-subject-' + subject_id + '-questions');
+        $(this).after(
+            '<div class="row my-subject-questions margin-right-15" id="' +
+            subject_element_id +
+            '"><div class="center"><img src="/static/assets/loader.svg"/></div></div>'
+        );
+        subject_questions_element = $('#' + subject_element_id);
         $(glyphicon_element).removeClass('glyphicon-triangle-right');
         $(glyphicon_element).addClass('glyphicon-triangle-bottom');
 
         $.ajax({
-            url: url_base + subject_id + '/' + user_id + '/',
+            url: '/askup/qset/user-questions/' + subject_id + '/' + user_id + '/',
             type: 'GET',
             success: function(data) {
                 on_subject_questions_get(data, subject_id, user_id, subject_questions_element);
