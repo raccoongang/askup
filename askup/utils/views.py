@@ -7,7 +7,11 @@ from django.urls import reverse
 
 from askup.forms import FeedbackForm, QsetModelForm, QuestionModelForm
 from askup.models import Answer, Qset, Question
-from askup.utils.general import add_notification_to_url, check_user_has_groups, send_feedback
+from askup.utils.general import (
+    add_notification_to_url,
+    check_user_has_groups,
+    send_feedback,
+)
 from askup.utils.models import check_user_and_create_question
 
 
