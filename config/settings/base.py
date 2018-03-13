@@ -162,11 +162,7 @@ DEFAULT_FROM_EMAIL = secure.DEFAULT_FROM_EMAIL
 SECRET_KEY = secure.SECRET_KEY
 
 if SENTRY_DSN:
-    import raven
     INSTALLED_APPS.append('raven.contrib.django.raven_compat')
     RAVEN_CONFIG = {
         'dsn': SENTRY_DSN,
-        # If you are using git, you can also automatically configure the
-        # release based on the git info.
-        'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
     }
