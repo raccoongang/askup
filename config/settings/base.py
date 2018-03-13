@@ -160,9 +160,3 @@ EMAIL_HOST_PASSWORD = secure.EMAIL_HOST_PASSWORD
 EMAIL_USE_TLS = secure.EMAIL_USE_TLS
 DEFAULT_FROM_EMAIL = secure.DEFAULT_FROM_EMAIL
 SECRET_KEY = secure.SECRET_KEY
-
-if SENTRY_DSN:
-    INSTALLED_APPS.append('raven.contrib.django.raven_compat')
-    RAVEN_CONFIG = {
-        'dsn': SENTRY_DSN,
-    }

@@ -22,8 +22,13 @@ LOGGING = {
     },
 }
 
-LOGGING['handlers']['sentry'] = {
-    'level': 'ERROR',
-    'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-}
-LOGGING['root']['handlers'].append('sentry')
+if SENTRY_DSN:
+    INSTALLED_APPS.append('raven.contrib.django.raven_compat')
+    RAVEN_CONFIG = {
+        'dsn': SENTRY_DSN,
+    }
+    LOGGING['handlers']['sentry'] = {
+        'level': 'ERROR',
+        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+    }
+    LOGGING['root']['handlers'].append('sentry')
