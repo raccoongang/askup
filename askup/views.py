@@ -759,7 +759,7 @@ def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
     """
     Get next quiz question id from the db/cache.
     """
-    cache_key = 'user_{}_quiz_{}_qset_{}'.format(request.user.id, filter, qset_id)
+    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
     cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
 
     if cached_quiz_questions is None:
@@ -769,10 +769,11 @@ def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
         cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
 
     if not cached_quiz_questions:
+        cache.delete(cache_key)
         return None
 
     next_question_id = cached_quiz_questions.pop(0)
-    cache.set(cache_key, cached_quiz_questions, 86400)  # Setting the cache for the 24 hours
+    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the 24 hours
 
     return next_question_id
 

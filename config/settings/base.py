@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'debug_toolbar',
-    'raven.contrib.django.raven_compat',
     'askup',
 ]
 
@@ -92,6 +91,7 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
         'LOCATION': 'django_cache',
+        'TIMEOUT': 7 * 24 * 60 * 60,  # default cache timeout set for a week
     }
 }
 
@@ -152,6 +152,7 @@ try:
 except ImportError:
     import config.settings.secure_example as secure
 
+SENTRY = getattr(secure, 'SENTRY', False)
 EMAIL_HOST = secure.EMAIL_HOST
 EMAIL_PORT = secure.EMAIL_PORT
 EMAIL_HOST_USER = secure.EMAIL_HOST_USER
@@ -159,3 +160,13 @@ EMAIL_HOST_PASSWORD = secure.EMAIL_HOST_PASSWORD
 EMAIL_USE_TLS = secure.EMAIL_USE_TLS
 DEFAULT_FROM_EMAIL = secure.DEFAULT_FROM_EMAIL
 SECRET_KEY = secure.SECRET_KEY
+
+if SENTRY:
+    import raven
+    INSTALLED_APPS.append('raven.contrib.django.raven_compat')
+    RAVEN_CONFIG = {
+        'dsn': SENTRY,
+        # If you are using git, you can also automatically configure the
+        # release based on the git info.
+        'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
+    }
