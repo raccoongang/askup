@@ -1,6 +1,6 @@
-# SENTRY could contain sentry dsn string or None/False. If contains a sentry dsn string,
+# SENTRY could contain sentry dsn string or None. If contains a sentry dsn string,
 # then all exceptions from the application will be forwarded to this url.
-SENTRY = False
+SENTRY_DSN = None
 
 # Email credentials
 EMAIL_HOST = 'localhost'

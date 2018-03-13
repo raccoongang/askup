@@ -763,7 +763,6 @@ def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
     cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
 
     if cached_quiz_questions is None:
-        cache.delete(cache_key)
         questions_queryset = get_real_questions_queryset(qset_id)
         questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
         cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))

@@ -152,7 +152,7 @@ try:
 except ImportError:
     import config.settings.secure_example as secure
 
-SENTRY = getattr(secure, 'SENTRY', False)
+SENTRY_DSN = getattr(secure, 'SENTRY_DSN', False)
 EMAIL_HOST = secure.EMAIL_HOST
 EMAIL_PORT = secure.EMAIL_PORT
 EMAIL_HOST_USER = secure.EMAIL_HOST_USER
@@ -161,11 +161,11 @@ EMAIL_USE_TLS = secure.EMAIL_USE_TLS
 DEFAULT_FROM_EMAIL = secure.DEFAULT_FROM_EMAIL
 SECRET_KEY = secure.SECRET_KEY
 
-if SENTRY:
+if SENTRY_DSN:
     import raven
     INSTALLED_APPS.append('raven.contrib.django.raven_compat')
     RAVEN_CONFIG = {
-        'dsn': SENTRY,
+        'dsn': SENTRY_DSN,
         # If you are using git, you can also automatically configure the
         # release based on the git info.
         'release': raven.fetch_git_sha(os.path.abspath(os.pardir)),
