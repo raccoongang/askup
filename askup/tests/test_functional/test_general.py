@@ -19,7 +19,7 @@ from askup.utils.general import (
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
     get_user_place_in_rank_list,
-    get_user_profile_rank_list,
+    get_user_profile_rank_list_and_total_users,
     get_user_score_by_id,
 )
 from askup.utils.tests import client_user
@@ -1232,7 +1232,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
         self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
 
-        for row in get_user_profile_rank_list(user01.id, user01.id)[0]:
+        for row in get_user_profile_rank_list_and_total_users(user01.id, user01.id)[0]:
             place, return_user_id, name, questions, thumbs_up = row
 
             if return_user_id == user01.id:

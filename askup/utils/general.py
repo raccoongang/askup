@@ -117,7 +117,7 @@ def get_user_place_in_rank_list(user_id):
     return 0
 
 
-def get_user_profile_rank_list(rank_user_id, viewer_user_id):
+def get_user_profile_rank_list_and_total_users(rank_user_id, viewer_user_id):
     """
     Aquire and return a list of rows for the user profile rank list in pair with total ranked users.
     """

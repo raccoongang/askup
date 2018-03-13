@@ -42,7 +42,7 @@ from .utils.general import (
     get_user_incorrect_answers_count,
     get_user_organizations_string,
     get_user_place_in_rank_list,
-    get_user_profile_rank_list,
+    get_user_profile_rank_list_and_total_users,
     get_user_score_by_id,
     get_user_subjects,
 )
@@ -269,7 +269,7 @@ def user_profile_view(request, user_id):
 def user_profile_rank_list_view(request, user_id):
     """Provide the user profile rank list view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    rank_list, total_users = get_user_profile_rank_list(profile_user.id, request.user.id)
+    rank_list, total_users = get_user_profile_rank_list_and_total_users(profile_user.id, request.user.id)
     user_id = int(user_id)
     return render(
         request,
