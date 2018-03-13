@@ -5,6 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -32,6 +33,7 @@ from .utils.general import (
     add_notification_to_url,
     check_user_has_groups,
     compose_user_full_name_from_object,
+    get_real_questions_queryset,
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
     get_student_last_week_questions_count,
@@ -191,17 +193,10 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
             # Empty questions queryset if rendering the "qsets only" Qset
             queryset = []
         else:
-            queryset = self.get_real_questions_queryset(self.kwargs.get('pk'))
+            queryset = get_real_questions_queryset(self.kwargs.get('pk'))
 
         queryset = self.process_user_filter(context, queryset)
         return queryset
-
-    @staticmethod
-    def get_real_questions_queryset(qset_id):
-        """
-        Get a questions queryset for the questions type qset (subject) by qset_id.
-        """
-        return Question.objects.filter(qset_id=qset_id).order_by('-vote_value', 'text')
 
     def fill_qset_context(self, context):
         """Fill qset related context extra fields."""
@@ -739,6 +734,7 @@ def answer_evaluate(request, answer_id, evaluation):
         answer_id
     )
     filter = request.GET.get('filter', None)
+    is_quiz_start = request.GET.get('quiz_start', None)
     answer = get_object_or_404(Answer, pk=answer_id)
 
     if not do_user_checks_and_evaluate(request.user, answer, evaluation):
@@ -749,44 +745,36 @@ def answer_evaluate(request, answer_id, evaluation):
         filter = get_clean_filter_parameter(request)
         previous_question = answer.question
         qset_id = previous_question.qset_id
-        questions_queryset = QsetView.get_real_questions_queryset(qset_id)
-        questions_queryset = questions_queryset.filter(
-            vote_value__lte=previous_question.vote_value,
+        next_question_id = get_next_quiz_question(
+            request, filter, qset_id, is_quiz_start
         )
-        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
-        next_question = get_next_quiz_question(questions_queryset, previous_question)
 
-        if next_question:
-            return get_quiz_question_redirect(next_question.id, filter)
+        if next_question_id:
+            return get_quiz_question_redirect(next_question_id, filter)
 
     return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
 
 
-def get_next_quiz_question(questions_queryset, previous_question):
+def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
     """
-    Get next quiz Question object from db by the previous one.
+    Get next quiz question id from the db/cache.
     """
-    for question in questions_queryset:
-        if check_question_is_next(question, previous_question):
-            return question
+    cache_key = 'user_{}_quiz_{}_qset_{}'.format(request.user.id, filter, qset_id)
+    cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
 
-    return None
+    if cached_quiz_questions is None:
+        cache.delete(cache_key)
+        questions_queryset = get_real_questions_queryset(qset_id)
+        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
+        cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
 
+    if not cached_quiz_questions:
+        return None
 
-def check_question_is_next(question, previous_question):
-    """
-    Check if the question is the next one.
-    """
-    if question.id == previous_question.id:
-        return False
+    next_question_id = cached_quiz_questions.pop(0)
+    cache.set(cache_key, cached_quiz_questions, 86400)  # Setting the cache for the 24 hours
 
-    if question.vote_value != previous_question.vote_value:
-        return True
-
-    if question.text > previous_question.text:
-        return True
-
-    return False
+    return next_question_id
 
 
 def do_user_checks_and_evaluate(user, answer, evaluation):
@@ -815,19 +803,19 @@ def start_quiz_all(request, qset_id):
     log.debug('Got the quiz all request for the qset_id: %s', qset_id)
     qset = get_object_or_404(Qset, pk=qset_id)
     filter = get_clean_filter_parameter(request)
-    queryset = Question.objects.filter(qset_id=qset.id)
-    queryset = apply_filter_to_queryset(request, filter, queryset)
-    question = queryset.order_by('-vote_value', 'text').first()
     user = request.user
+    first_question_id = get_next_quiz_question(
+        request, filter, qset.id, True
+    )
 
     if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
-    if not question:
+    if first_question_id is None:
         raise Http404
 
     if request.method == 'GET':
-        return get_quiz_question_redirect(question.id, filter)
+        return get_quiz_question_redirect(first_question_id, filter)
     else:
         return redirect(reverse('askup:organizations'))
 

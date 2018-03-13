@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'debug_toolbar',
+    'raven.contrib.django.raven_compat',
     'askup',
 ]
 
@@ -83,6 +84,14 @@ DATABASES = {
         'PASSWORD': 'pass',
         'HOST': 'postgres',
         'PORT': '5432',
+    }
+}
+
+# Cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache',
     }
 }
 

@@ -35,9 +35,6 @@ PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
     ) as ranked
     {}
 '''
-PROFILE_RANK_USERS_COUNT = '''
-    select count(distinct user_id) from askup_question
-'''
 
 
 def check_user_has_groups(user, required_groups):
@@ -122,7 +119,7 @@ def get_user_place_in_rank_list(user_id):
 
 def get_user_profile_rank_list(rank_user_id, viewer_user_id):
     """
-    Aquire and return a list of rows for the user profile rank list.
+    Aquire and return a list of rows for the user profile rank list in pair with total ranked users.
     """
     first_items = get_user_profile_rank_list_elements(viewer_user_id, args=(rank_user_id,))
     result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(
@@ -514,3 +511,10 @@ def get_user_subjects(user_id):
         return cursor.fetchall()
 
     return []
+
+
+def get_real_questions_queryset(qset_id):
+    """
+    Get a questions queryset for the questions type qset (subject) by qset_id.
+    """
+    return askup.models.Question.objects.filter(qset_id=qset_id).order_by('-vote_value', 'text')
