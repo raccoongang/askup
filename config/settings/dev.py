@@ -14,7 +14,7 @@ LOGGING = {
         'logfile': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR + "/../dev.log", # noqa F405
+            'filename': BASE_DIR + "/../dev.log",  # noqa F405
             'maxBytes': 50000,
             'backupCount': 2,
             'formatter': 'standard',
@@ -43,10 +43,10 @@ LOGGING = {
     }
 }
 
-if SENTRY_DSN:
-    INSTALLED_APPS.append('raven.contrib.django.raven_compat')
+if SENTRY_DSN:  # noqa F405
+    INSTALLED_APPS.append('raven.contrib.django.raven_compat')  # noqa F405
     RAVEN_CONFIG = {
-        'dsn': SENTRY_DSN,
+        'dsn': SENTRY_DSN,  # noqa F405
     }
     LOGGING['handlers']['sentry'] = {
         'level': 'ERROR',
