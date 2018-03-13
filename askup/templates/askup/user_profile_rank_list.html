@@ -3,3 +3,7 @@
         {% include 'askup/user_profile_rank_list_row.html' %}
     {% endfor %}
 </div>
+
+<div class="profile-rank-list-total-users">
+    Total: {{ rank_list_total_users }} user{{ rank_list_total_users|pluralize }}
+</div>

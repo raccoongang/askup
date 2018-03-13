@@ -5,6 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -32,6 +33,7 @@ from .utils.general import (
     add_notification_to_url,
     check_user_has_groups,
     compose_user_full_name_from_object,
+    get_real_questions_queryset,
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
     get_student_last_week_questions_count,
@@ -191,9 +193,7 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
             # Empty questions queryset if rendering the "qsets only" Qset
             queryset = []
         else:
-            queryset = Question.objects.filter(
-                qset_id=self.kwargs.get('pk')
-            ).order_by('-vote_value', 'text')
+            queryset = get_real_questions_queryset(self.kwargs.get('pk'))
 
         queryset = self.process_user_filter(context, queryset)
         return queryset
@@ -259,6 +259,7 @@ def user_profile_view(request, user_id):
             'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
             'user_organizations': get_user_organizations_string(profile_user),
             'rank_list': tuple(),
+            'rank_list_total_users': 0,
             'own_subjects': get_user_subjects(user_id),
         },
     )
@@ -268,7 +269,7 @@ def user_profile_view(request, user_id):
 def user_profile_rank_list_view(request, user_id):
     """Provide the user profile rank list view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    rank_list = get_user_profile_rank_list(profile_user.id, request.user.id)
+    rank_list, total_users = get_user_profile_rank_list(profile_user.id, request.user.id)
     user_id = int(user_id)
     return render(
         request,
@@ -289,6 +290,7 @@ def user_profile_rank_list_view(request, user_id):
             'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
             'user_organizations': get_user_organizations_string(profile_user),
             'rank_list': rank_list,
+            'rank_list_total_users': total_users,
             'own_subjects': tuple(),
         },
     )
@@ -686,7 +688,11 @@ def question_delete(request, pk):
     form = do_make_form_and_delete(request, question)
 
     if form is None:
-        return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
+        redirect_url = add_notification_to_url(
+            ('success', 'This question has been deleted successfuly'),
+            reverse('askup:qset', kwargs={'pk': qset_id}),
+        )
+        return redirect(redirect_url)
 
     return render(
         request,
@@ -728,6 +734,7 @@ def answer_evaluate(request, answer_id, evaluation):
         answer_id
     )
     filter = request.GET.get('filter', None)
+    is_quiz_start = request.GET.get('quiz_start', None)
     answer = get_object_or_404(Answer, pk=answer_id)
 
     if not do_user_checks_and_evaluate(request.user, answer, evaluation):
@@ -736,19 +743,38 @@ def answer_evaluate(request, answer_id, evaluation):
     if filter:
         # If it's a Quiz
         filter = get_clean_filter_parameter(request)
-        qset_id = answer.question.qset_id
-        queryset = Question.objects.filter(
-            qset_id=qset_id,
-            vote_value__lte=answer.question.vote_value,
-            text__gt=answer.question.text,
+        previous_question = answer.question
+        qset_id = previous_question.qset_id
+        next_question_id = get_next_quiz_question(
+            request, filter, qset_id, is_quiz_start
         )
-        queryset = apply_filter_to_queryset(request, filter, queryset)
-        next_question = queryset.order_by('-vote_value', 'text').first()
 
-        if next_question:
-            return get_quiz_question_redirect(next_question.id, filter)
+        if next_question_id:
+            return get_quiz_question_redirect(next_question_id, filter)
 
     return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
+
+
+def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
+    """
+    Get next quiz question id from the db/cache.
+    """
+    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
+    cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
+
+    if cached_quiz_questions is None:
+        questions_queryset = get_real_questions_queryset(qset_id)
+        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
+        cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
+
+    if not cached_quiz_questions:
+        cache.delete(cache_key)
+        return None
+
+    next_question_id = cached_quiz_questions.pop(0)
+    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the 24 hours
+
+    return next_question_id
 
 
 def do_user_checks_and_evaluate(user, answer, evaluation):
@@ -777,19 +803,19 @@ def start_quiz_all(request, qset_id):
     log.debug('Got the quiz all request for the qset_id: %s', qset_id)
     qset = get_object_or_404(Qset, pk=qset_id)
     filter = get_clean_filter_parameter(request)
-    queryset = Question.objects.filter(qset_id=qset.id)
-    queryset = apply_filter_to_queryset(request, filter, queryset)
-    question = queryset.order_by('-vote_value', 'text').first()
     user = request.user
+    first_question_id = get_next_quiz_question(
+        request, filter, qset.id, True
+    )
 
     if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
         return redirect(reverse('askup:organizations'))
 
-    if not question:
+    if first_question_id is None:
         raise Http404
 
     if request.method == 'GET':
-        return get_quiz_question_redirect(question.id, filter)
+        return get_quiz_question_redirect(first_question_id, filter)
     else:
         return redirect(reverse('askup:organizations'))
 
