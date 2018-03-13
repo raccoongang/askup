@@ -21,3 +21,9 @@ LOGGING = {
         'handlers': ['console', 'logfile']
     },
 }
+
+LOGGING['handlers']['sentry'] = {
+    'level': 'ERROR',
+    'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+}
+LOGGING['root']['handlers'].append('sentry')

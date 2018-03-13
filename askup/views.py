@@ -794,6 +794,7 @@ def do_user_checks_and_evaluate(user, answer, evaluation):
 
 def index_view(request):
     """Provide the index view."""
+    log.error("This is an actual error, you see")
     return render(request, 'askup/index.html')
 
 
