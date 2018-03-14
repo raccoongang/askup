@@ -121,7 +121,7 @@ function alert_open_animation(close_timeout, callback) {
     }
 
     $('.alert, .close-alert').on('click', function() {
-        $(alert_selector).slideUp(400, callback);
+        $(alert_selector).slideUp(400);
     });
     $(alert_selector).slideDown();
 
