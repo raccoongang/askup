@@ -1330,7 +1330,7 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
         user_id = 5  # student03 from the mockups
         response = self.get_user_profile(user_id)
 
-        self.assertContains(response, 'You haven\'t created any questions yet.')
+        self.assertContains(response, 'You haven’t created any questions yet.')
 
     def test_user_has_no_questions(self):
         """
@@ -1339,4 +1339,4 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
         user_id = 4  # student02 from the mockups
         response = self.get_user_profile(user_id)
 
-        self.assertContains(response, 'This user has no created questions.')
+        self.assertContains(response, 'This user hasn’t created any questions yet.')
