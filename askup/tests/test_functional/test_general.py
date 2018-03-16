@@ -433,7 +433,7 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
         """Test question creation."""
         qset_id = 4
         text = 'Test question 1'
-        answer_text = 'Test answer 1'
+        answer_text = 'Test answer 1' * 50  # testing as well that the answer can be a big one (255+ chars) now
 
         self.qset_create_question(text, answer_text, qset_id)
         question = get_object_or_404(Question, text=text, qset_id=qset_id)
@@ -646,7 +646,7 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
 
     def test_answer_the_question_success(self):
         """test_answer_the_question_success."""
-        answer_text = 'Test answer'
+        answer_text = 'Test answer' * 50  # testing as well that the answer can be a big one (255+ chars) now
         response = self.create_answer(1, answer_text).json()
         answer = get_object_or_404(Answer, pk=response['answer_id'])
         self.assertEqual(response['result'], 'success')

@@ -346,7 +346,7 @@ class Question(models.Model):
         (5, 'creating')
     )
     text = models.TextField(db_index=True)
-    answer_text = models.CharField(max_length=255)
+    answer_text = models.TextField()
     qset = models.ForeignKey(Qset, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -458,7 +458,7 @@ class Answer(models.Model):
         (1, "sort-of"),
         (2, "correct"),
     )
-    text = models.CharField(max_length=255)
+    text = models.TextField()
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     self_evaluation = models.PositiveSmallIntegerField(choices=EVALUATIONS, null=True)
