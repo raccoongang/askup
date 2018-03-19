@@ -19,12 +19,28 @@ from askup.utils.general import (
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
     get_user_place_in_rank_list,
+    get_user_profile_rank_list_and_total_users,
     get_user_score_by_id,
 )
 from askup.utils.tests import client_user
 from askup.views import login_view
 
 log = logging.getLogger(__name__)
+
+
+class GeneralTestCase(TestCase):
+    """
+    General test case class inherited by all the functional test cases below.
+    """
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """
+        Set up the default test assets.
+        """
+        settings.DEBUG = False
+        self.default_login()
 
 
 class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
@@ -52,15 +68,8 @@ class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertIs(isinstance(response, HttpResponseRedirect), True)
 
 
-class OrganizationsListView(LoginAdminByDefaultMixIn, TestCase):
+class OrganizationsListView(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Organizations view."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     @client_user('teacher01', 'teacher01')
     def test_has_many_organizations(self):
@@ -83,15 +92,8 @@ class OrganizationsListView(LoginAdminByDefaultMixIn, TestCase):
         self.client.login(username='admin', password='admin')
 
 
-class OrganizationListView(LoginAdminByDefaultMixIn, TestCase):
+class OrganizationListView(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Organization view."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def test_has_subjects(self):
         """Test an Organization view with the subjects."""
@@ -118,15 +120,8 @@ class OrganizationListView(LoginAdminByDefaultMixIn, TestCase):
         self.assertNotContains(response, 'data-target="#modal-edit-qset"')
 
 
-class QsetListView(LoginAdminByDefaultMixIn, TestCase):
+class QsetListView(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Qset views (for questions only type)."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def test_type_2_has_questions(self):
         """Test Qset list view with the subjects."""
@@ -205,15 +200,8 @@ class QsetListView(LoginAdminByDefaultMixIn, TestCase):
         )
 
 
-class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+class QsetModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Qset model form (CRUD etc.)."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def create_qset(self, name, parent_qset_id):
         """Create qset with the parameters."""
@@ -369,15 +357,8 @@ class QsetModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         )
 
 
-class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+class QuestionModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Question model form (CRUD etc.)."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def qset_create_question(self, text, answer_text, qset_id, form_qset_id=None):
         """Create question by qset's "Generate question" form."""
@@ -452,7 +433,7 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         """Test question creation."""
         qset_id = 4
         text = 'Test question 1'
-        answer_text = 'Test answer 1'
+        answer_text = 'Test answer 1' * 50  # testing as well that the answer can be a big one (255+ chars) now
 
         self.qset_create_question(text, answer_text, qset_id)
         question = get_object_or_404(Question, text=text, qset_id=qset_id)
@@ -641,15 +622,8 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         )
 
 
-class AnswerModelFormCase(LoginAdminByDefaultMixIn, TestCase):
+class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Answer model related forms."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def create_answer(self, question_id, answer_text):
         """create_answer."""
@@ -672,7 +646,7 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, TestCase):
 
     def test_answer_the_question_success(self):
         """test_answer_the_question_success."""
-        answer_text = 'Test answer'
+        answer_text = 'Test answer' * 50  # testing as well that the answer can be a big one (255+ chars) now
         response = self.create_answer(1, answer_text).json()
         answer = get_object_or_404(Answer, pk=response['answer_id'])
         self.assertEqual(response['result'], 'success')
@@ -720,15 +694,8 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(answer.self_evaluation, None)
 
 
-class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
+class VoteModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Vote model related functionality."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """Set up the test assets."""
-        settings.DEBUG = False
-        self.default_login()
 
     def upvote_question(self, question_id):
         """Upvote the questioon by sending a get request."""
@@ -806,18 +773,10 @@ class VoteModelFormTest(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(result_votes['value__sum'], original_votes['value__sum'])
 
 
-class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
+class UserSignUpCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the user sign up process."""
 
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """
-        Set up a TestCase.
-        """
-        settings.DEBUG = False
-
-    def user_sign_up(self, username, email, first_name, second_name, org, password1, password2):
+    def user_sign_up(self, username, email, first_name, last_name, org, password1, password2):
         """
         Send the Sign Up form and return a response.
         """
@@ -827,7 +786,7 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
                 'username': username,
                 'email': email,
                 'first_name': first_name,
-                'last_name': second_name,
+                'last_name': last_name,
                 'organization': org,
                 'password1': password1,
                 'password2': password2,
@@ -1044,16 +1003,8 @@ class UserSignUpCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(user, None)
 
 
-class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
+class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the student dashboard statistics."""
-
-    fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """
-        Set up the test assets.
-        """
-        settings.DEBUG = False
 
     def get_user_profile(self, user_id):
         """
@@ -1096,7 +1047,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
         week_correct_answers = get_student_last_week_correct_answers_count(user_id)
         week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
 
-        self.assertEqual(rank_place, 6)  # 6-th user after the mockup ones
+        self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
         self.assertEqual(user_score, 0)
         self.assertEqual(correct_answers, 0)
         self.assertEqual(incorrect_answers, 0)
@@ -1157,3 +1108,235 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, TestCase):
         answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, evaluation)
+
+
+class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
+    """Tests the student dashboard statistics."""
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """
+        Set up the test assets.
+        """
+        settings.DEBUG = False
+
+    def create_dummy_users(self):
+        """
+        Create 20 dummy users to fill over a rank list.
+        """
+        username = 'testuser_rank_list{}'
+        first_name = 'Test {}'
+        last_name = 'User {}'
+
+        for i in range(20):
+            UserSignUpCase.user_sign_up(
+                self,
+                username.format(i),
+                'testuser_rank_list{}@maildomain1.com'.format(),
+                first_name.format(i),
+                last_name.format(i),
+                '1',
+                'tu_rlist01',
+                'tu_rlist01',
+            )
+
+    def get_user_profile_rank_list_response(self, user_id):
+        """
+        Return user profile response.
+        """
+        return self.client.get(reverse('askup:user_profile_rank_list', kwargs={'user_id': user_id}))
+
+    def test_user_rank_list(self):
+        """
+        Test user rank list.
+        """
+        username = 'testuser_rank_list01'
+        first_name = 'Test'
+        last_name = 'User'
+        UserSignUpCase.user_sign_up(
+            self,
+            username,
+            'testuser_rank_list01@maildomain1.com',
+            first_name,
+            last_name,
+            '1',
+            'tu_rlist01',
+            'tu_rlist01',
+        )
+        user01 = User.objects.filter(username=username).first()
+        self.assertIsNotNone(user01)
+        user01.is_active = True
+        user01.save()
+
+        UserSignUpCase.user_sign_up(
+            self,
+            'testuser_rank_list02',
+            'testuser_rank_list02@maildomain1.com',
+            '',
+            '',
+            '1',
+            'tu_rlist02',
+            'tu_rlist02',
+        )
+        user02 = User.objects.filter(username='testuser_rank_list02').first()
+        self.assertIsNotNone(user02)
+        user02.is_active = True
+        user02.save()
+
+        self.initial_user_rank_assertions(user01.id)
+        self.active_user_rank_assertions(user01, user02)
+
+    def initial_user_rank_assertions(self, user_id):
+        """
+        Check freshly created user stats.
+        """
+        rank_place = get_user_place_in_rank_list(user_id)
+        user_score = get_user_score_by_id(user_id)
+        correct_answers = get_user_correct_answers_count(user_id)
+        incorrect_answers = get_user_incorrect_answers_count(user_id)
+        week_questions = get_student_last_week_questions_count(user_id)
+        week_thumbs_ups = get_student_last_week_votes_value(user_id)
+        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
+        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+
+        self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
+        self.assertEqual(user_score, 0)
+        self.assertEqual(correct_answers, 0)
+        self.assertEqual(incorrect_answers, 0)
+        self.assertEqual(week_questions, 0)
+        self.assertEqual(week_thumbs_ups, 0)
+        self.assertEqual(week_correct_answers, 0)
+        self.assertEqual(week_incorrect_answers, 0)
+
+    def active_user_rank_assertions(self, user01, user02):
+        """
+        Check an active user stats.
+        """
+        self.client.login(username='testuser_rank_list01', password='tu_rlist01')
+        question_text = 'Question text'
+        question_answer = 'Question answer'
+        QuestionModelFormTest.create_question(
+            self, question_text, question_answer, 4
+        )
+        question = Question.objects.filter(text=question_text, user_id=user01.id).first()
+
+        self.client.login(username='student01', password='student01')
+        VoteModelFormTest.upvote_question(self, question.id)
+
+        self.client.login(username='teacher01', password='teacher01')
+        VoteModelFormTest.upvote_question(self, question.id)
+
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 0)  # wrong
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 1)  # counts as wrong
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
+        self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
+
+        for row in get_user_profile_rank_list_and_total_users(user01.id, user01.id)[0]:
+            place, return_user_id, name, questions, thumbs_up = row
+
+            if return_user_id == user01.id:
+                self.assertEqual(place, 1)
+                self.assertEqual(
+                    name,
+                    '{} {} ({})'.format(
+                        user01.first_name, user01.last_name, user01.username
+                    )
+                )
+                self.assertEqual(thumbs_up, 3)
+                self.assertEqual(questions, 1)
+
+            if return_user_id == user02.id:
+                self.assertEqual(place, 7)
+                self.assertEqual(
+                    name,
+                    '{}'.format(user02.username)
+                )
+                self.assertEqual(thumbs_up, 0)
+                self.assertEqual(questions, 0)
+
+        response = self.get_user_profile_rank_list_response(user01.id)
+
+        # We've got only three users that were made it into the rank list (have any questions)
+        self.assertContains(response, 'Total: 3 users')
+
+    def answer_and_evaluate(self, username, password, question_id, evaluation):
+        """
+        Answer and evaluate question by a specified user.
+        """
+        self.client.login(username=username, password=password)
+        answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
+        AnswerModelFormCase.evaluate_answer(self, answer_response['answer_id'], evaluation)
+        answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
+        self.assertIsNotNone(answer)
+        self.assertEqual(answer.self_evaluation, evaluation)
+
+
+class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
+    """Tests the student dashboard statistics."""
+
+    def get_user_profile(self, user_id):
+        """
+        Return user profile response.
+        """
+        return self.client.get(reverse('askup:user_profile', kwargs={'user_id': user_id}))
+
+    def get_qset_user_questions(self, qset_id, user_id):
+        """
+        Return qset user response.
+        """
+        return self.client.get(
+            reverse(
+                'askup:qset_user_questions',
+                kwargs={
+                    'qset_id': qset_id,
+                    'user_id': user_id,
+                }
+            )
+        )
+
+    @client_user('student01', 'student01')
+    def test_my_questions(self):
+        """
+        Test my questions.
+        """
+        user_id = 3  # student01 from the mockups
+        qset_id = 4  # Qset 1-1 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'Organization 1: Qset 1-1')
+        self.assertContains(response, '2 questions')
+        self.assertContains(response, 'My questions')
+
+        json_response = self.get_qset_user_questions(qset_id, user_id)
+        self.assertContains(json_response, 'Question 1-1-1')
+        self.assertContains(json_response, 'Question 1-1-3')
+        self.assertNotContains(json_response, 'Question 1-1-2')
+
+    def test_user_questions(self):
+        """
+        Test user questions.
+        """
+        user_id = 3  # student01 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'User\'s questions')
+
+    @client_user('student03', 'student03')
+    def test_you_have_not_questions(self):
+        """
+        Test you have no questions.
+        """
+        user_id = 5  # student03 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'You haven’t created any questions yet.')
+
+    def test_user_has_no_questions(self):
+        """
+        Test user has no questions.
+        """
+        user_id = 4  # student02 from the mockups
+        response = self.get_user_profile(user_id)
+
+        self.assertContains(response, 'This user hasn’t created any questions yet.')

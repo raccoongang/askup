@@ -86,6 +86,15 @@ DATABASES = {
     }
 }
 
+# Cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache',
+        'TIMEOUT': 7 * 24 * 60 * 60,  # default cache timeout set for a week
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -143,6 +152,7 @@ try:
 except ImportError:
     import config.settings.secure_example as secure
 
+SENTRY_DSN = getattr(secure, 'SENTRY_DSN', False)
 EMAIL_HOST = secure.EMAIL_HOST
 EMAIL_PORT = secure.EMAIL_PORT
 EMAIL_HOST_USER = secure.EMAIL_HOST_USER

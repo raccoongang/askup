@@ -21,3 +21,14 @@ LOGGING = {
         'handlers': ['console', 'logfile']
     },
 }
+
+if SENTRY_DSN:  # noqa F405
+    INSTALLED_APPS.append('raven.contrib.django.raven_compat')  # noqa F405
+    RAVEN_CONFIG = {
+        'dsn': SENTRY_DSN,  # noqa F405
+    }
+    LOGGING['handlers']['sentry'] = {
+        'level': 'ERROR',
+        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+    }
+    LOGGING['root']['handlers'].append('sentry')

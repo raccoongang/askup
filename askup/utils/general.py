@@ -7,10 +7,34 @@ from smtplib import SMTPException
 from django.contrib.auth.models import User
 from django.core.mail.message import EmailMessage
 from django.db import connection
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
+import askup.models
 
 log = logging.getLogger(__name__)
+PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
+    select * from
+    (
+        select
+            rank() over (
+                order by
+                    sum(aq.vote_value) desc,
+                    count(aq.id) asc
+            ) as place,
+            au.id as id,
+            au.username as username,
+            au.first_name as first_name,
+            au.last_name as first_name,
+            count(aq.id) as questions,
+            sum(coalesce(aq.vote_value, 0)) as thumbs_up
+        from auth_user as au
+        inner join askup_question aq on aq.user_id = au.id
+        group by au.id
+        order by place, case when au.id = {} then 1 else 0 end desc
+    ) as ranked
+    {}
+'''
 
 
 def check_user_has_groups(user, required_groups):
@@ -73,16 +97,17 @@ def get_user_place_in_rank_list(user_id):
                 select rank from
                     (
                         select
-                            au.id as user_id,
                             rank() over (
-                                order by sum(coalesce(aq.vote_value, 0)) desc,
-                                min(au.id) asc
-                            ) as rank
+                                order by
+                                    sum(aq.vote_value) desc,
+                                    count(aq.id) asc
+                            ) as rank,
+                            au.id as id
                         from auth_user as au
-                        left join askup_question aq on aq.user_id = au.id
+                        inner join askup_question aq on aq.user_id = au.id
                         group by au.id
                     ) as ranked
-                    where ranked.user_id = %s
+                    where ranked.id = %s
             ''',
             (user_id,)
         )
@@ -90,6 +115,92 @@ def get_user_place_in_rank_list(user_id):
         return (result and result[0]) or 0
 
     return 0
+
+
+def get_user_profile_rank_list_and_total_users(rank_user_id, viewer_user_id):
+    """
+    Aquire and return a list of rows for the user profile rank list in pair with total ranked users.
+    """
+    first_items = get_user_profile_rank_list_elements(viewer_user_id, args=(rank_user_id,))
+    result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(
+        first_items, rank_user_id
+    )
+    total_users = get_rank_list_users_count()
+
+    if user_is_present:
+        return result_row_datas, total_users
+
+    result_row_datas += [(0, None, None, None, None)]  # adding an ellipsis row
+    user_item = get_user_profile_rank_list_elements(rank_user_id, 'where ranked.id = %s', (rank_user_id,))
+    user_row_data, _ = compose_user_profile_rank_list_row_data(user_item)
+
+    if not user_row_data:
+        user_row_data = [(-1, rank_user_id, None, None, None)]  # adding an ellipsis row
+
+    result_row_datas += user_row_data
+    return result_row_datas, total_users
+
+
+def compose_user_profile_rank_list_row_data(rows, user_id_to_check=None):
+    """
+    Compose user profile rank list row datas from the query result rows.
+    """
+    items = []
+    user_is_present = False
+
+    for place, user_id, username, first_name, last_name, questions, thumbs_up in rows:
+        if user_id_to_check == user_id:
+            user_is_present = True
+
+        name = compose_user_full_name(username, first_name, last_name)
+        items.append((place, user_id, name, questions, thumbs_up))
+
+    return items, user_is_present
+
+
+def compose_user_full_name_from_object(user):
+    """
+    Return user's full name representation for the views from the user object.
+
+    Needed because of unrequired first and last names.
+    """
+    return compose_user_full_name(user.username, user.first_name, user.last_name)
+
+
+def compose_user_full_name(username, first_name, last_name):
+    """
+    Return user's full name representation for the views.
+
+    Needed because of unrequired first and last names.
+    """
+    name = (first_name or last_name) and ' '.join((first_name, last_name))
+    return '{} ({})'.format(name, username) if name else username
+
+
+def get_user_profile_rank_list_elements(viewer_user_id, expression='limit 10', args=None):
+    """
+    Return a rank list place of the user by id.
+    """
+    if args is None:
+        args = []
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            PROFILE_RANK_LIST_ELEMENTS_QUERY.format(viewer_user_id, expression),
+            args
+        )
+        result = cursor.fetchall()
+        return result
+
+    return []
+
+
+def get_rank_list_users_count():
+    """
+    Return a rank list total users count.
+    """
+    result = askup.models.Question.objects.aggregate(Count('user_id', distinct=True))
+    return result['user_id__count']
 
 
 def get_user_correct_answers_count(user_id):
@@ -369,3 +480,41 @@ def get_student_last_week_incorrect_answers_count(user_id):
         return cursor.fetchone()[0] or 0
 
     return 0
+
+
+def get_user_organizations_string(user):
+    """
+    Return comma separated user organizations string.
+    """
+    return ', '.join(
+        (str(org) for org in askup.models.Organization.objects.filter(users__in=[user]))
+    )
+
+
+def get_user_subjects(user_id):
+    """
+    Return the list of subjects prepared data by the user_id.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+                select aqs.id, concat(aqsp.name, ': ', aqs.name) as name, count(aqu.id) as my_questions_count
+                from askup_qset as aqs
+                inner join askup_qset as aqsp on aqsp.id = aqs.parent_qset_id
+                inner join askup_question as aqu on aqu.qset_id = aqs.id
+                where user_id = %s
+                group by aqs.id, aqsp.name, aqs.name
+                order by aqsp.name, aqs.name
+            """,
+            (user_id,)
+        )
+        return cursor.fetchall()
+
+    return []
+
+
+def get_real_questions_queryset(qset_id):
+    """
+    Get a questions queryset for the questions type qset (subject) by qset_id.
+    """
+    return askup.models.Question.objects.filter(qset_id=qset_id).order_by('-vote_value', 'text')

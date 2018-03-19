@@ -170,14 +170,18 @@ class UserLoginForm(forms.Form):
         """
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
-        user = authenticate(username=username, password=password)
+        real_user = User.objects.filter(username__iexact=username).first()
+        user = None
+
+        if real_user:
+            user = authenticate(username=real_user.username, password=password)
 
         if not user:
-            email_user = User.objects.filter(email=username).first()
+            email_user = User.objects.filter(email__iexact=username).first()
             user = email_user and authenticate(username=email_user.username, password=password)
 
         if not user:
-            raise forms.ValidationError("This user doesn't exist")
+            raise forms.ValidationError("The username and/or password are incorrect")
 
         if not user.is_active:
             raise forms.ValidationError("This user is no longer active")
