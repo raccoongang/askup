@@ -400,9 +400,6 @@ def extract_notification_from_request(request):
 
 def parse_response_url_to_parameters(response):
     """Parse response url to parameter pair strings "name=value"."""
-    if getattr(response, 'url', None) is None:
-        return None, None
-
     url_parts = response.url.split('?')
 
     if len(url_parts) < 2:
