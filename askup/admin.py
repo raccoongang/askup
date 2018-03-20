@@ -183,7 +183,10 @@ class QsetAdmin(CookieFilterMixIn, admin.ModelAdmin):
         """Set admin-filter-org cookie on qset creation."""
         response = super().response_add(*args, **kwargs)
         obj = args[1]
-        response = self.apply_organization_to_url(obj.parent_qset_id, response)
+
+        if isinstance(response, HttpResponseRedirect):
+            response = self.apply_organization_to_url(obj.parent_qset_id, response)
+
         response.set_cookie('admin-filter-org', obj.parent_qset_id)
         return response
 
@@ -191,16 +194,16 @@ class QsetAdmin(CookieFilterMixIn, admin.ModelAdmin):
         """Set admin-filter-org cookie on qset update."""
         response = super().response_change(*args, **kwargs)
         obj = args[1]
-        response = self.apply_organization_to_url(obj.parent_qset_id, response)
+
+        if isinstance(response, HttpResponseRedirect):
+            response = self.apply_organization_to_url(obj.parent_qset_id, response)
+
         response.set_cookie('admin-filter-org', obj.parent_qset_id)
         return response
 
     def apply_organization_to_url(self, organization_id, response):
         """Apply organization filter value to the url on save."""
         url_path, parameters = parse_response_url_to_parameters(response)
-
-        if url_path is None:
-            return response
 
         for i in range(len(parameters)):
             if parameters[i].startswith('org='):
@@ -263,7 +266,10 @@ class QuestionAdmin(CookieFilterMixIn, admin.ModelAdmin):
         """Set admin-filter-qset on question creation."""
         response = super().response_add(*args, **kwargs)
         obj = args[1]
-        response = self.apply_org_and_qset_to_url(obj.qset_id, '0', response)
+
+        if isinstance(response, HttpResponseRedirect):
+            response = self.apply_org_and_qset_to_url(obj.qset_id, '0', response)
+
         response.set_cookie('admin-filter-qset', obj.qset_id)
         return response
 
@@ -271,17 +277,16 @@ class QuestionAdmin(CookieFilterMixIn, admin.ModelAdmin):
         """Set admin-filter-qset cookie on question update."""
         response = super().response_change(*args, **kwargs)
         obj = args[1]
-        response = self.apply_org_and_qset_to_url(obj.qset_id, '0', response)
+
+        if isinstance(response, HttpResponseRedirect):
+            response = self.apply_org_and_qset_to_url(obj.qset_id, '0', response)
+
         response.set_cookie('admin-filter-qset', obj.qset_id)
         return response
 
     def apply_org_and_qset_to_url(self, qset_id, org_id, response):
         """Apply org and qset filter values to the url on save."""
         url_path, parameters = parse_response_url_to_parameters(response)
-
-        if url_path is None:
-            return response
-
         parameters = self.update_parameters(parameters, qset_id, org_id)
         return HttpResponseRedirect('?'.join((url_path, ('&'.join(parameters)))))
 

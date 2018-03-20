@@ -9436,3 +9436,34 @@ select.form-control, input.form-control {
     font-size: 18px;
     text-align: center;
 }
+
+.row .user-points-cell {
+    padding: 0;
+}
+
+.row.no-padding {
+    padding: 0;
+}
+
+.row.no-side-margins {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+@media (max-width: 1600px) {
+    .user-points-label.weekly h2 {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 1330px) {
+    .user-points-label.weekly h2 {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .user-points-label.weekly h2 {
+        font-size: 18px;
+    }
+}
