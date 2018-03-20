@@ -6,7 +6,7 @@
         <h3>{{ user_organizations|default:"No organizations assigned to the user" }}</h3>
     </div>
     <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-5 col-md-3">
             <div class="box center dash-profile rounded-10">
                 <img alt="Person" src="/static/assets/default-avatar.png">
                 <br><br>
@@ -16,97 +16,97 @@
                     <div class="center">{{ profile_user.email }}</div>
                 </div>
                 <br/><br/>
-                <div class="row col-xs-12 margin-bottom-10">
-                    <div class="user-points-cell col-xs-3">
+                <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
+                    <div class="user-points-cell col-xs-5">
                         <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
                             data-trigger="click focus hover" title="" data-original-title="{% if is_owner %}Your{% else %}User's{% endif %} place in the Rank List">
                             <h2 class="vcenter">{{ user_rank_place }}</h2>
                         </div>
                     </div>
-                    <div class="user-points-label col-xs-9">
+                    <div class="user-points-label col-xs-7">
                         <h2>{% if is_owner %}Your{% else %}User's{% endif %} place in the Rank List</h2>
                     </div>
                 </div>
                 <div class="clearfix"></div>
-                <div class="row col-xs-12 margin-bottom-10">
-                    <div class="user-points-cell col-xs-3">
+                <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
+                    <div class="user-points-cell col-xs-5">
                         <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
                             data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
                             <h2 class="vcenter">{{ own_score }}</h2>
                         </div>
                     </div>
-                    <div class="user-points-label col-xs-9">
+                    <div class="user-points-label col-xs-7">
                         <h2>Total number of thumbs up</h2>
                     </div>
                 </div>
                 <div class="clearfix"></div>
-                <div class="row col-xs-12 margin-bottom-10">
-                    <div class="user-points-cell col-xs-3">
+                <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
+                    <div class="user-points-cell col-xs-5">
                         <div class="user-points pastel-green" data-toggle="tooltip" data-placement="bottom"
                             data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
                             <h2 class="vcenter">{{ own_correct_answers }}</h2>
                         </div>
                     </div>
-                    <div class="user-points-label col-xs-9">
+                    <div class="user-points-label col-xs-7">
                         <h2>Total number of correct answers</h2>
                     </div>
                 </div>
                 <div class="clearfix"></div>
-                <div class="row col-xs-12 margin-bottom-10">
-                    <div class="user-points-cell col-xs-3">
+                <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
+                    <div class="user-points-cell col-xs-5">
                         <div class="user-points pastel-red" data-toggle="tooltip" data-placement="bottom"
                             data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
                             <h2 class="vcenter">{{ own_incorrect_answers }}</h2>
                         </div>
                     </div>
-                    <div class="user-points-label col-xs-9">
+                    <div class="user-points-label col-xs-7">
                         <h2>Total number of incorrect answers</h2>
                     </div>
                 </div>
                 <div class="clearfix"></div>
                 <h3>Over the last week</h3>
-                <div class="row margin-bottom-10">
-                    <div class="col-xs-3">
+                <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
+                    <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
                             <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_questions == 0 %}0{% else %}{{ own_last_week_questions|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
-                        <div class="row user-points-label">
+                        <div class="row user-points-label weekly">
                             <h2>Questions created</h2>
                         </div>
                     </div>
-                    <div class="col-xs-3">
+                    <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
                             <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_thumbs_up == 0 %}0{% else %}{{ own_last_week_thumbs_up|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
-                        <div class="row user-points-label">
+                        <div class="row user-points-label weekly">
                             <h2>Thumbs up</h2>
                         </div>
                     </div>
-                    <div class="col-xs-3">
+                    <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
                             <div class="user-points pastel-green" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_correct_answers == 0 %}0{% else %}{{ own_last_week_correct_answers|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
-                        <div class="row user-points-label">
+                        <div class="row user-points-label weekly">
                             <h2>Correct answers</h2>
                         </div>
                     </div>
-                    <div class="col-xs-3">
+                    <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
                             <div class="user-points pastel-red" data-toggle="tooltip" data-placement="bottom"
                                 data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_incorrect_answers == 0 %}0{% else %}{{ own_last_week_incorrect_answers|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
-                        <div class="row user-points-label">
+                        <div class="row user-points-label weekly">
                             <h2>Incorrect answers</h2>
                         </div>
                     </div>
@@ -114,7 +114,7 @@
                 <div class="clearfix"></div>
             </div>
         </div>
-        <div class="col-sm-9">
+        <div class="col-sm-7 col-md-9">
             <div class="row" style="margin: 0 25px">
             {% if is_student %}
                 <div class="profile-nav-bar">
