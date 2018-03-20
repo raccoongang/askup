@@ -239,6 +239,7 @@ def validate_answer_form_and_create(form, request, question):
             question_id=question.id,
             user_id=user.id
         )
+        response['qset_id'] = question.qset_id
         response['answer_id'] = answer.id
     else:
         response['result'] = 'error'
@@ -288,3 +289,18 @@ def apply_filter_to_queryset(request, filter, queryset):
         return queryset.exclude(user_id=request.user.id)
 
     return queryset
+
+
+def do_user_checks_and_evaluate(user, answer, evaluation):
+    """Do user checks and evaluate answer for the answer evaluation view."""
+    evaluation_int = int(evaluation)
+    is_admin = check_user_has_groups(user, 'admin')
+
+    if not is_admin and user not in answer.question.qset.top_qset.users.all():
+        return False
+
+    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0] and answer:
+        answer.self_evaluation = evaluation_int
+        answer.save()
+
+    return True

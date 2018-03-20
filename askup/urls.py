@@ -54,7 +54,7 @@ urlpatterns = [
         name='question_downvote'
     ),
     url(
-        r'^answer/evaluate/(?P<answer_id>\d+)/(?P<evaluation>\d+)/$',
+        r'^answer/evaluate/(?P<qset_id>\d+)/(?P<answer_id>\d+)/(?P<evaluation>\d+)/$',
         views.answer_evaluate,
         name='answer_evaluate'
     ),

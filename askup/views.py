@@ -51,6 +51,7 @@ from .utils.views import (
     compose_qset_form,
     compose_question_form_and_create,
     delete_qset_by_form,
+    do_user_checks_and_evaluate,
     get_clean_filter_parameter,
     qset_update_form_template,
     question_vote,
@@ -726,7 +727,7 @@ def do_make_form_and_delete(request, question):
 
 
 @login_required
-def answer_evaluate(request, answer_id, evaluation):
+def answer_evaluate(request, qset_id, answer_id, evaluation):
     """Provide a self-evaluation for the student/teacher/admin."""
     log.debug(
         'Got the "%s" evaluation for the answer_id - %s',
@@ -735,7 +736,7 @@ def answer_evaluate(request, answer_id, evaluation):
     )
     filter = request.GET.get('filter', None)
     is_quiz_start = request.GET.get('quiz_start', None)
-    answer = get_object_or_404(Answer, pk=answer_id)
+    answer = Answer.objects.filter(pk=answer_id).first()
 
     if not do_user_checks_and_evaluate(request.user, answer, evaluation):
         return redirect(reverse('askup:organizations'))
@@ -743,8 +744,6 @@ def answer_evaluate(request, answer_id, evaluation):
     if filter:
         # If it's a Quiz
         filter = get_clean_filter_parameter(request)
-        previous_question = answer.question
-        qset_id = previous_question.qset_id
         next_question_id = get_next_quiz_question(
             request, filter, qset_id, is_quiz_start
         )
@@ -752,7 +751,7 @@ def answer_evaluate(request, answer_id, evaluation):
         if next_question_id:
             return get_quiz_question_redirect(next_question_id, filter)
 
-    return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
+    return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
 
 
 def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
@@ -775,21 +774,6 @@ def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
     cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the 24 hours
 
     return next_question_id
-
-
-def do_user_checks_and_evaluate(user, answer, evaluation):
-    """Do user checks and evaluate answer for the answer evaluation view."""
-    evaluation_int = int(evaluation)
-    is_admin = check_user_has_groups(user, 'admin')
-
-    if not is_admin and user not in answer.question.qset.top_qset.users.all():
-        return False
-
-    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
-        answer.self_evaluation = evaluation_int
-        answer.save()
-
-    return True
 
 
 def index_view(request):

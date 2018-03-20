@@ -197,7 +197,7 @@ function on_answer_success(data) {
     if (data.result == 'success') {
         $('h4.your-answer').html($('#id_text').val());
         $('.self-evaluate').find('a').each(function(){
-            $(this).attr('href', $(this).attr('href').replace('/evaluate/1', '/evaluate/' + data.answer_id));
+            $(this).attr('href', $(this).attr('href').replace('/evaluate/1/1', '/evaluate/' + data.qset_id + '/' + data.answer_id));
         });
         $('.show-on-answered').slideDown();
         $('.hide-on-answered').slideUp();
