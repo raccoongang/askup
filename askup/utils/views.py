@@ -10,6 +10,20 @@ from askup.models import Answer, Qset, Question
 from askup.utils.general import (
     add_notification_to_url,
     check_user_has_groups,
+    compose_user_full_name_from_object,
+    get_checked_user_organization_by_id,
+    get_first_user_organization,
+    get_student_last_week_correct_answers_count,
+    get_student_last_week_incorrect_answers_count,
+    get_student_last_week_questions_count,
+    get_student_last_week_votes_value,
+    get_user_correct_answers_count,
+    get_user_incorrect_answers_count,
+    get_user_organizations_for_filter,
+    get_user_place_in_rank_list,
+    get_user_profile_rank_list_and_total_users,
+    get_user_score_by_id,
+    get_user_subjects,
     send_feedback,
 )
 from askup.utils.models import check_user_and_create_question
@@ -304,3 +318,72 @@ def do_user_checks_and_evaluate(user, answer, evaluation):
         answer.save()
 
     return True
+
+
+def select_user_organization(user, requested_organization_id):
+    """
+    Select the organization for the user profile view.
+
+    May return organization object or None.
+    If organization_id is None, then returns a first organization from the user relations.
+    If user has no organizations in related then returns None.
+    """
+    if requested_organization_id:
+        return get_checked_user_organization_by_id(user, requested_organization_id)
+
+    return get_first_user_organization(user)
+
+
+def get_user_profile_context_data(request, profile_user, user_id, selected_organization):
+    """
+    Return the context data used in the user profile view template.
+    """
+    return {
+        'profile_user': profile_user,
+        'full_name': compose_user_full_name_from_object(profile_user),
+        'viewer_user_id': request.user.id,
+        'own_score': get_user_score_by_id(user_id),
+        'is_owner': user_id == request.user.id,
+        'is_student': check_user_has_groups(profile_user, 'student'),
+        'own_correct_answers': get_user_correct_answers_count(user_id),
+        'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
+        'user_rank_place': get_user_place_in_rank_list(selected_organization, user_id),
+        'own_last_week_questions': get_student_last_week_questions_count(user_id),
+        'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
+        'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
+        'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
+        'user_organizations': get_user_organizations_for_filter(profile_user),
+        'rank_list': tuple(),
+        'rank_list_total_users': 0,
+        'own_subjects': get_user_subjects(selected_organization, user_id),
+        'selected_organization': selected_organization,
+    }
+
+
+def get_user_profile_rank_list_context_data(request, profile_user, user_id, selected_organization):
+    """
+    Return the context data used in the user profile rank list view template.
+    """
+    rank_list, total_users = get_user_profile_rank_list_and_total_users(
+        profile_user.id, request.user.id, selected_organization.id
+    )
+    return {
+        'profile_user': profile_user,
+        'full_name': compose_user_full_name_from_object(profile_user),
+        'viewer_user_id': request.user.id,
+        'own_score': get_user_score_by_id(user_id),
+        'is_owner': user_id == request.user.id,
+        'is_student': check_user_has_groups(profile_user, 'student'),
+        'own_correct_answers': get_user_correct_answers_count(user_id),
+        'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
+        'user_rank_place': get_user_place_in_rank_list(selected_organization, user_id),
+        'own_last_week_questions': get_student_last_week_questions_count(user_id),
+        'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
+        'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
+        'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
+        'user_organizations': get_user_organizations_for_filter(profile_user),
+        'rank_list': rank_list,
+        'rank_list_total_users': total_users,
+        'own_subjects': tuple(),
+        'selected_organization': selected_organization,
+    }

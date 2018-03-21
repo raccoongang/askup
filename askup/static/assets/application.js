@@ -75,6 +75,14 @@ $(document).ready(function(){
 
     $('.my-subject-row').click(on_click_my_subject);
 
+    $('#user_organization_filter').on('change', function(event) {
+        if (window.location.href.search('/organization/') == -1) {
+            window.location.href = window.location.href + 'organization/' + $(this).val() + '/';
+        } else {
+            window.location.href = window.location.href.replace(/\/organization\/\d+/, '/organization/' + $(this).val());
+        }
+    });
+
     check_active_blooms_taxonomy();
 });
 

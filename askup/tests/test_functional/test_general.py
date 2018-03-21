@@ -632,12 +632,13 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
             {'text': answer_text}
         )
 
-    def evaluate_answer(self, answer_id, self_evaluation):
+    def evaluate_answer(self, qset_id, answer_id, self_evaluation):
         """evaluate_answer."""
         return self.client.get(
             reverse(
                 'askup:answer_evaluate',
                 kwargs={
+                    'qset_id': qset_id,
                     'answer_id': answer_id,
                     'evaluation': self_evaluation,
                 }
@@ -671,17 +672,17 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         """test_answer_evaluation_success."""
         answer_text = 'Test answer'
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(answer_response['answer_id'], 0)
+        self.evaluate_answer(4, answer_response['answer_id'], 0)
         answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
         self.assertEqual(answer.self_evaluation, 0)
 
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(answer_response['answer_id'], 1)
+        self.evaluate_answer(4, answer_response['answer_id'], 1)
         answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
         self.assertEqual(answer.self_evaluation, 1)
 
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(answer_response['answer_id'], 2)
+        self.evaluate_answer(4, answer_response['answer_id'], 2)
         answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
         self.assertEqual(answer.self_evaluation, 2)
 
@@ -689,7 +690,7 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         """test_answer_evaluation_fail_wrong_evaluation_value."""
         answer_text = 'Test answer'
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(answer_response['answer_id'], 3)
+        self.evaluate_answer(4, answer_response['answer_id'], 3)
         answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
         self.assertEqual(answer.self_evaluation, None)
 
@@ -1030,15 +1031,16 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.assertIsNotNone(user)
         user.is_active = True
         user.save()
+        organization_id = 1
 
-        self.initial_user_stats_assertions(user.id)
-        self.active_user_stats_assertions(user.id)
+        self.initial_user_stats_assertions(user.id, organization_id)
+        self.active_user_stats_assertions(user.id, organization_id)
 
-    def initial_user_stats_assertions(self, user_id):
+    def initial_user_stats_assertions(self, user_id, organization_id):
         """
         Check freshly created user stats.
         """
-        rank_place = get_user_place_in_rank_list(user_id)
+        rank_place = get_user_place_in_rank_list(user_id, organization_id)
         user_score = get_user_score_by_id(user_id)
         correct_answers = get_user_correct_answers_count(user_id)
         incorrect_answers = get_user_incorrect_answers_count(user_id)
@@ -1056,7 +1058,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.assertEqual(week_correct_answers, 0)
         self.assertEqual(week_incorrect_answers, 0)
 
-    def active_user_stats_assertions(self, user_id):
+    def active_user_stats_assertions(self, user_id, organization_id):
         """
         Check an active user stats.
         """
@@ -1067,6 +1069,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
             self, question_text, question_answer, 4
         )
         question = Question.objects.filter(text=question_text, user_id=user_id).first()
+        self.assertIsNotNone(question)
 
         self.client.login(username='student01', password='student01')
         VoteModelFormTest.upvote_question(self, question.id)
@@ -1080,7 +1083,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
 
         self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
 
-        rank_place = get_user_place_in_rank_list(user_id)
+        rank_place = get_user_place_in_rank_list(organization_id, user_id)
         user_score = get_user_score_by_id(user_id)
         correct_answers = get_user_correct_answers_count(user_id)
         incorrect_answers = get_user_incorrect_answers_count(user_id)
@@ -1104,7 +1107,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         """
         self.client.login(username=username, password=password)
         answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
-        AnswerModelFormCase.evaluate_answer(self, answer_response['answer_id'], evaluation)
+        AnswerModelFormCase.evaluate_answer(self, 4, answer_response['answer_id'], evaluation)
         answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, evaluation)
@@ -1141,11 +1144,19 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
                 'tu_rlist01',
             )
 
-    def get_user_profile_rank_list_response(self, user_id):
+    def get_user_profile_rank_list_response(self, user_id, organization_id):
         """
         Return user profile response.
         """
-        return self.client.get(reverse('askup:user_profile_rank_list', kwargs={'user_id': user_id}))
+        return self.client.get(
+            reverse(
+                'askup:user_profile_organization_rank_list',
+                kwargs={
+                    'user_id': user_id,
+                    'organization_id': organization_id,
+                }
+            )
+        )
 
     def test_user_rank_list(self):
         """
@@ -1184,14 +1195,14 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         user02.is_active = True
         user02.save()
 
-        self.initial_user_rank_assertions(user01.id)
-        self.active_user_rank_assertions(user01, user02)
+        self.initial_user_rank_assertions(user01.id, 1)
+        self.active_user_rank_assertions(user01, user02, 1)
 
-    def initial_user_rank_assertions(self, user_id):
+    def initial_user_rank_assertions(self, user_id, organization_id):
         """
         Check freshly created user stats.
         """
-        rank_place = get_user_place_in_rank_list(user_id)
+        rank_place = get_user_place_in_rank_list(organization_id, user_id)
         user_score = get_user_score_by_id(user_id)
         correct_answers = get_user_correct_answers_count(user_id)
         incorrect_answers = get_user_incorrect_answers_count(user_id)
@@ -1209,7 +1220,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.assertEqual(week_correct_answers, 0)
         self.assertEqual(week_incorrect_answers, 0)
 
-    def active_user_rank_assertions(self, user01, user02):
+    def active_user_rank_assertions(self, user01, user02, organization_id):
         """
         Check an active user stats.
         """
@@ -1231,10 +1242,9 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 1)  # counts as wrong
         self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
         self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
+        rows, _ = get_user_profile_rank_list_and_total_users(user01.id, user01.id, organization_id)
 
-        for row in get_user_profile_rank_list_and_total_users(user01.id, user01.id)[0]:
-            place, return_user_id, name, questions, thumbs_up = row
-
+        for place, return_user_id, name, questions, thumbs_up in rows:
             if return_user_id == user01.id:
                 self.assertEqual(place, 1)
                 self.assertEqual(
@@ -1255,7 +1265,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
                 self.assertEqual(thumbs_up, 0)
                 self.assertEqual(questions, 0)
 
-        response = self.get_user_profile_rank_list_response(user01.id)
+        response = self.get_user_profile_rank_list_response(user01.id, 1)
 
         # We've got only three users that were made it into the rank list (have any questions)
         self.assertContains(response, 'Total: 3 users')
@@ -1266,10 +1276,21 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         """
         self.client.login(username=username, password=password)
         answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
-        AnswerModelFormCase.evaluate_answer(self, answer_response['answer_id'], evaluation)
+        AnswerModelFormCase.evaluate_answer(self, 4, answer_response['answer_id'], evaluation)
         answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, evaluation)
+
+    @client_user('admin', 'admin')
+    def test_no_users_in_organization_3(self):
+        """
+        Test that there is no users in the rank list of Organization 3.
+        """
+        # 5 - user assigned to "Organization 2", 2 - "Organization 2" id
+        response = self.get_user_profile_rank_list_response(5, 2)
+
+        # We've got no users that were made it into the rank list (have any questions)
+        self.assertContains(response, 'Total: 0 users')
 
 
 class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
@@ -1304,7 +1325,7 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
         qset_id = 4  # Qset 1-1 from the mockups
         response = self.get_user_profile(user_id)
 
-        self.assertContains(response, 'Organization 1: Qset 1-1')
+        self.assertContains(response, 'Qset 1-1')
         self.assertContains(response, '2 questions')
         self.assertContains(response, 'My questions')
 
@@ -1336,7 +1357,7 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
         """
         Test user has no questions.
         """
-        user_id = 4  # student02 from the mockups
+        user_id = 5  # student03 from the mockups
         response = self.get_user_profile(user_id)
 
         self.assertContains(response, 'This user hasn’t created any questions yet.')

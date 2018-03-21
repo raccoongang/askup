@@ -9467,3 +9467,8 @@ select.form-control, input.form-control {
         font-size: 18px;
     }
 }
+
+#user_organization_filter {
+    height: 48px;
+    font-size: 24px;
+}
