@@ -632,24 +632,12 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
             {'text': answer_text}
         )
 
-    def evaluate_answer(self, qset_id, answer_id, self_evaluation):
-        """evaluate_answer."""
-        return self.client.get(
-            reverse(
-                'askup:answer_evaluate',
-                kwargs={
-                    'qset_id': qset_id,
-                    'answer_id': answer_id,
-                    'evaluation': self_evaluation,
-                }
-            )
-        )
-
     def test_answer_the_question_success(self):
         """test_answer_the_question_success."""
         answer_text = 'Test answer' * 50  # testing as well that the answer can be a big one (255+ chars) now
         response = self.create_answer(1, answer_text).json()
-        answer = get_object_or_404(Answer, pk=response['answer_id'])
+        answer = Answer.objects.filter(question_id=1, text=answer_text).first()
+        self.assertIsNotNone(answer)
         self.assertEqual(response['result'], 'success')
         self.assertEqual(answer.text, answer_text)
 
@@ -670,28 +658,38 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
 
     def test_answer_evaluation_success(self):
         """test_answer_evaluation_success."""
-        answer_text = 'Test answer'
+        answer_text = 'This test answer is very unique 01'
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(4, answer_response['answer_id'], 0)
-        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.client.get(answer_response['evaluation_urls'][2])  # Evaluate as wrong (0)
+        answer = Answer.objects.filter(question_id=1, text=answer_text).first()
+        self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 0)
 
+        answer_text = 'This test answer is very unique 02'
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(4, answer_response['answer_id'], 1)
-        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.client.get(answer_response['evaluation_urls'][1])  # Evaluate as wrong (1)
+        answer = Answer.objects.filter(question_id=1, text=answer_text).first()
+        self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 1)
 
+        answer_text = 'This test answer is very unique 03'
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(4, answer_response['answer_id'], 2)
-        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.client.get(answer_response['evaluation_urls'][0])  # Evaluate as wrong (2)
+        answer = Answer.objects.filter(question_id=1, text=answer_text).first()
+        self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 2)
 
     def test_answer_evaluation_fail_wrong_evaluation_value(self):
         """test_answer_evaluation_fail_wrong_evaluation_value."""
-        answer_text = 'Test answer'
+        answer_text = 'This test answer is very unique'
         answer_response = self.create_answer(1, answer_text).json()
-        self.evaluate_answer(4, answer_response['answer_id'], 3)
-        answer = get_object_or_404(Answer, pk=answer_response['answer_id'])
+        self.client.get(
+            answer_response['evaluation_urls'][0].replace(
+                'evaluation/2', 'evaluation/{}'.format(333)
+            )
+        )  # Evaluate as wrong (333)
+        answer = Answer.objects.filter(question_id=1, text=answer_text).first()
+        self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, None)
 
 
@@ -1077,11 +1075,17 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.client.login(username='teacher01', password='teacher01')
         VoteModelFormTest.upvote_question(self, question.id)
 
-        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 0)  # wrong
-        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 1)  # counts as wrong
-        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 2)  # Correct
+        # Wrong
+        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 'Unique answer 01', 0)
 
-        self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
+        # Kind-of (counts as wrong)
+        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 'Unique answer 02', 1)
+
+        # Correct
+        self.answer_and_evaluate('testuser_stat', 'tu_stat01', question.id, 'Unique answer 03', 2)
+
+        # Shouldn't count
+        self.answer_and_evaluate('student01', 'student01', question.id, 'Unique answer 04', 2)
 
         rank_place = get_user_place_in_rank_list(organization_id, user_id)
         user_score = get_user_score_by_id(user_id)
@@ -1101,14 +1105,18 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.assertEqual(week_correct_answers, 1)
         self.assertEqual(week_incorrect_answers, 2)
 
-    def answer_and_evaluate(self, username, password, question_id, evaluation):
+    def answer_and_evaluate(self, username, password, question_id, answer_text, evaluation):
         """
         Answer and evaluate question by a specified user.
         """
         self.client.login(username=username, password=password)
-        answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
-        AnswerModelFormCase.evaluate_answer(self, 4, answer_response['answer_id'], evaluation)
-        answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
+        answer_response = AnswerModelFormCase.create_answer(self, 1, answer_text).json()
+        self.client.get(
+            answer_response['evaluation_urls'][0].replace(
+                'evaluation/2', 'evaluation/{}'.format(evaluation)
+            )
+        )
+        answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, evaluation)
 
@@ -1150,7 +1158,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         """
         return self.client.get(
             reverse(
-                'askup:user_profile_organization_rank_list',
+                'askup:user_profile_rank_list',
                 kwargs={
                     'user_id': user_id,
                     'organization_id': organization_id,
@@ -1238,10 +1246,18 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.client.login(username='teacher01', password='teacher01')
         VoteModelFormTest.upvote_question(self, question.id)
 
-        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 0)  # wrong
-        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 1)  # counts as wrong
-        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 2)  # Correct
-        self.answer_and_evaluate('student01', 'student01', question.id, 2)  # shouldn't count
+        # Wrong
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 'Unique answer 01', 0)
+
+        # Kind-of (counts as wrong)
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 'Unique answer 02', 1)
+
+        # Correct
+        self.answer_and_evaluate('testuser_rank_list', 'tu_rlist01', question.id, 'Unique answer 03', 2)
+
+        # Shouldn't count
+        self.answer_and_evaluate('student01', 'student01', question.id, 'Unique answer 04', 2)
+
         rows, _ = get_user_profile_rank_list_and_total_users(user01.id, user01.id, organization_id)
 
         for place, return_user_id, name, questions, thumbs_up in rows:
@@ -1270,14 +1286,18 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         # We've got only three users that were made it into the rank list (have any questions)
         self.assertContains(response, 'Total: 3 users')
 
-    def answer_and_evaluate(self, username, password, question_id, evaluation):
+    def answer_and_evaluate(self, username, password, question_id, answer_text, evaluation):
         """
         Answer and evaluate question by a specified user.
         """
         self.client.login(username=username, password=password)
-        answer_response = AnswerModelFormCase.create_answer(self, 1, 'Test answer').json()
-        AnswerModelFormCase.evaluate_answer(self, 4, answer_response['answer_id'], evaluation)
-        answer = Answer.objects.filter(pk=answer_response['answer_id']).first()
+        answer_response = AnswerModelFormCase.create_answer(self, 1, answer_text).json()
+        self.client.get(
+            answer_response['evaluation_urls'][0].replace(
+                'evaluation/2', 'evaluation/{}'.format(evaluation)
+            )
+        )
+        answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, evaluation)
 

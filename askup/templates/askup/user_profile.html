@@ -115,20 +115,18 @@
         </div>
         <div class="col-sm-7 col-md-9">
             <div class="row" style="margin: 0 25px">
-                <div class="row center">
-                    {% include 'askup/user_profile_organizations.html' %}
-                </div>
+                {% include 'askup/user_profile_organizations.html' %}
                 {% if is_student and user_organizations %}
                 <div class="profile-nav-bar">
                     <div>
-                            <a href="{% url 'askup:user_profile_organization' profile_user.id selected_organization.id %}"
-                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile" or request.resolver_match.url_name == "user_profile_organization" %} active{% endif %}">{% if is_owner %}My{% else %}User's{% endif %} questions</a>
-                            <a href="{% url 'askup:user_profile_organization_rank_list' profile_user.id selected_organization.id  %}"
-                               class="btn btn-info{% if request.resolver_match.url_name == "user_profile_rank_list" or request.resolver_match.url_name == "user_profile_organization_rank_list" %} active{% endif %}">Rank list</a>
+                        <a href="{% url 'askup:user_profile' profile_user.id selected_organization.id %}"
+                            class="btn btn-info{% if request.resolver_match.url_name == "user_profile" %} active{% endif %}">{% if is_owner %}My{% else %}User's{% endif %} questions</a>
+                        <a href="{% url 'askup:user_profile_rank_list' profile_user.id selected_organization.id  %}"
+                            class="btn btn-info{% if request.resolver_match.url_name == "user_profile_rank_list" %} active{% endif %}">Rank list</a>
                     </div>
                 </div>
                 <div class="list">
-                    {% if request.resolver_match.url_name == "user_profile" or request.resolver_match.url_name == "user_profile_organization" %}
+                    {% if request.resolver_match.url_name == "user_profile" %}
                         {% include "askup/user_profile_own_questions.html" %}
                     {% else %}
                         {% include "askup/user_profile_rank_list.html" %}

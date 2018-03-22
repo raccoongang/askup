@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from askup.forms import FeedbackForm, QsetModelForm, QuestionModelForm
-from askup.models import Answer, Qset, Question
+from askup.models import Answer, Organization, Qset, Question
 from askup.utils.general import (
     add_notification_to_url,
     check_user_has_groups,
@@ -253,12 +253,41 @@ def validate_answer_form_and_create(form, request, question):
             question_id=question.id,
             user_id=user.id
         )
-        response['qset_id'] = question.qset_id
-        response['answer_id'] = answer.id
+        response['evaluation_urls'] = get_evaluation_urls(request, question.qset_id, answer.id)
     else:
         response['result'] = 'error'
 
     return response
+
+
+def get_evaluation_urls(request, qset_id, answer_id):
+    """
+    Get the evaluation urls to send to the client side in the question answer form.
+    """
+    filter_value = request.GET.get('filter', '')
+
+    if filter_value:
+        query_args_string = '?filter={}'.format(clean_filter_parameter(filter_value))
+    else:
+        query_args_string = ''
+
+    urls = []
+
+    for evaluation in range(2, -1, -1):
+        urls.append(
+            '{}{}'.format(
+                reverse(
+                    'askup:answer_evaluate',
+                    kwargs={
+                        'qset_id': qset_id,
+                        'answer_id': answer_id,
+                        'evaluation': evaluation,
+                    },
+                ),
+                query_args_string,
+            )
+        )
+    return urls
 
 
 def validate_and_send_feedback_form(request, next_page):
@@ -289,9 +318,16 @@ def validate_and_send_feedback_form(request, next_page):
 
 def get_clean_filter_parameter(request):
     """Return a clean user filter value."""
-    allowed_filters = ('all', 'mine', 'other')
     get_parameter = request.GET.get('filter')
-    return 'all' if get_parameter not in allowed_filters else get_parameter
+    return clean_filter_parameter(get_parameter)
+
+
+def clean_filter_parameter(parameter):
+    """
+    Return a clean filter parameter.
+    """
+    allowed_filters = ('all', 'mine', 'other')
+    return 'all' if parameter not in allowed_filters else parameter
 
 
 def apply_filter_to_queryset(request, filter, queryset):
@@ -305,22 +341,25 @@ def apply_filter_to_queryset(request, filter, queryset):
     return queryset
 
 
-def do_user_checks_and_evaluate(user, answer, evaluation):
-    """Do user checks and evaluate answer for the answer evaluation view."""
+def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
+    """
+    Do user checks and evaluate answer for the answer evaluation view.
+    """
     evaluation_int = int(evaluation)
     is_admin = check_user_has_groups(user, 'admin')
+    user_permitted = Organization.objects.filter(qset__in=[qset_id], users__in=[user.id]).first()
 
-    if not is_admin and user not in answer.question.qset.top_qset.users.all():
+    if not is_admin and not user_permitted:
         return False
 
-    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0] and answer:
+    if evaluation_int in next(zip(*Answer.EVALUATIONS)) and answer:
         answer.self_evaluation = evaluation_int
         answer.save()
 
     return True
 
 
-def select_user_organization(user, requested_organization_id):
+def select_user_organization(user_id, requested_organization_id):
     """
     Select the organization for the user profile view.
 
@@ -329,9 +368,9 @@ def select_user_organization(user, requested_organization_id):
     If user has no organizations in related then returns None.
     """
     if requested_organization_id:
-        return get_checked_user_organization_by_id(user, requested_organization_id)
+        return get_checked_user_organization_by_id(user_id, requested_organization_id)
 
-    return get_first_user_organization(user)
+    return get_first_user_organization(user_id)
 
 
 def get_user_profile_context_data(request, profile_user, user_id, selected_organization):
@@ -352,11 +391,12 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
         'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
         'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
         'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-        'user_organizations': get_user_organizations_for_filter(profile_user),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id),
         'rank_list': tuple(),
         'rank_list_total_users': 0,
         'own_subjects': get_user_subjects(selected_organization, user_id),
         'selected_organization': selected_organization,
+        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }
 
 
@@ -381,9 +421,10 @@ def get_user_profile_rank_list_context_data(request, profile_user, user_id, sele
         'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
         'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
         'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-        'user_organizations': get_user_organizations_for_filter(profile_user),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id),
         'rank_list': rank_list,
         'rank_list_total_users': total_users,
         'own_subjects': tuple(),
         'selected_organization': selected_organization,
+        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }

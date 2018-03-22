@@ -231,26 +231,26 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 def user_profile_view(request, user_id, organization_id=None):
     """Provide the user profile my questions view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    user_id = int(user_id)
-    selected_organization = select_user_organization(profile_user, organization_id)
+    selected_organization = select_user_organization(profile_user.id, organization_id)
     return render(
         request,
         'askup/user_profile.html',
-        get_user_profile_context_data(request, profile_user, user_id, selected_organization),
+        get_user_profile_context_data(request, profile_user, profile_user.id, selected_organization),
     )
 
 
 @login_required
 def user_profile_rank_list_view(request, user_id, organization_id=None):
-    """Provide the user profile rank list view."""
+    """
+    Provide the user profile rank list view.
+    """
     profile_user = get_object_or_404(User, pk=user_id)
-    user_id = int(user_id)
-    selected_organization = select_user_organization(profile_user, organization_id)
+    selected_organization = select_user_organization(profile_user.id, organization_id)
     return render(
         request,
         'askup/user_profile.html',
         get_user_profile_rank_list_context_data(
-            request, profile_user, user_id, selected_organization
+            request, profile_user, profile_user.id, selected_organization
         ),
     )
 
@@ -696,7 +696,7 @@ def answer_evaluate(request, qset_id, answer_id, evaluation):
     is_quiz_start = request.GET.get('quiz_start', None)
     answer = Answer.objects.filter(pk=answer_id).first()
 
-    if not do_user_checks_and_evaluate(request.user, answer, evaluation):
+    if not do_user_checks_and_evaluate(request.user, answer, evaluation, qset_id):
         return redirect(reverse('askup:organizations'))
 
     if filter:
