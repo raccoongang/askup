@@ -715,6 +715,8 @@ def answer_evaluate(request, qset_id, answer_id, evaluation):
 def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
     """
     Get next quiz question id from the db/cache.
+
+    May return question_id or None (if there are no existent questions in cached list).
     """
     cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
     cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
@@ -728,10 +730,24 @@ def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
         cache.delete(cache_key)
         return None
 
-    next_question_id = cached_quiz_questions.pop(0)
-    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the 24 hours
+    next_question_id = pop_next_inexistent_questions_from_list(cached_quiz_questions)
+    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the default time
+    return next_question_id  # may return None if no any existent questions were in cached list
 
-    return next_question_id
+
+def pop_next_inexistent_questions_from_list(question_ids):
+    """
+    Pop every next inexistent question in the list until you find the existent one.
+
+    Returns first existent question_id if found, otherwise returns None.
+    """
+    while question_ids:
+        next_question_id = question_ids.pop(0)
+
+        if Question.objects.filter(id=next_question_id).exists():
+            return next_question_id
+
+    return None
 
 
 def index_view(request):

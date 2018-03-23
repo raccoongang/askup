@@ -350,6 +350,8 @@ def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
     if not is_admin and not user_permitted:
         return False
 
+    # <answer> can be passed into this function as None if it was deleted in pair with the
+    # question it belongs before the evaluation request was sent
     if evaluation_int in next(zip(*Answer.EVALUATIONS)) and answer:
         answer.self_evaluation = evaluation_int
         answer.save()
