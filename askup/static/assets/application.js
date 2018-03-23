@@ -201,7 +201,7 @@ function on_answer_success(data) {
     if (data.result == 'success') {
         $('h4.your-answer').html($('#id_text').val());
         $('.self-evaluate').find('a').each(function(){
-            $(this).attr('href', data.evaluation_urls[$(this).attr('data-evaluation')]);
+            $(this).attr('href', data.evaluation_urls[$(this).attr('data-evaluation-name')]);
         });
         $('.show-on-answered').slideDown();
         $('.hide-on-answered').slideUp();

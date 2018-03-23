@@ -271,21 +271,19 @@ def get_evaluation_urls(request, qset_id, answer_id):
     else:
         query_args_string = ''
 
-    urls = []
+    urls = {}
 
-    for evaluation in range(2, -1, -1):
-        urls.append(
-            '{}{}'.format(
-                reverse(
-                    'askup:answer_evaluate',
-                    kwargs={
-                        'qset_id': qset_id,
-                        'answer_id': answer_id,
-                        'evaluation': evaluation,
-                    },
-                ),
-                query_args_string,
-            )
+    for evaluation, url_name in Answer.EVALUATIONS:
+        urls[url_name] = '{}{}'.format(
+            reverse(
+                'askup:answer_evaluate',
+                kwargs={
+                    'qset_id': qset_id,
+                    'answer_id': answer_id,
+                    'evaluation': evaluation,
+                },
+            ),
+            query_args_string,
         )
     return urls
 
@@ -347,7 +345,7 @@ def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
     """
     evaluation_int = int(evaluation)
     is_admin = check_user_has_groups(user, 'admin')
-    user_permitted = Organization.objects.filter(qset__in=[qset_id], users__in=[user.id]).first()
+    user_permitted = Organization.objects.filter(qset__in=[qset_id], users__in=[user.id]).exists()
 
     if not is_admin and not user_permitted:
         return False

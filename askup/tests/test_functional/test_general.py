@@ -660,21 +660,21 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         """test_answer_evaluation_success."""
         answer_text = 'This test answer is very unique 01'
         answer_response = self.create_answer(1, answer_text).json()
-        self.client.get(answer_response['evaluation_urls'][2])  # Evaluate as wrong (0)
+        self.client.get(answer_response['evaluation_urls']['wrong'])  # Evaluate as wrong (0)
         answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 0)
 
         answer_text = 'This test answer is very unique 02'
         answer_response = self.create_answer(1, answer_text).json()
-        self.client.get(answer_response['evaluation_urls'][1])  # Evaluate as wrong (1)
+        self.client.get(answer_response['evaluation_urls']['sort-of'])  # Evaluate as wrong (1)
         answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 1)
 
         answer_text = 'This test answer is very unique 03'
         answer_response = self.create_answer(1, answer_text).json()
-        self.client.get(answer_response['evaluation_urls'][0])  # Evaluate as wrong (2)
+        self.client.get(answer_response['evaluation_urls']['correct'])  # Evaluate as wrong (2)
         answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 2)
@@ -684,7 +684,7 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         answer_text = 'This test answer is very unique'
         answer_response = self.create_answer(1, answer_text).json()
         self.client.get(
-            answer_response['evaluation_urls'][0].replace(
+            answer_response['evaluation_urls']['correct'].replace(
                 'evaluation/2', 'evaluation/{}'.format(333)
             )
         )  # Evaluate as wrong (333)
@@ -1112,7 +1112,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.client.login(username=username, password=password)
         answer_response = AnswerModelFormCase.create_answer(self, 1, answer_text).json()
         self.client.get(
-            answer_response['evaluation_urls'][0].replace(
+            answer_response['evaluation_urls']['correct'].replace(
                 'evaluation/2', 'evaluation/{}'.format(evaluation)
             )
         )
@@ -1293,7 +1293,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         self.client.login(username=username, password=password)
         answer_response = AnswerModelFormCase.create_answer(self, 1, answer_text).json()
         self.client.get(
-            answer_response['evaluation_urls'][0].replace(
+            answer_response['evaluation_urls']['correct'].replace(
                 'evaluation/2', 'evaluation/{}'.format(evaluation)
             )
         )

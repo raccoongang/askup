@@ -29,8 +29,14 @@
                 <p class="question-{{ question_id }}-net-votes">{{ question_vote_value }}</p><br>
             </div>
             <div class="question-voting">
-                <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
-                <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="{{ question_id }}"></div>
+                <div
+                    class="glyphicon glyphicon-triangle-top upvote-button"
+                    data-vote="upvote" data-vote-qid="{{ question_id }}">
+                </div>
+                <div 
+                    class="glyphicon glyphicon-triangle-bottom downvote-button"
+                    data-vote="downvote" data-vote-qid="{{ question_id }}">
+                </div>
             </div>
             <div class="correct-container">
                 <h4 class="correct">{{ question_answer_text }}</h4>
@@ -42,17 +48,17 @@
         <br>
         <div class="row row-no-padding">
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-success" href="{% url 'askup:answer_evaluate' 1 1 2 %}{% if filter %}?filter={{ filter }}{% endif %}" title="Yes" data-evaluation="2">
+                <a class="btn-feedback btn-success" href="" title="Yes" data-evaluation-name="correct">
                     <i class="fa fa-check self-evaluation-symbol"></i>
                 </a>
             </div>
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-maybe" href="{% url 'askup:answer_evaluate' 1 1 1 %}{% if filter %}?filter={{ filter }}{% endif %}" title="Not sure" data-evaluation="1">
+                <a class="btn-feedback btn-maybe" href="" title="Not sure" data-evaluation-name="sort-of">
                     <i class="fa fa-question self-evaluation-symbol"></i>
                 </a>
             </div>
             <div class="col-xs-4 center">
-                <a class="btn-feedback btn-pink" href="{% url 'askup:answer_evaluate' 1 1 0 %}{% if filter %}?filter={{ filter }}{% endif %}" title="No" data-evaluation="0">
+                <a class="btn-feedback btn-pink" href="" title="No" data-evaluation-name="wrong">
                     <i class="fa fa-times self-evaluation-symbol"></i>
                 </a>
             </div>

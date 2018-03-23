@@ -16,8 +16,12 @@
                 {% if selected_organization %}
                 <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
                     <div class="user-points-cell col-xs-5">
-                        <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
-                            data-trigger="click focus hover" title="" data-original-title="{% if is_owner %}Your{% else %}User's{% endif %} place in the Rank List">
+                        <div class="user-points pastel-orange"
+                            data-toggle="tooltip"
+                            data-placement="bottom"
+                            data-trigger="click focus hover"
+                            title=""
+                            data-original-title="{% if is_owner %}Your{% else %}User's{% endif %} place in the Rank List">
                             <h2 class="vcenter">{{ user_rank_place }}</h2>
                         </div>
                     </div>
@@ -29,8 +33,12 @@
                 {% endif %}
                 <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
                     <div class="user-points-cell col-xs-5">
-                        <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
-                            data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                        <div class="user-points pastel-orange"
+                            data-toggle="tooltip"
+                            data-placement="bottom"
+                            data-trigger="click focus hover"
+                            title=""
+                            data-original-title="User score reflects questions authored and votes received on questions">
                             <h2 class="vcenter">{{ own_score }}</h2>
                         </div>
                     </div>
@@ -41,8 +49,12 @@
                 <div class="clearfix"></div>
                 <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
                     <div class="user-points-cell col-xs-5">
-                        <div class="user-points pastel-green" data-toggle="tooltip" data-placement="bottom"
-                            data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                        <div class="user-points pastel-green"
+                            data-toggle="tooltip"
+                            data-placement="bottom"
+                            data-trigger="click focus hover"
+                            title=""
+                            data-original-title="User score reflects questions authored and votes received on questions">
                             <h2 class="vcenter">{{ own_correct_answers }}</h2>
                         </div>
                     </div>
@@ -53,8 +65,11 @@
                 <div class="clearfix"></div>
                 <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
                     <div class="user-points-cell col-xs-5">
-                        <div class="user-points pastel-red" data-toggle="tooltip" data-placement="bottom"
-                            data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                        <div class="user-points pastel-red"
+                            data-toggle="tooltip" data-placement="bottom"
+                            data-trigger="click focus hover"
+                            title=""
+                            data-original-title="User score reflects questions authored and votes received on questions">
                             <h2 class="vcenter">{{ own_incorrect_answers }}</h2>
                         </div>
                     </div>
@@ -67,8 +82,12 @@
                 <div class="row no-side-margins no-padding col-xs-12 margin-bottom-10">
                     <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
-                            <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
-                                data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                            <div class="user-points pastel-orange"
+                                data-toggle="tooltip"
+                                data-placement="bottom"
+                                data-trigger="click focus hover"
+                                title=""
+                                data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_questions == 0 %}0{% else %}{{ own_last_week_questions|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
@@ -78,8 +97,12 @@
                     </div>
                     <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
-                            <div class="user-points pastel-orange" data-toggle="tooltip" data-placement="bottom"
-                                data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                            <div class="user-points pastel-orange"
+                                data-toggle="tooltip"
+                                data-placement="bottom"
+                                data-trigger="click focus hover"
+                                title=""
+                                data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_thumbs_up == 0 %}0{% else %}{{ own_last_week_thumbs_up|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
@@ -89,8 +112,12 @@
                     </div>
                     <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
-                            <div class="user-points pastel-green" data-toggle="tooltip" data-placement="bottom"
-                                data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                            <div class="user-points pastel-green"
+                                data-toggle="tooltip"
+                                data-placement="bottom"
+                                data-trigger="click focus hover"
+                                title=""
+                                data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_correct_answers == 0 %}0{% else %}{{ own_last_week_correct_answers|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
@@ -100,8 +127,12 @@
                     </div>
                     <div class="col-lg-3 col-sm-12 col-xs-3">
                         <div class="row user-points-cell">
-                            <div class="user-points pastel-red" data-toggle="tooltip" data-placement="bottom"
-                                data-trigger="click focus hover" title="" data-original-title="User score reflects questions authored and votes received on questions">
+                            <div class="user-points pastel-red"
+                                data-toggle="tooltip"
+                                data-placement="bottom"
+                                data-trigger="click focus hover"
+                                title=""
+                                data-original-title="User score reflects questions authored and votes received on questions">
                                 <h2 class="vcenter">{% if own_last_week_incorrect_answers == 0 %}0{% else %}{{ own_last_week_incorrect_answers|stringformat:"+d" }}{% endif %}</h2>
                             </div>
                         </div>
@@ -120,9 +151,19 @@
                 <div class="profile-nav-bar">
                     <div>
                         <a href="{% url 'askup:user_profile' profile_user.id selected_organization.id %}"
-                            class="btn btn-info{% if request.resolver_match.url_name == "user_profile" %} active{% endif %}">{% if is_owner %}My{% else %}User's{% endif %} questions</a>
+                            class="btn btn-info
+                                {% if request.resolver_match.url_name == "user_profile" %}
+                                active
+                                {% endif %}">
+                            {% if is_owner %}My{% else %}User's{% endif %} questions
+                        </a>
                         <a href="{% url 'askup:user_profile_rank_list' profile_user.id selected_organization.id  %}"
-                            class="btn btn-info{% if request.resolver_match.url_name == "user_profile_rank_list" %} active{% endif %}">Rank list</a>
+                            class="btn btn-info
+                                {% if request.resolver_match.url_name == "user_profile_rank_list" %}
+                                active
+                                {% endif %}">
+                            Rank list
+                        </a>
                     </div>
                 </div>
                 <div class="list">
