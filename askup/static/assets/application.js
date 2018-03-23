@@ -75,6 +75,10 @@ $(document).ready(function(){
 
     $('.my-subject-row').click(on_click_my_subject);
 
+    $('#user_organization_filter').on('change', function(event) {
+        window.location.href = $(this).val();
+    });
+
     check_active_blooms_taxonomy();
 });
 
@@ -86,16 +90,16 @@ var QUESTION_ROW_TEMPLATE = `
                     <img src="/static/assets/thumbs-up.svg" alt="Thumbs up">{{ vote_value }}
                 </div>
                 <div class="col-xs-9">
-                    <a target="_blank" href="/askup/question/answer/{{ question_id }}/">{{ question_text }}</a>
+                    <a target="_blank" href="/askup/question/{{ question_id }}/answer/">{{ question_text }}</a>
                 </div>
             </div>
             <div class="col-xs-1">
                 <div class="question-actions">
                     <span class="actions pull-right">
-                        <a target="_blank" class="btn shortcut-button-link" href="/askup/question/edit/{{ question_id }}/">
+                        <a target="_blank" class="btn shortcut-button-link" href="/askup/question/{{ question_id }}/edit/">
                             <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
                         </a>
-                        <a target="_blank" class="btn shortcut-button-link" href="/askup/question/delete/{{ question_id }}/" rel="nofollow">
+                        <a target="_blank" class="btn shortcut-button-link" href="/askup/question/{{ question_id }}/delete/" rel="nofollow">
                             <span class="glyphicon glyphicon-trash shortcut-button-glyphicon"></span>
                         </a>
                     </span>
@@ -197,7 +201,7 @@ function on_answer_success(data) {
     if (data.result == 'success') {
         $('h4.your-answer').html($('#id_text').val());
         $('.self-evaluate').find('a').each(function(){
-            $(this).attr('href', $(this).attr('href').replace('/evaluate/1', '/evaluate/' + data.answer_id));
+            $(this).attr('href', data.evaluation_urls[$(this).attr('data-evaluation-name')]);
         });
         $('.show-on-answered').slideDown();
         $('.hide-on-answered').slideUp();

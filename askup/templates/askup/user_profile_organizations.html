@@ -1,0 +1,17 @@
+{% if selected_organization %}
+<div class="row center">
+    {% if user_organizations|length == 1 %}
+    <h3>{{ user_organizations.0.name }}</h3>
+    {% else %}
+    <div class="col-xs-push-3 col-xs-6">
+        <select id="user_organization_filter" class="select form-control">
+            {% for organization in user_organizations %}
+            <option value="{% url select_url_name profile_user.id organization.id %}"{% if organization.id == selected_organization.id %} selected{% endif %}>{{ organization.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<h3>No organizations assigned to the user</h3>
+{% endif %}

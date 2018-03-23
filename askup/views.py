@@ -5,7 +5,6 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.cache import cache
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -32,28 +31,20 @@ from .tokens import account_activation_token
 from .utils.general import (
     add_notification_to_url,
     check_user_has_groups,
-    compose_user_full_name_from_object,
     get_real_questions_queryset,
-    get_student_last_week_correct_answers_count,
-    get_student_last_week_incorrect_answers_count,
-    get_student_last_week_questions_count,
-    get_student_last_week_votes_value,
-    get_user_correct_answers_count,
-    get_user_incorrect_answers_count,
-    get_user_organizations_string,
-    get_user_place_in_rank_list,
-    get_user_profile_rank_list_and_total_users,
-    get_user_score_by_id,
-    get_user_subjects,
 )
 from .utils.views import (
-    apply_filter_to_queryset,
     compose_qset_form,
     compose_question_form_and_create,
     delete_qset_by_form,
+    do_user_checks_and_evaluate,
     get_clean_filter_parameter,
+    get_next_quiz_question,
+    get_user_profile_context_data,
+    get_user_profile_rank_list_context_data,
     qset_update_form_template,
     question_vote,
+    select_user_organization,
     user_group_required,
     validate_and_send_feedback_form,
     validate_answer_form_and_create,
@@ -236,63 +227,30 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 
 
 @login_required
-def user_profile_view(request, user_id):
+def user_profile_view(request, user_id, organization_id=None):
     """Provide the user profile my questions view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    user_id = int(user_id)
+    selected_organization = select_user_organization(profile_user.id, organization_id)
     return render(
         request,
         'askup/user_profile.html',
-        {
-            'profile_user': profile_user,
-            'full_name': compose_user_full_name_from_object(profile_user),
-            'viewer_user_id': request.user.id,
-            'own_score': get_user_score_by_id(user_id),
-            'is_owner': user_id == request.user.id,
-            'is_student': check_user_has_groups(profile_user, 'student'),
-            'own_correct_answers': get_user_correct_answers_count(user_id),
-            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-            'user_rank_place': get_user_place_in_rank_list(user_id),
-            'own_last_week_questions': get_student_last_week_questions_count(user_id),
-            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
-            'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-            'user_organizations': get_user_organizations_string(profile_user),
-            'rank_list': tuple(),
-            'rank_list_total_users': 0,
-            'own_subjects': get_user_subjects(user_id),
-        },
+        get_user_profile_context_data(request, profile_user, profile_user.id, selected_organization),
     )
 
 
 @login_required
-def user_profile_rank_list_view(request, user_id):
-    """Provide the user profile rank list view."""
+def user_profile_rank_list_view(request, user_id, organization_id=None):
+    """
+    Provide the user profile rank list view.
+    """
     profile_user = get_object_or_404(User, pk=user_id)
-    rank_list, total_users = get_user_profile_rank_list_and_total_users(profile_user.id, request.user.id)
-    user_id = int(user_id)
+    selected_organization = select_user_organization(profile_user.id, organization_id)
     return render(
         request,
         'askup/user_profile.html',
-        {
-            'profile_user': profile_user,
-            'full_name': compose_user_full_name_from_object(profile_user),
-            'viewer_user_id': request.user.id,
-            'own_score': get_user_score_by_id(user_id),
-            'is_owner': user_id == request.user.id,
-            'is_student': check_user_has_groups(profile_user, 'student'),
-            'own_correct_answers': get_user_correct_answers_count(user_id),
-            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-            'user_rank_place': get_user_place_in_rank_list(user_id),
-            'own_last_week_questions': get_student_last_week_questions_count(user_id),
-            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
-            'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-            'user_organizations': get_user_organizations_string(profile_user),
-            'rank_list': rank_list,
-            'rank_list_total_users': total_users,
-            'own_subjects': tuple(),
-        },
+        get_user_profile_rank_list_context_data(
+            request, profile_user, profile_user.id, selected_organization
+        ),
     )
 
 
@@ -726,7 +684,7 @@ def do_make_form_and_delete(request, question):
 
 
 @login_required
-def answer_evaluate(request, answer_id, evaluation):
+def answer_evaluate(request, qset_id, answer_id, evaluation):
     """Provide a self-evaluation for the student/teacher/admin."""
     log.debug(
         'Got the "%s" evaluation for the answer_id - %s',
@@ -735,16 +693,14 @@ def answer_evaluate(request, answer_id, evaluation):
     )
     filter = request.GET.get('filter', None)
     is_quiz_start = request.GET.get('quiz_start', None)
-    answer = get_object_or_404(Answer, pk=answer_id)
+    answer = Answer.objects.filter(pk=answer_id).first()
 
-    if not do_user_checks_and_evaluate(request.user, answer, evaluation):
+    if not do_user_checks_and_evaluate(request.user, answer, evaluation, qset_id):
         return redirect(reverse('askup:organizations'))
 
     if filter:
         # If it's a Quiz
         filter = get_clean_filter_parameter(request)
-        previous_question = answer.question
-        qset_id = previous_question.qset_id
         next_question_id = get_next_quiz_question(
             request, filter, qset_id, is_quiz_start
         )
@@ -752,44 +708,7 @@ def answer_evaluate(request, answer_id, evaluation):
         if next_question_id:
             return get_quiz_question_redirect(next_question_id, filter)
 
-    return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
-
-
-def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
-    """
-    Get next quiz question id from the db/cache.
-    """
-    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
-    cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
-
-    if cached_quiz_questions is None:
-        questions_queryset = get_real_questions_queryset(qset_id)
-        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
-        cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
-
-    if not cached_quiz_questions:
-        cache.delete(cache_key)
-        return None
-
-    next_question_id = cached_quiz_questions.pop(0)
-    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the 24 hours
-
-    return next_question_id
-
-
-def do_user_checks_and_evaluate(user, answer, evaluation):
-    """Do user checks and evaluate answer for the answer evaluation view."""
-    evaluation_int = int(evaluation)
-    is_admin = check_user_has_groups(user, 'admin')
-
-    if not is_admin and user not in answer.question.qset.top_qset.users.all():
-        return False
-
-    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
-        answer.self_evaluation = evaluation_int
-        answer.save()
-
-    return True
+    return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
 
 
 def index_view(request):

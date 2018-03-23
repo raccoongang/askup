@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 import askup.models
 
 log = logging.getLogger(__name__)
-PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
+PROFILE_RANK_LIST_ELEMENTS_QUERY = """
     select * from
     (
         select
@@ -30,11 +30,31 @@ PROFILE_RANK_LIST_ELEMENTS_QUERY = '''
             sum(coalesce(aq.vote_value, 0)) as thumbs_up
         from auth_user as au
         inner join askup_question aq on aq.user_id = au.id
+        inner join askup_qset aqs on aqs.id = aq.qset_id
+        where aqs.top_qset_id = {}
         group by au.id
         order by place, case when au.id = {} then 1 else 0 end desc
     ) as ranked
     {}
-'''
+"""
+PROFILE_RANK_LIST_USER_PLACE_QUERY = """
+    select rank from
+    (
+        select
+            rank() over (
+                order by
+                    sum(aq.vote_value) desc,
+                    count(aq.id) asc
+            ) as rank,
+            au.id as id
+        from auth_user as au
+        inner join askup_question aq on aq.user_id = au.id
+        inner join askup_qset aqs on aqs.id = aq.qset_id
+        where aqs.top_qset_id = %s
+        group by au.id
+    ) as ranked
+    where ranked.id = %s
+"""
 
 
 def check_user_has_groups(user, required_groups):
@@ -62,8 +82,6 @@ def get_user_score_by_id(user_id):
         cursor.execute('select sum(vote_value) from askup_question where user_id = %s', (user_id,))
         return cursor.fetchone()[0] or 0
 
-    return 0
-
 
 def get_user_questions_count(user_id):
     """Return total questions number for the user."""
@@ -84,54 +102,42 @@ def get_student_questions_count(user_id):
         cursor.execute('select count(id) from askup_question where user_id = %s', (user_id,))
         return cursor.fetchone()[0] or 0
 
-    return 0
 
-
-def get_user_place_in_rank_list(user_id):
+def get_user_place_in_rank_list(organization, user_id):
     """
     Return a rank list place of the user by id.
     """
+    if not organization:
+        return 0
+
+    organization_id = organization if isinstance(organization, int) else organization.id
+
     with connection.cursor() as cursor:
         cursor.execute(
-            '''
-                select rank from
-                    (
-                        select
-                            rank() over (
-                                order by
-                                    sum(aq.vote_value) desc,
-                                    count(aq.id) asc
-                            ) as rank,
-                            au.id as id
-                        from auth_user as au
-                        inner join askup_question aq on aq.user_id = au.id
-                        group by au.id
-                    ) as ranked
-                    where ranked.id = %s
-            ''',
-            (user_id,)
+            PROFILE_RANK_LIST_USER_PLACE_QUERY,
+            (organization_id, user_id)
         )
         result = cursor.fetchone()
         return (result and result[0]) or 0
 
-    return 0
 
-
-def get_user_profile_rank_list_and_total_users(rank_user_id, viewer_user_id):
+def get_user_profile_rank_list_and_total_users(rank_user_id, viewer_user_id, organization_id):
     """
     Aquire and return a list of rows for the user profile rank list in pair with total ranked users.
     """
-    first_items = get_user_profile_rank_list_elements(viewer_user_id, args=(rank_user_id,))
+    first_items = get_user_profile_rank_list_elements(organization_id, viewer_user_id)
     result_row_datas, user_is_present = compose_user_profile_rank_list_row_data(
         first_items, rank_user_id
     )
-    total_users = get_rank_list_users_count()
+    total_users = get_rank_list_users_count(organization_id)
 
     if user_is_present:
         return result_row_datas, total_users
 
     result_row_datas += [(0, None, None, None, None)]  # adding an ellipsis row
-    user_item = get_user_profile_rank_list_elements(rank_user_id, 'where ranked.id = %s', (rank_user_id,))
+    user_item = get_user_profile_rank_list_elements(
+        organization_id, rank_user_id, 'where ranked.id = %s', (rank_user_id,)
+    )
     user_row_data, _ = compose_user_profile_rank_list_row_data(user_item)
 
     if not user_row_data:
@@ -177,7 +183,7 @@ def compose_user_full_name(username, first_name, last_name):
     return '{} ({})'.format(name, username) if name else username
 
 
-def get_user_profile_rank_list_elements(viewer_user_id, expression='limit 10', args=None):
+def get_user_profile_rank_list_elements(organization_id, viewer_user_id, expression='limit 10', args=None):
     """
     Return a rank list place of the user by id.
     """
@@ -186,20 +192,19 @@ def get_user_profile_rank_list_elements(viewer_user_id, expression='limit 10', a
 
     with connection.cursor() as cursor:
         cursor.execute(
-            PROFILE_RANK_LIST_ELEMENTS_QUERY.format(viewer_user_id, expression),
+            PROFILE_RANK_LIST_ELEMENTS_QUERY.format(organization_id, viewer_user_id, expression),
             args
         )
         result = cursor.fetchall()
         return result
 
-    return []
 
-
-def get_rank_list_users_count():
+def get_rank_list_users_count(organization_id):
     """
     Return a rank list total users count.
     """
-    result = askup.models.Question.objects.aggregate(Count('user_id', distinct=True))
+    queryset = askup.models.Question.objects.filter(qset__top_qset_id=organization_id)
+    result = queryset.aggregate(Count('user_id', distinct=True))
     return result['user_id__count']
 
 
@@ -210,8 +215,6 @@ def get_user_correct_answers_count(user_id):
     with connection.cursor() as cursor:
         cursor.execute('select count(id) from askup_answer where self_evaluation = 2 and user_id = %s', (user_id,))
         return cursor.fetchone()[0] or 0
-
-    return 0
 
 
 def get_user_incorrect_answers_count(user_id):
@@ -224,8 +227,6 @@ def get_user_incorrect_answers_count(user_id):
             (user_id,)
         )
         return cursor.fetchone()[0] or 0
-
-    return 0
 
 
 def get_teacher_questions_count(user_id):
@@ -243,8 +244,6 @@ def get_teacher_questions_count(user_id):
         )
         return cursor.fetchone()[0] or 0
 
-    return 0
-
 
 def get_admin_questions_count():
     """
@@ -258,8 +257,6 @@ def get_admin_questions_count():
             ' where aq.parent_qset_id is null'
         )
         return cursor.fetchone()[0] or 0
-
-    return 0
 
 
 def get_user_answers_count(user_id):
@@ -281,8 +278,6 @@ def get_student_answers_count(user_id):
         cursor.execute('select count(id) from askup_answer where user_id = %s', (user_id,))
         return cursor.fetchone()[0] or 0
 
-    return 0
-
 
 def get_teacher_answers_count(user_id):
     """
@@ -301,8 +296,6 @@ def get_teacher_answers_count(user_id):
         )
         return cursor.fetchone()[0] or 0
 
-    return 0
-
 
 def get_admin_answers_count():
     """
@@ -313,8 +306,6 @@ def get_admin_answers_count():
     with connection.cursor() as cursor:
         cursor.execute('select count(id) from askup_answer')
         return cursor.fetchone()[0] or 0
-
-    return 0
 
 
 def send_feedback(from_email, subject, message):
@@ -423,8 +414,6 @@ def get_student_last_week_questions_count(user_id):
         )
         return cursor.fetchone()[0] or 0
 
-    return 0
-
 
 def get_student_last_week_votes_value(user_id):
     """Return last week thumbs ups student received."""
@@ -441,8 +430,6 @@ def get_student_last_week_votes_value(user_id):
             (user_id,)
         )
         return cursor.fetchone()[0] or 0
-
-    return 0
 
 
 def get_student_last_week_correct_answers_count(user_id):
@@ -461,8 +448,6 @@ def get_student_last_week_correct_answers_count(user_id):
         )
         return cursor.fetchone()[0] or 0
 
-    return 0
-
 
 def get_student_last_week_incorrect_answers_count(user_id):
     """Return last week correct answers of the student."""
@@ -479,38 +464,64 @@ def get_student_last_week_incorrect_answers_count(user_id):
         )
         return cursor.fetchone()[0] or 0
 
-    return 0
 
-
-def get_user_organizations_string(user):
+def get_user_organizations_queryset(user_id, ordered=True):
     """
-    Return comma separated user organizations string.
+    Return the queryset of sorted by name user organizations.
     """
-    return ', '.join(
-        (str(org) for org in askup.models.Organization.objects.filter(users__in=[user]))
-    )
+    queryset = askup.models.Organization.objects.filter(users__in=[user_id])
+
+    if ordered:
+        queryset = queryset.order_by('name')
+
+    return queryset
 
 
-def get_user_subjects(user_id):
+def get_user_organizations_for_filter(user_id):
+    """
+    Return user organizations as a list of dictionaries in a sorted manner.
+    """
+    return list(get_user_organizations_queryset(user_id).values('id', 'name'))
+
+
+def get_first_user_organization(user_id):
+    """
+    Check if user is assigned to the specified organization.
+    """
+    return get_user_organizations_queryset(user_id).first()
+
+
+def get_checked_user_organization_by_id(user_id, organization_id):
+    """
+    Check if an organization is assigned to the specified user and return it on success.
+
+    Return an organization if it belongs to this user and None if it is not.
+    """
+    queryset = get_user_organizations_queryset(user_id, ordered=False)
+    queryset = queryset.filter(id=organization_id)
+    return queryset.first()
+
+
+def get_user_subjects(organization, user_id):
     """
     Return the list of subjects prepared data by the user_id.
     """
+    if organization is None:
+        return []
+
     with connection.cursor() as cursor:
         cursor.execute(
             """
-                select aqs.id, concat(aqsp.name, ': ', aqs.name) as name, count(aqu.id) as my_questions_count
+                select aqs.id, aqs.name, count(aqu.id) as my_questions_count
                 from askup_qset as aqs
-                inner join askup_qset as aqsp on aqsp.id = aqs.parent_qset_id
                 inner join askup_question as aqu on aqu.qset_id = aqs.id
-                where user_id = %s
-                group by aqs.id, aqsp.name, aqs.name
-                order by aqsp.name, aqs.name
+                where aqs.top_qset_id = %s and aqu.user_id = %s
+                group by aqs.id
+                order by aqs.name
             """,
-            (user_id,)
+            (organization.id, user_id)
         )
         return cursor.fetchall()
-
-    return []
 
 
 def get_real_questions_queryset(qset_id):

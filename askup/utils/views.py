@@ -1,15 +1,31 @@
 import logging
 
+from django.core.cache import cache
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from askup.forms import FeedbackForm, QsetModelForm, QuestionModelForm
-from askup.models import Answer, Qset, Question
+from askup.models import Answer, Organization, Qset, Question
 from askup.utils.general import (
     add_notification_to_url,
     check_user_has_groups,
+    compose_user_full_name_from_object,
+    get_checked_user_organization_by_id,
+    get_first_user_organization,
+    get_real_questions_queryset,
+    get_student_last_week_correct_answers_count,
+    get_student_last_week_incorrect_answers_count,
+    get_student_last_week_questions_count,
+    get_student_last_week_votes_value,
+    get_user_correct_answers_count,
+    get_user_incorrect_answers_count,
+    get_user_organizations_for_filter,
+    get_user_place_in_rank_list,
+    get_user_profile_rank_list_and_total_users,
+    get_user_score_by_id,
+    get_user_subjects,
     send_feedback,
 )
 from askup.utils.models import check_user_and_create_question
@@ -239,11 +255,39 @@ def validate_answer_form_and_create(form, request, question):
             question_id=question.id,
             user_id=user.id
         )
-        response['answer_id'] = answer.id
+        response['evaluation_urls'] = get_evaluation_urls(request, question.qset_id, answer.id)
     else:
         response['result'] = 'error'
 
     return response
+
+
+def get_evaluation_urls(request, qset_id, answer_id):
+    """
+    Get the evaluation urls to send to the client side in the question answer form.
+    """
+    filter_value = request.GET.get('filter', '')
+
+    if filter_value:
+        query_args_string = '?filter={}'.format(clean_filter_parameter(filter_value))
+    else:
+        query_args_string = ''
+
+    urls = {}
+
+    for evaluation, url_name in Answer.EVALUATIONS:
+        urls[url_name] = '{}{}'.format(
+            reverse(
+                'askup:answer_evaluate',
+                kwargs={
+                    'qset_id': qset_id,
+                    'answer_id': answer_id,
+                    'evaluation': evaluation,
+                },
+            ),
+            query_args_string,
+        )
+    return urls
 
 
 def validate_and_send_feedback_form(request, next_page):
@@ -274,9 +318,16 @@ def validate_and_send_feedback_form(request, next_page):
 
 def get_clean_filter_parameter(request):
     """Return a clean user filter value."""
-    allowed_filters = ('all', 'mine', 'other')
     get_parameter = request.GET.get('filter')
-    return 'all' if get_parameter not in allowed_filters else get_parameter
+    return clean_filter_parameter(get_parameter)
+
+
+def clean_filter_parameter(parameter):
+    """
+    Return a clean filter parameter.
+    """
+    allowed_filters = ('all', 'mine', 'other')
+    return 'all' if parameter not in allowed_filters else parameter
 
 
 def apply_filter_to_queryset(request, filter, queryset):
@@ -288,3 +339,130 @@ def apply_filter_to_queryset(request, filter, queryset):
         return queryset.exclude(user_id=request.user.id)
 
     return queryset
+
+
+def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
+    """
+    Do user checks and evaluate answer for the answer evaluation view.
+    """
+    evaluation_int = int(evaluation)
+    is_admin = check_user_has_groups(user, 'admin')
+    user_permitted = Organization.objects.filter(qset__in=[qset_id], users__in=[user.id]).exists()
+
+    if not is_admin and not user_permitted:
+        return False
+
+    # <answer> can be passed into this function as None if it was deleted in pair with the
+    # question it belongs before the evaluation request was sent
+    if evaluation_int in next(zip(*Answer.EVALUATIONS)) and answer:
+        answer.self_evaluation = evaluation_int
+        answer.save()
+
+    return True
+
+
+def select_user_organization(user_id, requested_organization_id):
+    """
+    Select the organization for the user profile view.
+
+    May return organization object or None.
+    If organization_id is None, then returns a first organization from the user relations.
+    If user has no organizations in related then returns None.
+    """
+    if requested_organization_id:
+        return get_checked_user_organization_by_id(user_id, requested_organization_id)
+
+    return get_first_user_organization(user_id)
+
+
+def get_user_profile_context_data(request, profile_user, user_id, selected_organization):
+    """
+    Return the context data used in the user profile view template.
+    """
+    return {
+        'profile_user': profile_user,
+        'full_name': compose_user_full_name_from_object(profile_user),
+        'viewer_user_id': request.user.id,
+        'own_score': get_user_score_by_id(user_id),
+        'is_owner': user_id == request.user.id,
+        'is_student': check_user_has_groups(profile_user, 'student'),
+        'own_correct_answers': get_user_correct_answers_count(user_id),
+        'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
+        'user_rank_place': get_user_place_in_rank_list(selected_organization, user_id),
+        'own_last_week_questions': get_student_last_week_questions_count(user_id),
+        'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
+        'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
+        'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id),
+        'rank_list': tuple(),
+        'rank_list_total_users': 0,
+        'own_subjects': get_user_subjects(selected_organization, user_id),
+        'selected_organization': selected_organization,
+        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
+    }
+
+
+def get_user_profile_rank_list_context_data(request, profile_user, user_id, selected_organization):
+    """
+    Return the context data used in the user profile rank list view template.
+    """
+    rank_list, total_users = get_user_profile_rank_list_and_total_users(
+        profile_user.id, request.user.id, selected_organization.id
+    )
+    return {
+        'profile_user': profile_user,
+        'full_name': compose_user_full_name_from_object(profile_user),
+        'viewer_user_id': request.user.id,
+        'own_score': get_user_score_by_id(user_id),
+        'is_owner': user_id == request.user.id,
+        'is_student': check_user_has_groups(profile_user, 'student'),
+        'own_correct_answers': get_user_correct_answers_count(user_id),
+        'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
+        'user_rank_place': get_user_place_in_rank_list(selected_organization, user_id),
+        'own_last_week_questions': get_student_last_week_questions_count(user_id),
+        'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
+        'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
+        'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id),
+        'rank_list': rank_list,
+        'rank_list_total_users': total_users,
+        'own_subjects': tuple(),
+        'selected_organization': selected_organization,
+        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
+    }
+
+
+def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
+    """
+    Get next quiz question id from the db/cache.
+
+    May return question_id or None (if there are no existent questions in cached list).
+    """
+    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
+    cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
+
+    if cached_quiz_questions is None:
+        questions_queryset = get_real_questions_queryset(qset_id)
+        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
+        cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
+
+    if not cached_quiz_questions:
+        cache.delete(cache_key)
+        return None
+
+    next_question_id = pop_next_existent_question_id_from_list(cached_quiz_questions)
+    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the default time
+    return next_question_id  # may return None if no any existent questions were in cached list
+
+
+def pop_next_existent_question_id_from_list(question_ids):
+    """
+    Pop every next inexistent question id in the list until you find the existent one.
+
+    Returns first existent question_id if found, otherwise returns None.
+    """
+    while question_ids:
+        next_question_id = question_ids.pop(0)
+
+        if Question.objects.filter(id=next_question_id).exists():
+            return next_question_id

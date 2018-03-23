@@ -38,11 +38,11 @@ urlpatterns = [
         name='qset_user_questions'
     ),
     url(r'^qset/quiz/all/(?P<qset_id>\d+)/$', views.start_quiz_all, name='start_quiz_all'),
-    url(r'^question/answer/(?P<question_id>\d+)/$', views.question_answer, name='question_answer'),
+    url(r'^question/(?P<question_id>\d+)/answer/$', views.question_answer, name='question_answer'),
     url(r'^question/new/(?P<qset_id>\d+)/$', views.question_create, name='qset_question_create'),
     url(r'^question/new/$', views.question_create, name='question_create'),
-    url(r'^question/edit/(?P<pk>\d+)/$', views.question_edit, name='question_edit'),
-    url(r'^question/delete/(?P<pk>\d+)/$', views.question_delete, name='question_delete'),
+    url(r'^question/(?P<pk>\d+)/edit/$', views.question_edit, name='question_edit'),
+    url(r'^question/(?P<pk>\d+)/delete/$', views.question_delete, name='question_delete'),
     url(
         r'^question/upvote/(?P<question_id>\d+)/$',
         views.question_upvote,
@@ -54,13 +54,17 @@ urlpatterns = [
         name='question_downvote'
     ),
     url(
-        r'^answer/evaluate/(?P<answer_id>\d+)/(?P<evaluation>\d+)/$',
+        r'^answer/(?P<answer_id>\d+)/evaluate/qset/(?P<qset_id>\d+)/evaluation/(?P<evaluation>\d+)/$',
         views.answer_evaluate,
         name='answer_evaluate'
     ),
-    url(r'^user/profile/(?P<user_id>\d+)/$', views.user_profile_view, name='user_profile'),
     url(
-        r'^user/profile/rank-list/(?P<user_id>\d+)/$',
+        r'^user/profile/(?P<user_id>\d+)/(?:organization/(?P<organization_id>\d+)/)?$',
+        views.user_profile_view,
+        name='user_profile'
+    ),
+    url(
+        r'^user/profile/rank-list/(?P<user_id>\d+)/(?:organization/(?P<organization_id>\d+)/)?$',
         views.user_profile_rank_list_view,
         name='user_profile_rank_list'
     ),
