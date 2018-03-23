@@ -5,7 +5,6 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.cache import cache
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -35,12 +34,12 @@ from .utils.general import (
     get_real_questions_queryset,
 )
 from .utils.views import (
-    apply_filter_to_queryset,
     compose_qset_form,
     compose_question_form_and_create,
     delete_qset_by_form,
     do_user_checks_and_evaluate,
     get_clean_filter_parameter,
+    get_next_quiz_question,
     get_user_profile_context_data,
     get_user_profile_rank_list_context_data,
     qset_update_form_template,
@@ -710,44 +709,6 @@ def answer_evaluate(request, qset_id, answer_id, evaluation):
             return get_quiz_question_redirect(next_question_id, filter)
 
     return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
-
-
-def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
-    """
-    Get next quiz question id from the db/cache.
-
-    May return question_id or None (if there are no existent questions in cached list).
-    """
-    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
-    cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
-
-    if cached_quiz_questions is None:
-        questions_queryset = get_real_questions_queryset(qset_id)
-        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
-        cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
-
-    if not cached_quiz_questions:
-        cache.delete(cache_key)
-        return None
-
-    next_question_id = pop_next_inexistent_questions_from_list(cached_quiz_questions)
-    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the default time
-    return next_question_id  # may return None if no any existent questions were in cached list
-
-
-def pop_next_inexistent_questions_from_list(question_ids):
-    """
-    Pop every next inexistent question in the list until you find the existent one.
-
-    Returns first existent question_id if found, otherwise returns None.
-    """
-    while question_ids:
-        next_question_id = question_ids.pop(0)
-
-        if Question.objects.filter(id=next_question_id).exists():
-            return next_question_id
-
-    return None
 
 
 def index_view(request):

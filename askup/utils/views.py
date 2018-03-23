@@ -1,5 +1,6 @@
 import logging
 
+from django.core.cache import cache
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,6 +14,7 @@ from askup.utils.general import (
     compose_user_full_name_from_object,
     get_checked_user_organization_by_id,
     get_first_user_organization,
+    get_real_questions_queryset,
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
     get_student_last_week_questions_count,
@@ -428,3 +430,39 @@ def get_user_profile_rank_list_context_data(request, profile_user, user_id, sele
         'selected_organization': selected_organization,
         'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }
+
+
+def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
+    """
+    Get next quiz question id from the db/cache.
+
+    May return question_id or None (if there are no existent questions in cached list).
+    """
+    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
+    cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
+
+    if cached_quiz_questions is None:
+        questions_queryset = get_real_questions_queryset(qset_id)
+        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
+        cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
+
+    if not cached_quiz_questions:
+        cache.delete(cache_key)
+        return None
+
+    next_question_id = pop_next_existent_question_id_from_list(cached_quiz_questions)
+    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the default time
+    return next_question_id  # may return None if no any existent questions were in cached list
+
+
+def pop_next_existent_question_id_from_list(question_ids):
+    """
+    Pop every next inexistent question id in the list until you find the existent one.
+
+    Returns first existent question_id if found, otherwise returns None.
+    """
+    while question_ids:
+        next_question_id = question_ids.pop(0)
+
+        if Question.objects.filter(id=next_question_id).exists():
+            return next_question_id
