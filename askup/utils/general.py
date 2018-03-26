@@ -212,7 +212,6 @@ def get_user_correct_answers_count(user_id):
     """
     Return total amount of the correct answers of the user by id.
     """
-#    correct_answers = Answer.objects.aggregate(Count(id)).filter(self_evaluation=2, user_id=user_id).first()
     with connection.cursor() as cursor:
         cursor.execute('select count(id) from askup_answer where self_evaluation = 2 and user_id = %s', (user_id,))
         return cursor.fetchone()[0] or 0
