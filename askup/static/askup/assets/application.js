@@ -87,7 +87,7 @@ var QUESTION_ROW_TEMPLATE = `
         <div class="row col-xs-12">
             <div class="col-xs-11">
                 <div class="col-xs-2 own-question-thumbs-up left">
-                    <img src="/static/assets/thumbs-up.svg" alt="Thumbs up">{{ vote_value }}
+                    <img src="/static/askup/assets/thumbs-up.svg" alt="Thumbs up">{{ vote_value }}
                 </div>
                 <div class="col-xs-9">
                     <a target="_blank" href="/askup/question/{{ question_id }}/answer/">{{ question_text }}</a>
@@ -249,7 +249,7 @@ function on_click_my_subject() {
         $(this).after(
             '<div class="row my-subject-questions margin-right-15" id="' +
             subject_element_id +
-            '"><div class="center"><img src="/static/assets/loader.svg"/></div></div>'
+            '"><div class="center"><img src="/static/askup/assets/loader.svg"/></div></div>'
         );
         subject_questions_element = $('#' + subject_element_id);
         $(glyphicon_element).removeClass('glyphicon-triangle-right');
