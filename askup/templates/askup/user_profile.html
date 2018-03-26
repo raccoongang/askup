@@ -1,11 +1,12 @@
 {% extends 'askup/base.html' %}
+{% load static %}
 
 {% block body %}
 <div class="container-fluid">
     <div class="row margin-top-10">
         <div class="col-sm-5 col-md-3">
             <div class="box center dash-profile rounded-10">
-                <img alt="Person" src="/static/assets/default-avatar.png">
+                <img alt="Person" src="{% static 'askup/assets/default-avatar.png' %}">
                 <br><br>
                 <h3 class="center">{{ full_name }}</h3>
                 <br/>
