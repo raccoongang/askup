@@ -1,0 +1,28 @@
+{% load static %}
+var QUESTION_ROW_TEMPLATE = `
+    <div class="box valign my-subject-question row col-xs-push-1 col-xs-11">
+        <div class="row col-xs-12">
+            <div class="col-xs-11">
+                <div class="col-xs-2 own-question-thumbs-up left">
+                    <img src="{% static 'askup/assets/thumbs-up.svg' %}" alt="Thumbs up">##vote_value##
+                </div>
+                <div class="col-xs-9">
+                    <a target="_blank" href="{% url 'askup:question_answer' 999 %}">##question_text##</a>
+                </div>
+            </div>
+            <div class="col-xs-1">
+                <div class="question-actions">
+                    <span class="actions pull-right">
+                        <a target="_blank" class="btn shortcut-button-link" href="{% url 'askup:question_edit' 999 %}">
+                            <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
+                        </a>
+                        <a target="_blank" class="btn shortcut-button-link" href="{% url 'askup:question_delete' 999 %}" rel="nofollow">
+                            <span class="glyphicon glyphicon-trash shortcut-button-glyphicon"></span>
+                        </a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+`;
+var STATIC_URL_LOADER_IMAGE = "{% static 'askup/assets/loader.svg' %}";

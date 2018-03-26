@@ -33,7 +33,7 @@ urlpatterns = [
     url(r'^qset/update/(?P<pk>\d+)/$', views.qset_update, name='qset_update'),
     url(r'^qset/delete/(?P<pk>\d+)/$', views.qset_delete, name='qset_delete'),
     url(
-        r'^qset/user-questions/(?P<qset_id>\d+)/(?P<user_id>\d+)/$',
+        r'^qset/(?P<qset_id>\d+)/user/(?P<user_id>\d+)/questions/$',
         views.qset_user_questions,
         name='qset_user_questions'
     ),
@@ -59,12 +59,12 @@ urlpatterns = [
         name='answer_evaluate'
     ),
     url(
-        r'^user/profile/(?P<user_id>\d+)/(?:organization/(?P<organization_id>\d+)/)?$',
+        r'^user/(?P<user_id>\d+)/profile/(?:organization/(?P<organization_id>\d+)/)?$',
         views.user_profile_view,
         name='user_profile'
     ),
     url(
-        r'^user/profile/rank-list/(?P<user_id>\d+)/(?:organization/(?P<organization_id>\d+)/)?$',
+        r'^user/(?P<user_id>\d+)/profile/rank-list/(?:organization/(?P<organization_id>\d+)/)?$',
         views.user_profile_rank_list_view,
         name='user_profile_rank_list'
     ),
