@@ -350,7 +350,7 @@ def sign_up_activate(request, uid, token):
             'You\'ve successfuly registered{0}'.format(organization_text)
         )
 
-        return redirect(add_notification_to_url(notification, '/'))
+        return redirect(add_notification_to_url(notification, reverse('index')))
 
     return(render(request, 'askup/sign_up_activation_invalid.html'))
 
@@ -358,10 +358,10 @@ def sign_up_activate(request, uid, token):
 def login_view(request):
     """Provide the login view and functionality."""
     if request.user.is_authenticated():
-        return redirect('/')
+        return redirect(reverse('index'))
 
     form = UserLoginForm(request.POST or None, request=request)
-    next_page = request.GET.get('next', '/')
+    next_page = request.GET.get('next', reverse('index'))
 
     if form.is_valid():
         if request.user.is_authenticated():
@@ -381,7 +381,7 @@ def logout_view(request):
     return redirect(
         add_notification_to_url(
             ('danger', 'You were logged out'),
-            '/',
+            reverse('index'),
         ),
     )
 

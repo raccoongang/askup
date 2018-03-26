@@ -10,7 +10,7 @@
         <link data-turbolinks-track="true" href="{% static 'askup/assets/application.css' %}" media="all" rel="stylesheet">
 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
         <meta content="authenticity_token" name="csrf-param">
         <link href="{% static 'askup/assets/favicon.ico' %}" rel="shortcut icon" type="image/vnd.microsoft.icon">
 
@@ -34,7 +34,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 </button>
-                    <a class="navbar-brand float" href="/">AskUp</a>
+                <a class="navbar-brand float" href="{% url 'index' %}">AskUp</a>
             </div>
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-left">
