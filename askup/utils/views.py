@@ -491,37 +491,28 @@ def get_json_redirect_next_quiz_question(user_id, qset_id, filter):
     if next_question_id is None:
         return get_json_redirect_qset(qset_id)
 
-    notification = QUESTION_DELETED_TEXT.format('the next one in the Quiz...')
     redirect_url = reverse(
         'askup:question_answer',
-        kwargs={
-            'question_id': next_question_id,
-            'qset_id': qset_id,
-        }
+        kwargs={'question_id': next_question_id, 'qset_id': qset_id}
     )
-    return JsonResponse(
-        {
-            'result': 'error',
-            'redirect_url': redirect_url,
-            'notification': notification,
-        }
-    )
+    notification = QUESTION_DELETED_TEXT.format('the next one in the Quiz...')
+    return JsonResponse({
+        'result': 'error',
+        'redirect_url': redirect_url,
+        'notification': notification,
+    })
 
 
 def get_json_redirect_qset(qset_id):
     """
     Return the json object with redirect to the qset.
     """
-    notification = (
-        QUESTION_DELETED_TEXT.format('the correspondent subject...')
-    )
-    return JsonResponse(
-        {
-            'result': 'error',
-            'redirect_url': reverse('askup:qset', kwargs={'pk': qset_id}),
-            'notification': notification,
-        }
-    )
+    notification = QUESTION_DELETED_TEXT.format('the correspondent subject...')
+    return JsonResponse({
+        'result': 'error',
+        'redirect_url': reverse('askup:qset', kwargs={'pk': qset_id}),
+        'notification': notification,
+    })
 
 
 def do_make_answer_form(request, question):
