@@ -4,7 +4,6 @@ import json
 import logging
 from smtplib import SMTPException
 
-from django.contrib.auth.models import User
 from django.core.mail.message import EmailMessage
 from django.db import connection
 from django.db.models import Count
@@ -85,7 +84,7 @@ def get_user_score_by_id(user_id):
 
 def get_user_questions_count(user_id):
     """Return total questions number for the user."""
-    user = get_object_or_404(User, pk=user_id)
+    user = get_object_or_404(askup.models.User, pk=user_id)
 
     if check_user_has_groups(user, 'admin'):
         return get_admin_questions_count()
@@ -261,7 +260,7 @@ def get_admin_questions_count():
 
 def get_user_answers_count(user_id):
     """Return total answers number for the user."""
-    user = get_object_or_404(User, pk=user_id)
+    user = get_object_or_404(askup.models.User, pk=user_id)
 
     if check_user_has_groups(user, 'admin'):
         return get_admin_answers_count()
@@ -310,7 +309,7 @@ def get_admin_answers_count():
 
 def send_feedback(from_email, subject, message):
     """Send a feedback from the <from_email> sender to all the admin users in the system."""
-    admins = tuple(user.email for user in User.objects.filter(groups__name='Admin'))
+    admins = tuple(user.email for user in askup.models.User.objects.filter(groups__name='Admin'))
 
     if admins:
         body = "Subject:\n{0}\n\nMessage:\n{1}".format(subject, message)

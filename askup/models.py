@@ -1,5 +1,5 @@
 """Askup django models."""
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import F
@@ -8,6 +8,14 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .utils.general import check_user_has_groups
+
+
+class User(AbstractUser):
+    """
+    Custom user model for the AskUp application.
+    """
+
+    pass
 
 
 class Profile(models.Model):

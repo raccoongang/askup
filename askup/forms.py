@@ -8,12 +8,12 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from django.db import models
 from django.urls import reverse
 
 from askup.mixins.forms import InitFormWithCancelButtonMixIn, UsernameCleanMixIn
-from askup.models import Organization, Qset, Question
+from askup.models import Organization, Qset, Question, User
 
 
 log = logging.getLogger(__name__)

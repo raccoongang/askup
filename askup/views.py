@@ -3,7 +3,7 @@ import logging
 
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from django.contrib.sites.shortcuts import get_current_site
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -26,7 +26,7 @@ from .mixins.views import (
     ListViewUserContextDataMixIn,
     QsetViewMixIn,
 )
-from .models import Answer, Organization, Qset, Question
+from .models import Answer, Organization, Qset, Question, User
 from .tokens import account_activation_token
 from .utils.general import (
     add_notification_to_url,

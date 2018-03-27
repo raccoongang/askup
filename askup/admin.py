@@ -1,7 +1,6 @@
 """Admin views."""
 from django.contrib import admin
 from django.contrib.admin import StackedInline, TabularInline
-from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 
 from .forms import OrganizationModelForm, QuestionModelForm, UserForm
@@ -9,6 +8,7 @@ from .mixins.admin import CookieFilterMixIn
 from .models import Domain, Organization, Profile, Qset, Question
 from .utils.general import parse_response_url_to_parameters
 
+from askup.models import User
 
 class OrganizationFilter(admin.SimpleListFilter):
     """Provides an organization filter for the Qsets and Questions lists."""
@@ -351,5 +351,5 @@ admin.site.register(Organization, OrganizationAdmin)
 admin.site.register(Qset, QsetAdmin)
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(Domain, DomainAdmin)
-admin.site.unregister(User)
+#admin.site.unregister(User)
 admin.site.register(User, UserAdmin)

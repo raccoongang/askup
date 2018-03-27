@@ -1,7 +1,7 @@
 import logging
 
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.db import models
 from django.http import Http404, HttpResponseRedirect
@@ -10,7 +10,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
-from askup.models import Answer, Qset, Question, Vote
+from askup.models import Answer, Qset, Question, User, Vote
 from askup.utils.general import (
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
