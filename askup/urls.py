@@ -38,7 +38,11 @@ urlpatterns = [
         name='qset_user_questions'
     ),
     url(r'^qset/quiz/all/(?P<qset_id>\d+)/$', views.start_quiz_all, name='start_quiz_all'),
-    url(r'^question/(?P<question_id>\d+)/answer/$', views.question_answer, name='question_answer'),
+    url(
+        r'^question/(?P<question_id>\d+)/qset/(?P<qset_id>\d+)/answer/$',
+        views.question_answer,
+        name='question_answer'
+    ),
     url(r'^question/new/(?P<qset_id>\d+)/$', views.question_create, name='qset_question_create'),
     url(r'^question/new/$', views.question_create, name='question_create'),
     url(r'^question/(?P<pk>\d+)/edit/$', views.question_edit, name='question_edit'),

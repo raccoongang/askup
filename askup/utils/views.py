@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from askup.forms import FeedbackForm, QsetModelForm, QuestionModelForm
+from askup.forms import AnswerModelForm, FeedbackForm, QsetModelForm, QuestionModelForm
 from askup.models import Answer, Organization, Qset, Question
 from askup.utils.general import (
     add_notification_to_url,
@@ -32,6 +32,7 @@ from askup.utils.models import check_user_and_create_question
 
 
 log = logging.getLogger(__name__)
+QUESTION_DELETED_TEXT = 'This question was deleted since you\'ve opened it! Redirecting you to {}'
 
 
 def do_redirect_unauthenticated(user, back_url):
@@ -330,13 +331,13 @@ def clean_filter_parameter(parameter):
     return 'all' if parameter not in allowed_filters else parameter
 
 
-def apply_filter_to_queryset(request, filter, queryset):
+def apply_filter_to_queryset(user_id, filter, queryset):
     """Return a queryset with user filter applied."""
     if filter == 'mine':
-        return queryset.filter(user_id=request.user.id)
+        return queryset.filter(user_id=user_id)
 
     if filter == 'other':
-        return queryset.exclude(user_id=request.user.id)
+        return queryset.exclude(user_id=user_id)
 
     return queryset
 
@@ -432,18 +433,18 @@ def get_user_profile_rank_list_context_data(request, profile_user, user_id, sele
     }
 
 
-def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
+def get_next_quiz_question(user_id, filter, qset_id, is_quiz_start):
     """
     Get next quiz question id from the db/cache.
 
     May return question_id or None (if there are no existent questions in cached list).
     """
-    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
+    cache_key = 'quiz_user_{}_qset_{}'.format(user_id, qset_id)
     cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
 
     if cached_quiz_questions is None:
         questions_queryset = get_real_questions_queryset(qset_id)
-        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
+        questions_queryset = apply_filter_to_queryset(user_id, filter, questions_queryset)
         cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
 
     if not cached_quiz_questions:
@@ -466,3 +467,57 @@ def pop_next_existent_question_id_from_list(question_ids):
 
         if Question.objects.filter(id=next_question_id).exists():
             return next_question_id
+
+
+def get_redirect_on_answer_fail(request, qset_id, filter, is_quiz):
+    """
+    Redirect to a backup question if answering question is failing due to deletion of question.
+
+    Returns HttpResponseRedirect to the qset where question was located, to the next question
+    in the quiz or to the organizations list.
+    """
+    if is_quiz:
+        return get_json_redirect_next_quiz_question(request.user.id, qset_id, filter)
+
+    return get_json_redirect_qset(qset_id)
+
+
+def get_json_redirect_next_quiz_question(user_id, qset_id, filter):
+    """
+    Return the json object with redirect to the next question in the quiz.
+    """
+    next_question_id = get_next_quiz_question(user_id, filter, qset_id, False)
+
+    if next_question_id is None:
+        return get_json_redirect_qset(qset_id)
+
+    redirect_url = reverse(
+        'askup:question_answer',
+        kwargs={'question_id': next_question_id, 'qset_id': qset_id}
+    )
+    notification = QUESTION_DELETED_TEXT.format('the next one in the Quiz...')
+    return JsonResponse({
+        'result': 'error',
+        'redirect_url': redirect_url,
+        'notification': notification,
+    })
+
+
+def get_json_redirect_qset(qset_id):
+    """
+    Return the json object with redirect to the qset.
+    """
+    notification = QUESTION_DELETED_TEXT.format('the correspondent subject...')
+    return JsonResponse({
+        'result': 'error',
+        'redirect_url': reverse('askup:qset', kwargs={'pk': qset_id}),
+        'notification': notification,
+    })
+
+
+def do_make_answer_form(request, question):
+    """Compose and return answer form."""
+    if request.method == 'POST':
+        return AnswerModelForm(request.POST, parent_qset_id=question.qset_id)
+    else:
+        return AnswerModelForm(parent_qset_id=question.qset_id)
