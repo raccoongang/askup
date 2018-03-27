@@ -738,10 +738,7 @@ def get_quiz_question_redirect(qset_id, next_question_id, filter):
         '{0}?filter={1}'.format(
             reverse(
                 'askup:question_answer',
-                kwargs={
-                    'question_id': next_question_id,
-                    'qset_id': qset_id,
-                }
+                kwargs={'question_id': next_question_id, 'qset_id': qset_id}
             ),
             filter,
         )

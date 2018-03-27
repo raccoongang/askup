@@ -32,6 +32,7 @@ from askup.utils.models import check_user_and_create_question
 
 
 log = logging.getLogger(__name__)
+QUESTION_DELETED_TEXT = 'This question was deleted since you\'ve opened it! Redirecting you to {}'
 
 
 def do_redirect_unauthenticated(user, back_url):
@@ -481,32 +482,16 @@ def get_redirect_on_answer_fail(request, qset_id, filter, is_quiz):
     return get_json_redirect_qset(qset_id)
 
 
-def get_json_redirect_organizations_list():
-    """
-    Return the json object with redirect to the organizations list.
-    """
-    notification = (
-        'This question was deleted since you\'ve opened it,' +
-        'redirecting you to your organizations list ...'
-    )
-    return JsonResponse(
-        {
-            'result': 'error',
-            'redirect_url': reverse('askup:organizations'),
-            'notification': notification,
-        }
-    )
-
-
 def get_json_redirect_next_quiz_question(user_id, qset_id, filter):
     """
     Return the json object with redirect to the next question in the quiz.
     """
     next_question_id = get_next_quiz_question(user_id, filter, qset_id, False)
-    notification = (
-        'This question was deleted since you\'ve opened it,' +
-        'redirecting you to the next one in the Quiz...'
-    )
+
+    if next_question_id is None:
+        return get_json_redirect_qset(qset_id)
+
+    notification = QUESTION_DELETED_TEXT.format('the next one in the Quiz...')
     redirect_url = reverse(
         'askup:question_answer',
         kwargs={
@@ -528,8 +513,7 @@ def get_json_redirect_qset(qset_id):
     Return the json object with redirect to the qset.
     """
     notification = (
-        'This question was deleted since you\'ve opened it,' +
-        'redirecting you to the correspondent subject...'
+        QUESTION_DELETED_TEXT.format('the correspondent subject...')
     )
     return JsonResponse(
         {
@@ -543,6 +527,6 @@ def get_json_redirect_qset(qset_id):
 def do_make_answer_form(request, question):
     """Compose and return answer form."""
     if request.method == 'POST':
-        return AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
+        return AnswerModelForm(request.POST, parent_qset_id=question.qset_id)
     else:
         return AnswerModelForm(parent_qset_id=question.qset_id)
