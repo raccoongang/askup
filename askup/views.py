@@ -12,7 +12,6 @@ from django.urls import reverse
 from django.views import generic
 
 from .forms import (
-    AnswerModelForm,
     OrganizationModelForm,
     QsetDeleteModelForm,
     QsetModelForm,
@@ -37,9 +36,11 @@ from .utils.views import (
     compose_qset_form,
     compose_question_form_and_create,
     delete_qset_by_form,
+    do_make_answer_form,
     do_user_checks_and_evaluate,
     get_clean_filter_parameter,
     get_next_quiz_question,
+    get_redirect_on_answer_fail,
     get_user_profile_context_data,
     get_user_profile_rank_list_context_data,
     qset_update_form_template,
@@ -509,16 +510,16 @@ def qset_user_questions(request, qset_id, user_id):
 
 
 @login_required
-def question_answer(request, question_id=None):
+def question_answer(request, question_id, qset_id):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question answering request for the question_id: %s', question_id)
-    is_quiz = request.GET.get('filter') is not None
+    is_quiz = bool(request.GET.get('filter'))
+    filter = get_clean_filter_parameter(request)
     question = Question.objects.filter(id=question_id).first()
 
     if question is None:
-        return redirect(reverse('askup:organizations'))
+        return get_redirect_on_answer_fail(request, qset_id, filter, is_quiz)
 
-    filter = get_clean_filter_parameter(request)
     form = do_make_answer_form(request, question)
 
     if request.method == 'GET':
@@ -538,14 +539,6 @@ def question_answer(request, question_id=None):
     else:
         response = validate_answer_form_and_create(form, request, question)
         return JsonResponse(response)
-
-
-def do_make_answer_form(request, question):
-    """Compose and return answer form."""
-    if request.method == 'POST':
-        return AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
-    else:
-        return AnswerModelForm(parent_qset_id=question.qset_id)
 
 
 @login_required
@@ -702,11 +695,11 @@ def answer_evaluate(request, qset_id, answer_id, evaluation):
         # If it's a Quiz
         filter = get_clean_filter_parameter(request)
         next_question_id = get_next_quiz_question(
-            request, filter, qset_id, is_quiz_start
+            request.user.id, filter, qset_id, is_quiz_start
         )
 
         if next_question_id:
-            return get_quiz_question_redirect(next_question_id, filter)
+            return get_quiz_question_redirect(qset_id, next_question_id, filter)
 
     return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
 
@@ -724,7 +717,7 @@ def start_quiz_all(request, qset_id):
     filter = get_clean_filter_parameter(request)
     user = request.user
     first_question_id = get_next_quiz_question(
-        request, filter, qset.id, True
+        request.user.id, filter, qset.id, True
     )
 
     if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
@@ -734,16 +727,22 @@ def start_quiz_all(request, qset_id):
         raise Http404
 
     if request.method == 'GET':
-        return get_quiz_question_redirect(first_question_id, filter)
+        return get_quiz_question_redirect(qset_id, first_question_id, filter)
     else:
         return redirect(reverse('askup:organizations'))
 
 
-def get_quiz_question_redirect(next_question_id, filter):
+def get_quiz_question_redirect(qset_id, next_question_id, filter):
     """Get quiz question redirect."""
     return redirect(
         '{0}?filter={1}'.format(
-            reverse('askup:question_answer', kwargs={'question_id': next_question_id}),
+            reverse(
+                'askup:question_answer',
+                kwargs={
+                    'question_id': next_question_id,
+                    'qset_id': qset_id,
+                }
+            ),
             filter,
         )
     )
