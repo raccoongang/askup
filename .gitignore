@@ -101,8 +101,9 @@ ENV/
 # mypy
 .mypy_cache/
 
-# Docker compose subdirs
+# Docker compose related
 .dc-*
+.initialized
 
 # Django non-deployable static
 askup/static/admin
