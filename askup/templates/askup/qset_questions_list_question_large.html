@@ -19,7 +19,7 @@
                     </div>
                     <div class="col-xs-8">
                         <div class="question-content">
-                            <a href="{% url 'askup:question_answer' question_id %}">
+                            <a href="{% url 'askup:question_answer' question_id question.qset_id %}">
                                 {{ question_text }}
                             </a>          
                         </div>

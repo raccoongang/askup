@@ -625,17 +625,23 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
 class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Answer model related forms."""
 
-    def create_answer(self, question_id, answer_text):
+    def create_answer(self, question_id, qset_id, answer_text):
         """create_answer."""
         return self.client.post(
-            reverse('askup:question_answer', kwargs={'question_id': question_id}),
+            reverse(
+                'askup:question_answer',
+                kwargs={
+                    'question_id': question_id,
+                    'qset_id': qset_id,
+                }
+            ),
             {'text': answer_text}
         )
 
     def test_answer_the_question_success(self):
         """test_answer_the_question_success."""
         answer_text = 'Test answer' * 50  # testing as well that the answer can be a big one (255+ chars) now
-        response = self.create_answer(1, answer_text).json()
+        response = self.create_answer(1, 4, answer_text).json()
         answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(response['result'], 'success')
@@ -645,35 +651,35 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         """test_answer_the_question_fail_inexistent_question."""
         answer_text = 'Test answer'
         inexistant_question_id = 111
-
-        with self.assertRaises(ValueError):
-            self.create_answer(inexistant_question_id, answer_text).json()
+        inexistant_qset_id = 111
+        response = self.create_answer(inexistant_question_id, inexistant_qset_id, answer_text)
+        self.assertEqual(response.json()['result'], 'error')
+        self.assertTrue('redirect_url' in response.json())
 
     def test_answer_the_question_fail_empty_answer(self):
         """test_answer_the_question_fail_empty_answer."""
         answer_text = ''
-        inexistant_question_id = 1
-        response = self.create_answer(inexistant_question_id, answer_text).json()
+        response = self.create_answer(1, 4, answer_text).json()
         self.assertEqual(response['result'], 'error')
 
     def test_answer_evaluation_success(self):
         """test_answer_evaluation_success."""
         answer_text = 'This test answer is very unique 01'
-        answer_response = self.create_answer(1, answer_text).json()
+        answer_response = self.create_answer(1, 4, answer_text).json()
         self.client.get(answer_response['evaluation_urls']['wrong'])  # Evaluate as wrong (0)
         answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 0)
 
         answer_text = 'This test answer is very unique 02'
-        answer_response = self.create_answer(1, answer_text).json()
+        answer_response = self.create_answer(1, 4, answer_text).json()
         self.client.get(answer_response['evaluation_urls']['sort-of'])  # Evaluate as wrong (1)
         answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
         self.assertEqual(answer.self_evaluation, 1)
 
         answer_text = 'This test answer is very unique 03'
-        answer_response = self.create_answer(1, answer_text).json()
+        answer_response = self.create_answer(1, 4, answer_text).json()
         self.client.get(answer_response['evaluation_urls']['correct'])  # Evaluate as wrong (2)
         answer = Answer.objects.filter(question_id=1, text=answer_text).first()
         self.assertIsNotNone(answer)
@@ -682,7 +688,7 @@ class AnswerModelFormCase(LoginAdminByDefaultMixIn, GeneralTestCase):
     def test_answer_evaluation_fail_wrong_evaluation_value(self):
         """test_answer_evaluation_fail_wrong_evaluation_value."""
         answer_text = 'This test answer is very unique'
-        answer_response = self.create_answer(1, answer_text).json()
+        answer_response = self.create_answer(1, 4, answer_text).json()
         self.client.get(
             answer_response['evaluation_urls']['correct'].replace(
                 'evaluation/2', 'evaluation/{}'.format(333)
@@ -1110,7 +1116,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         Answer and evaluate question by a specified user.
         """
         self.client.login(username=username, password=password)
-        answer_response = AnswerModelFormCase.create_answer(self, 1, answer_text).json()
+        answer_response = AnswerModelFormCase.create_answer(self, 1, 4, answer_text).json()
         self.client.get(
             answer_response['evaluation_urls']['correct'].replace(
                 'evaluation/2', 'evaluation/{}'.format(evaluation)
@@ -1291,7 +1297,7 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         Answer and evaluate question by a specified user.
         """
         self.client.login(username=username, password=password)
-        answer_response = AnswerModelFormCase.create_answer(self, 1, answer_text).json()
+        answer_response = AnswerModelFormCase.create_answer(self, 1, 4, answer_text).json()
         self.client.get(
             answer_response['evaluation_urls']['correct'].replace(
                 'evaluation/2', 'evaluation/{}'.format(evaluation)

@@ -175,6 +175,13 @@ function on_answer_success(data) {
         });
         $('.show-on-answered').slideDown();
         $('.hide-on-answered').slideUp();
+        return;
+    }
+
+    if ('redirect_url' in data) {
+        var callback = function() {window.location.href = data.redirect_url};
+        var notification = data.notification;
+        show_alert('danger', notification, 5000, callback);
     }
 }
 
