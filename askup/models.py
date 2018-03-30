@@ -15,7 +15,8 @@ class User(AbstractUser):
     Custom user model for the AskUp application.
     """
 
-    pass
+    class Meta:
+        db_table = 'auth_user'
 
 
 class Profile(models.Model):

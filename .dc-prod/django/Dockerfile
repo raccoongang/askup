@@ -14,4 +14,4 @@ VOLUME /askup
 
 EXPOSE 8001
 
-cmd until nc -w 3 postgres 5432; do echo "Trying to connect to the postgres...\n"; sleep 1; done && /askup/init-django.sh && /askup/start-server.sh
+cmd echo "Starting the entrypoint..." && while [ $(nc -w 1 -z -v postgres 5432 2>&1 | grep -o 'refused') ]; do echo "Trying to connect to the postgres...\n"; sleep 1; done && /askup/init-django.sh && /askup/start-server.sh

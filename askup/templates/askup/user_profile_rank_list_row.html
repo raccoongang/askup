@@ -1,7 +1,9 @@
 {% if place == 0 %}
+    {% if rank_list_total_users %}
 <div class="center">
     <h4>&bull;&bull;&bull;</h4>
 </div>
+    {% endif %}
 {% elif place == -1 %}
 <div class="row row-box white-box rounded-5 margin-top-10 {% if viewer_user_id == row_user_id %}current-user{% endif %} center">
     {% if viewer_user_id == row_user_id %}

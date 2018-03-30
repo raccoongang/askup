@@ -9,7 +9,7 @@
             <div class="col-xs-12">
                 <div class="row valign">
                     <div class="col-xs-12 question-content left-align">
-                        <a href="{% url 'askup:question_answer' question_id %}">
+                        <a href="{% url 'askup:question_answer' question_id question.qset_id %}">
                             {{ question_text }}
                         </a>
                     </div>

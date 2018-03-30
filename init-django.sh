@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # Run the initiation below only at the first container run
-[[ -e /.initiated ]] && exit
-touch /.initiated
+echo "Checking if the environment was initialized before..."
+[[ -e /askup/.initialized ]] && exit
+echo "Starting the environment initialization process."
+touch /askup/.initialized
 
 python manage.py createcachetable
 python manage.py migrate
@@ -19,3 +21,5 @@ if [[ "$LOADMOCKUPDATA" ]]
 then
     python manage.py loaddata askup/fixtures/mockup_data.json
 fi
+
+echo "Environment was successfuly initiated."

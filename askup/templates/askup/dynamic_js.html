@@ -8,16 +8,16 @@ var QUESTION_ROW_TEMPLATE = `
                     <img src="{% static 'askup/assets/thumbs-up.svg' %}" alt="Thumbs up">##vote_value##
                 </div>
                 <div class="col-xs-9">
-                    <a target="_blank" href="{% url 'askup:question_answer' 999 %}">##question_text##</a>
+                    <a target="_blank" href="{% url 'askup:question_answer' question_id=888 qset_id=999 %}">##question_text##</a>
                 </div>
             </div>
             <div class="col-xs-1">
                 <div class="question-actions">
                     <span class="actions pull-right">
-                        <a target="_blank" class="btn shortcut-button-link" href="{% url 'askup:question_edit' 999 %}">
+                        <a target="_blank" class="btn shortcut-button-link" href="{% url 'askup:question_edit' 888 %}">
                             <span class="glyphicon glyphicon-edit shortcut-button-glyphicon"></span>
                         </a>
-                        <a target="_blank" class="btn shortcut-button-link" href="{% url 'askup:question_delete' 999 %}" rel="nofollow">
+                        <a target="_blank" class="btn shortcut-button-link" href="{% url 'askup:question_delete' 888 %}" rel="nofollow">
                             <span class="glyphicon glyphicon-trash shortcut-button-glyphicon"></span>
                         </a>
                     </span>
