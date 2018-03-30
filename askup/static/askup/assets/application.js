@@ -269,7 +269,7 @@ function on_subject_questions_get(data, subject_id, subject_questions_element) {
     }
 
     if (!data.can_edit) {
-        $(questions_wrapper).find('.question-actions').css('display', 'none');
+        $(questions_wrapper).find('.question-actions').hide();
     }
 
     subject_questions_element.html(questions_wrapper.html());
