@@ -310,7 +310,7 @@ def validate_and_send_feedback_form(request, next_page):
             return None, redirect(
                 add_notification_to_url(
                     ('success', 'Thank you for your feedback!'),
-                    next_page or '/',
+                    next_page or reverse('index'),
                 )
             )
 

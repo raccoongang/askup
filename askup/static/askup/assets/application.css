@@ -258,8 +258,8 @@ th {
 }
 @font-face {
     font-family: 'Glyphicons Halflings';
-    src: url("/static/assets/bootstrap/glyphicons-halflings-regular.eot");
-    src: url("/static/assets/bootstrap/glyphicons-halflings-regular.eot?#iefix") format("embedded-opentype"), url("/static/assets/bootstrap/glyphicons-halflings-regular.woff2") format("woff2"), url("/static/assets/bootstrap/glyphicons-halflings-regular.woff") format("woff"), url("/static/assets/bootstrap/glyphicons-halflings-regular.ttf") format("truetype"), url("/static/assets/bootstrap/glyphicons-halflings-regular.svg#glyphicons_halflingsregular") format("svg")
+    src: url("/static/askup/assets/bootstrap/glyphicons-halflings-regular.eot");
+    src: url("/static/askup/assets/bootstrap/glyphicons-halflings-regular.eot?#iefix") format("embedded-opentype"), url("/static/askup/assets/bootstrap/glyphicons-halflings-regular.woff2") format("woff2"), url("/static/askup/assets/bootstrap/glyphicons-halflings-regular.woff") format("woff"), url("/static/askup/assets/bootstrap/glyphicons-halflings-regular.ttf") format("truetype"), url("/static/askup/assets/bootstrap/glyphicons-halflings-regular.svg#glyphicons_halflingsregular") format("svg")
 }
 .glyphicon {
     position: relative;
@@ -9045,7 +9045,7 @@ ul.qset-list-compressed {
     border-radius: 5px
 }
 .askup-header {
-    background-image: url(/static/assets/orange.jpg);
+    background-image: url(/static/askup/assets/orange.jpg);
     background-size: cover;
     height: 450px;
     color: white
@@ -9100,7 +9100,7 @@ ul.qset-list-compressed {
     color: #00b3fe
 }
 .twrap {
-    background: url(/static/assets/t-back.jpg) no-repeat center top;
+    background: url(/static/askup/assets/t-back.jpg) no-repeat center top;
     margin-top: 0px;
     padding: 60px;
     text-align: center;

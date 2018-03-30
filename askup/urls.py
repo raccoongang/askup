@@ -33,7 +33,7 @@ urlpatterns = [
     url(r'^qset/update/(?P<pk>\d+)/$', views.qset_update, name='qset_update'),
     url(r'^qset/delete/(?P<pk>\d+)/$', views.qset_delete, name='qset_delete'),
     url(
-        r'^qset/user-questions/(?P<qset_id>\d+)/(?P<user_id>\d+)/$',
+        r'^qset/(?P<qset_id>\d+)/user/(?P<user_id>\d+)/questions/$',
         views.qset_user_questions,
         name='qset_user_questions'
     ),

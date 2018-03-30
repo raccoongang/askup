@@ -199,6 +199,36 @@ class QsetListView(LoginAdminByDefaultMixIn, GeneralTestCase):
             )
         )
 
+    @client_user('student01', 'student01')
+    def test_apply_filter_all_on_qset(self):
+        """Test the "all" user filter selected."""
+        response = self.client.get(
+            '{}?filter=all'.format(reverse('askup:qset', kwargs={'pk': 4}))
+        )
+        self.assertContains(response, 'Question 1-1-1')  # My question
+        self.assertContains(response, 'Question 1-1-2')  # Other's question
+        self.assertContains(response, 'Question 1-1-3')  # My question
+
+    @client_user('student01', 'student01')
+    def test_apply_filter_mine_on_qset(self):
+        """Test the "mine" user filter selected."""
+        response = self.client.get(
+            '{}?filter=mine'.format(reverse('askup:qset', kwargs={'pk': 4}))
+        )
+        self.assertContains(response, 'Question 1-1-1')  # My question
+        self.assertNotContains(response, 'Question 1-1-2')  # Other's question
+        self.assertContains(response, 'Question 1-1-3')  # My question
+
+    @client_user('student01', 'student01')
+    def test_apply_filter_other_on_qset(self):
+        """Test the "other" user filter selected."""
+        response = self.client.get(
+            '{}?filter=other'.format(reverse('askup:qset', kwargs={'pk': 4}))
+        )
+        self.assertNotContains(response, 'Question 1-1-1')  # My question
+        self.assertContains(response, 'Question 1-1-2')  # Other's question
+        self.assertNotContains(response, 'Question 1-1-3')  # My question
+
 
 class QsetModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Qset model form (CRUD etc.)."""
