@@ -1,4 +1,8 @@
-<div class="box valign row my-subject-row rounded-5" data-subject-id="{{ subject_id }}">
+<div
+    class="box valign row my-subject-row rounded-5"
+    data-subject-id="{{ subject_id }}"
+    data-questions-url="{% url 'askup:qset_user_questions' subject_id profile_user.id %}"
+    >
     <div class="col-xs-9 valign">
         <div class="col-xs-1 glyphicon glyphicon-triangle-right">
         </div>

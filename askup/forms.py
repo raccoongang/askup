@@ -554,7 +554,7 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
     def _get_cancel_button(self, qset_id):
         """Return cancel button element of the form layout."""
         return HTML(
-            '<a class="btn btn-flat cancel-btn" href="/">' +
+            '<a class="btn btn-flat cancel-btn" href="{}">'.format(reverse('index')) +
             'Cancel' +
             '</a>'
         )
