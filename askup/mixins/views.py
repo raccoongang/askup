@@ -103,4 +103,4 @@ class ListViewUserContextDataMixIn(object):
     def process_user_filter(self, context, queryset):
         """Process user filter and return queryset with the correspondent changes."""
         filter = self.fill_user_filter_context(context)
-        return apply_filter_to_queryset(self.request, filter, queryset)
+        return apply_filter_to_queryset(self.request.user.id, filter, queryset)
