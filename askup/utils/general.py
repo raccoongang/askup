@@ -465,40 +465,62 @@ def get_student_last_week_incorrect_answers_count(user_id):
         return cursor.fetchone()[0] or 0
 
 
-def get_user_organizations_queryset(user_id, ordered=True):
+def get_user_organizations_queryset(user_id, viewer_id=None, organization_id=None):
     """
     Return the queryset of sorted by name user organizations.
     """
-    queryset = askup.models.Organization.objects.filter(users__in=[user_id])
+    queryset = askup.models.Organization.objects.filter(users__id=user_id)
+    queryset = check_and_apply_organization_filter(queryset, organization_id)
 
-    if ordered:
-        queryset = queryset.order_by('name')
+    if viewer_id:
+        viewer_queryset = askup.models.Organization.objects.filter(users__id=viewer_id)
+        viewer_queryset = check_and_apply_organization_filter(viewer_queryset, organization_id)
+        queryset = viewer_queryset.intersection(queryset)
+
+    return queryset.order_by('name')
+
+
+def check_and_apply_organization_filter(queryset, organization_id):
+    """
+    Apply organization filter to queryset if organization_id is not None.
+
+    If organization_id is not None, it's applying an id filter onto queryset.
+    Otherwise - returns the queryset unmodified.
+    """
+    if organization_id:
+        queryset = queryset.filter(id=organization_id)
 
     return queryset
 
 
-def get_user_organizations_for_filter(user_id):
+def get_user_organizations_for_filter(user_id, viewer_id):
     """
     Return user organizations as a list of dictionaries in a sorted manner.
     """
-    return list(get_user_organizations_queryset(user_id).values('id', 'name'))
+    return list(get_user_organizations_queryset(user_id, viewer_id=viewer_id).values('id', 'name'))
 
 
-def get_first_user_organization(user_id):
+def get_first_user_organization(user_id, viewer_id):
     """
     Check if user is assigned to the specified organization.
     """
-    return get_user_organizations_queryset(user_id).first()
+    if viewer_id == user_id:
+        queryset = get_user_organizations_queryset(user_id)
+    else:
+        queryset = get_user_organizations_queryset(user_id, viewer_id=viewer_id)
+
+    return queryset.first()
 
 
-def get_checked_user_organization_by_id(user_id, organization_id):
+def get_checked_user_organization_by_id(user_id, organization_id, viewer_id):
     """
     Check if an organization is assigned to the specified user and return it on success.
 
     Return an organization if it belongs to this user and None if it is not.
     """
-    queryset = get_user_organizations_queryset(user_id, ordered=False)
-    queryset = queryset.filter(id=organization_id)
+    queryset = get_user_organizations_queryset(
+        user_id, viewer_id=viewer_id, organization_id=organization_id
+    )
     return queryset.first()
 
 

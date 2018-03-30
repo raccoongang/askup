@@ -362,7 +362,7 @@ def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
     return True
 
 
-def select_user_organization(user_id, requested_organization_id):
+def select_user_organization(user_id, requested_organization_id, viewer_id=None):
     """
     Select the organization for the user profile view.
 
@@ -371,12 +371,12 @@ def select_user_organization(user_id, requested_organization_id):
     If user has no organizations in related then returns None.
     """
     if requested_organization_id:
-        return get_checked_user_organization_by_id(user_id, requested_organization_id)
+        return get_checked_user_organization_by_id(user_id, requested_organization_id, viewer_id)
 
-    return get_first_user_organization(user_id)
+    return get_first_user_organization(user_id, viewer_id)
 
 
-def get_user_profile_context_data(request, profile_user, user_id, selected_organization):
+def get_user_profile_context_data(request, profile_user, user_id, selected_organization, viewer_id):
     """
     Return the context data used in the user profile view template.
     """
@@ -394,7 +394,7 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
         'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
         'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
         'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-        'user_organizations': get_user_organizations_for_filter(profile_user.id),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': tuple(),
         'rank_list_total_users': 0,
         'own_subjects': get_user_subjects(selected_organization, user_id),
@@ -403,7 +403,9 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
     }
 
 
-def get_user_profile_rank_list_context_data(request, profile_user, user_id, selected_organization):
+def get_user_profile_rank_list_context_data(
+    request, profile_user, user_id, selected_organization, viewer_id
+):
     """
     Return the context data used in the user profile rank list view template.
     """
@@ -424,7 +426,7 @@ def get_user_profile_rank_list_context_data(request, profile_user, user_id, sele
         'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
         'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
         'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-        'user_organizations': get_user_organizations_for_filter(profile_user.id),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': rank_list,
         'rank_list_total_users': total_users,
         'own_subjects': tuple(),

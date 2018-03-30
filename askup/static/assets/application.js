@@ -90,7 +90,7 @@ var QUESTION_ROW_TEMPLATE = `
                     <img src="/static/assets/thumbs-up.svg" alt="Thumbs up">{{ vote_value }}
                 </div>
                 <div class="col-xs-9">
-                    <a target="_blank" href="/askup/question/{{ question_id }}/answer/">{{ question_text }}</a>
+                    <a target="_blank" href="/askup/question/{{ question_id }}/qset/{{ qset_id }}/answer/">{{ question_text }}</a>
                 </div>
             </div>
             <div class="col-xs-1">
@@ -291,6 +291,7 @@ function on_subject_questions_get(data, subject_id, user_id, subject_questions_e
         question_html = QUESTION_ROW_TEMPLATE.replace(/{{ question_id }}/g, data[i][0])
         question_html = question_html.replace(/{{ question_text }}/g, data[i][1])
         question_html = question_html.replace(/{{ vote_value }}/g, data[i][2])
+        question_html = question_html.replace(/{{ qset_id }}/g, data[i][3])
         questions_wrapper.append(question_html);
     }
 

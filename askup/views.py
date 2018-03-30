@@ -231,11 +231,20 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 def user_profile_view(request, user_id, organization_id=None):
     """Provide the user profile my questions view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    selected_organization = select_user_organization(profile_user.id, organization_id)
+    viewer_id = None if check_user_has_groups(request.user, 'admin') else request.user.id
+    selected_organization = select_user_organization(
+        profile_user.id, organization_id, viewer_id
+    )
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
+
     return render(
         request,
         'askup/user_profile.html',
-        get_user_profile_context_data(request, profile_user, profile_user.id, selected_organization),
+        get_user_profile_context_data(
+            request, profile_user, profile_user.id, selected_organization, viewer_id
+        ),
     )
 
 
@@ -245,12 +254,23 @@ def user_profile_rank_list_view(request, user_id, organization_id=None):
     Provide the user profile rank list view.
     """
     profile_user = get_object_or_404(User, pk=user_id)
-    selected_organization = select_user_organization(profile_user.id, organization_id)
+    viewer_id = None if check_user_has_groups(request.user, 'admin') else request.user.id
+    selected_organization = select_user_organization(
+        profile_user.id, organization_id, viewer_id
+    )
+
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:user_profile_rank_list', kwargs={'user_id': profile_user.id}))
+
+    if selected_organization is None:
+        return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
+
     return render(
         request,
         'askup/user_profile.html',
         get_user_profile_rank_list_context_data(
-            request, profile_user, profile_user.id, selected_organization
+            request, profile_user, profile_user.id, selected_organization, viewer_id
         ),
     )
 
