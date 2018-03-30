@@ -9,7 +9,7 @@ touch /askup/.initialized
 python manage.py createcachetable
 python manage.py migrate
 python manage.py collectstatic --noinput
-python manage.py loaddata askup/fixtures/groups.json
+python manage.py loaddata -i askup/fixtures/groups.json
 
 [[ "$ASKUPENV" =~ (dev|test) ]] && 
     psql -c "CREATE DATABASE travis_test_db;" -U postgres -h postgres &&
@@ -19,7 +19,7 @@ python manage.py loaddata askup/fixtures/groups.json
 
 if [[ "$LOADMOCKUPDATA" ]]
 then
-    python manage.py loaddata askup/fixtures/mockup_data.json
+    python manage.py loaddata -i askup/fixtures/mockup_data.json
 fi
 
 echo "Environment was successfuly initiated."
