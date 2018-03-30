@@ -478,6 +478,10 @@ def get_redirect_on_answer_fail(request, qset_id, filter, is_quiz):
     Returns HttpResponseRedirect to the qset where question was located, to the next question
     in the quiz or to the organizations list.
     """
+    if request.method == 'GET':
+        # Case, when the question is not in viewer's organization and viewer isn't admin
+        return redirect(reverse('askup:organizations'))
+
     if is_quiz:
         return get_json_redirect_next_quiz_question(request.user.id, qset_id, filter)
 
@@ -523,3 +527,17 @@ def do_make_answer_form(request, question):
         return AnswerModelForm(request.POST, parent_qset_id=question.qset_id)
     else:
         return AnswerModelForm(parent_qset_id=question.qset_id)
+
+
+def get_question_to_answer(request, question_id):
+    """
+    Return a question corresponding to the user and question_id.
+
+    If user has no permissions to the organization of this questions - return None.
+    """
+    question_queryset = Question.objects.filter(id=question_id)
+
+    if not check_user_has_groups(request.user, 'admin'):
+        question_queryset = question_queryset.filter(qset__top_qset__users__id=request.user.id)
+
+    return question_queryset.first()

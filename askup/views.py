@@ -40,6 +40,7 @@ from .utils.views import (
     do_user_checks_and_evaluate,
     get_clean_filter_parameter,
     get_next_quiz_question,
+    get_question_to_answer,
     get_redirect_on_answer_fail,
     get_user_profile_context_data,
     get_user_profile_rank_list_context_data,
@@ -519,13 +520,17 @@ def qset_delete(request, pk):
 @login_required
 def qset_user_questions(request, qset_id, user_id):
     """Provide a create question view for the student/teacher/admin."""
-    log.debug(
-        'Got the qset user questions request for the qset_id - %s and user_id - %s', qset_id, user_id
-    )
+    can_edit = False
     questions = Question.objects.filter(qset_id=qset_id, user_id=user_id).order_by(
         '-vote_value', 'text'
     )
-    response = list(questions.values_list("id", "text", "vote_value"))
+    if request.user.id == user_id or check_user_has_groups(request.user, ['admin', 'teacher']):
+        can_edit = True
+
+    response = {
+        'can_edit': can_edit,
+        'questions': list(questions.values_list("id", "qset_id", "text", "vote_value")),
+    }
     return JsonResponse(response, safe=False)
 
 
@@ -535,7 +540,7 @@ def question_answer(request, question_id, qset_id):
     log.debug('Got the question answering request for the question_id: %s', question_id)
     is_quiz = bool(request.GET.get('filter'))
     filter = get_clean_filter_parameter(request)
-    question = Question.objects.filter(id=question_id).first()
+    question = get_question_to_answer(request, question_id)
 
     if question is None:
         return get_redirect_on_answer_fail(request, qset_id, filter, is_quiz)
