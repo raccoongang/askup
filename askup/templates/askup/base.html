@@ -1,27 +1,30 @@
-<html><head>
-    <title>AskUp</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<html>
+    {% load static %}
+    <head>
+        <title>AskUp</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
-    <script data-turbolinks-track="true" src="/static/assets/application.js"></script>
-    <link data-turbolinks-track="true" href="/static/assets/application.css" media="all" rel="stylesheet">
+        <script data-turbolinks-track="true" src="{% static 'askup/assets/application.js' %}"></script>
+        <link data-turbolinks-track="true" href="{% static 'askup/assets/application.css' %}" media="all" rel="stylesheet">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
-    <meta content="authenticity_token" name="csrf-param">
-    <link href="/static/assets/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+        <meta content="authenticity_token" name="csrf-param">
+        <link href="{% static 'askup/assets/favicon.ico' %}" rel="shortcut icon" type="image/vnd.microsoft.icon">
 
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-115469557-1"></script>
-	<script>
-	 window.dataLayer = window.dataLayer || [];
-	 function gtag(){dataLayer.push(arguments);}
-	 gtag('js', new Date());
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-115469557-1"></script>
+        <script>
+         window.dataLayer = window.dataLayer || [];
+         function gtag(){dataLayer.push(arguments);}
+         gtag('js', new Date());
 
-	 gtag('config', 'UA-115469557-1');
-	</script>
-</head>
+         gtag('config', 'UA-115469557-1');
+        </script>
+        {% include 'askup/dynamic_js.html' %}
+    </head>
 <body>
     <div class="container-fluid">
         <div class="navbar navbar-inverse navbar-fixed-top one-edge-shadow" role="navigation">
@@ -32,7 +35,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 </button>
-                    <a class="navbar-brand float" href="/">AskUp</a>
+                <a class="navbar-brand float" href="{% url 'index' %}">AskUp</a>
             </div>
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-left">
@@ -50,7 +53,7 @@
                         {% endwith %}
                     </li>
                     <li>
-                        <a class="float" href="/askup/sign-out" id="sign_out" rel="nofollow">Log out</a>
+                        <a class="float" href="{% url 'askup:sign_out' %}" id="sign_out" rel="nofollow">Log out</a>
                     </li>
                     {% else %}
                     <li>
