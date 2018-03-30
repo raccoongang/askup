@@ -59,7 +59,7 @@ class TestUserProfileOrganization(TestCase):
         """
         Test the getting of the first user organization.
         """
-        organization = get_first_user_organization(3)  # User is "student01"
+        organization = get_first_user_organization(3, None)  # User is "student01", viewer is "admin"
         self.assertIsNotNone(organization)  # He has an organizations assigned
         self.assertEqual(organization.id, 1)  # "Organization 1" is the first one in his list
 
@@ -67,28 +67,28 @@ class TestUserProfileOrganization(TestCase):
         """
         Test the getting of the user organization by id.
         """
-        organization = get_checked_user_organization_by_id(3, 1)  # "student01" and his organization (id=1)
+        organization = get_checked_user_organization_by_id(3, 1, None)  # "student01" and his organization (id=1)
         self.assertIsNotNone(organization)  # He has this organization assigned
         self.assertEqual(organization.id, 1)  # Got the "Organization 1" (id=1) as his organization.
 
-        organization = get_checked_user_organization_by_id(3, 3)  # "student01" and another's organization
+        organization = get_checked_user_organization_by_id(3, 3, 1)  # "student01" and another's organization
         self.assertIsNone(organization)  # He has no this organization assigned
 
     def test_get_user_organizations_for_filter(self):
         """
         Test the getting of the first user organization.
         """
-        organizations = get_user_organizations_for_filter(3)  # User is "student01"
+        organizations = get_user_organizations_for_filter(3, None)  # User is "student01", viewer is "admin"
         self.assertEqual(len(organizations), 1)  # He has one organization to show in the filter
         self.assertTrue('id' in organizations[0])
         self.assertTrue('name' in organizations[0])
         self.assertEqual(organizations[0]['id'], 1)
         self.assertEqual(organizations[0]['name'], 'Organization 1')
 
-        organizations = get_user_organizations_for_filter(4)  # User is "student02_no_orgs"
+        organizations = get_user_organizations_for_filter(4, None)  # User is "student02_no_orgs", viewer is "admin"
         self.assertEqual(len(organizations), 0)  # He has no organizations to show in the filter
 
-        organizations = get_user_organizations_for_filter(5)  # User is "student03"
+        organizations = get_user_organizations_for_filter(5, None)  # User is "student03", viewer is "admin"
         self.assertEqual(len(organizations), 2)  # He has two organizations to show in the filter
         self.assertEqual(organizations[0]['id'], 1)
         self.assertEqual(organizations[0]['name'], 'Organization 1')
@@ -99,12 +99,12 @@ class TestUserProfileOrganization(TestCase):
         """
         Test the organization selection by the user and organization id.
         """
-        organization = select_user_organization(3, 1)  # 3 - student01, has 1 - "Organization 1"
+        organization = select_user_organization(3, 1, None)  # 3 - student01, has 1 - "Organization 1"
         self.assertIsNotNone(organization)
         self.assertEqual(organization.id, 1)
 
-        organization = select_user_organization(3, 3)  # 3 - student01, has no 3 - "Organization 3"
+        organization = select_user_organization(3, 3, None)  # 3 - student01, has no 3 - "Organization 3"
         self.assertIsNone(organization)
 
-        organization = select_user_organization(4, 1)  # 4 - student02_no_orgs, has no organizations
+        organization = select_user_organization(4, 1, None)  # 4 - student02_no_orgs, has no organizations
         self.assertIsNone(organization)

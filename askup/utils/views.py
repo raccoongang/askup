@@ -362,7 +362,7 @@ def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
     return True
 
 
-def select_user_organization(user_id, requested_organization_id):
+def select_user_organization(user_id, requested_organization_id, viewer_id=None):
     """
     Select the organization for the user profile view.
 
@@ -371,12 +371,12 @@ def select_user_organization(user_id, requested_organization_id):
     If user has no organizations in related then returns None.
     """
     if requested_organization_id:
-        return get_checked_user_organization_by_id(user_id, requested_organization_id)
+        return get_checked_user_organization_by_id(user_id, requested_organization_id, viewer_id)
 
-    return get_first_user_organization(user_id)
+    return get_first_user_organization(user_id, viewer_id)
 
 
-def get_user_profile_context_data(request, profile_user, user_id, selected_organization):
+def get_user_profile_context_data(request, profile_user, user_id, selected_organization, viewer_id):
     """
     Return the context data used in the user profile view template.
     """
@@ -394,7 +394,7 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
         'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
         'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
         'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-        'user_organizations': get_user_organizations_for_filter(profile_user.id),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': tuple(),
         'rank_list_total_users': 0,
         'own_subjects': get_user_subjects(selected_organization, user_id),
@@ -403,7 +403,9 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
     }
 
 
-def get_user_profile_rank_list_context_data(request, profile_user, user_id, selected_organization):
+def get_user_profile_rank_list_context_data(
+    request, profile_user, user_id, selected_organization, viewer_id
+):
     """
     Return the context data used in the user profile rank list view template.
     """
@@ -424,7 +426,7 @@ def get_user_profile_rank_list_context_data(request, profile_user, user_id, sele
         'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
         'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
         'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-        'user_organizations': get_user_organizations_for_filter(profile_user.id),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': rank_list,
         'rank_list_total_users': total_users,
         'own_subjects': tuple(),
@@ -476,6 +478,10 @@ def get_redirect_on_answer_fail(request, qset_id, filter, is_quiz):
     Returns HttpResponseRedirect to the qset where question was located, to the next question
     in the quiz or to the organizations list.
     """
+    if request.method == 'GET':
+        # Case, when the question is not in viewer's organization and viewer isn't admin
+        return redirect(reverse('askup:organizations'))
+
     if is_quiz:
         return get_json_redirect_next_quiz_question(request.user.id, qset_id, filter)
 
@@ -521,3 +527,17 @@ def do_make_answer_form(request, question):
         return AnswerModelForm(request.POST, parent_qset_id=question.qset_id)
     else:
         return AnswerModelForm(parent_qset_id=question.qset_id)
+
+
+def get_question_to_answer(request, question_id):
+    """
+    Return a question corresponding to the user and question_id.
+
+    If user has no permissions to the organization of this questions - return None.
+    """
+    question_queryset = Question.objects.filter(id=question_id)
+
+    if not check_user_has_groups(request.user, 'admin'):
+        question_queryset = question_queryset.filter(qset__top_qset__users__id=request.user.id)
+
+    return question_queryset.first()

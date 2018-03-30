@@ -260,11 +260,16 @@ function on_subject_questions_get(data, subject_id, subject_questions_element) {
         '<div style="display: none" id="my-subject-' + subject_id + '-questions-wrapper"></div>'
     );
 
-    for (var i=0; i < data.length; i++) {
-        question_html = QUESTION_ROW_TEMPLATE.replace(/999/g, data[i][0])
-        question_html = question_html.replace(/##question_text##/g, data[i][1])
-        question_html = question_html.replace(/##vote_value##/g, data[i][2])
+    for (var i=0; i < data.questions.length; i++) {
+        question_html = QUESTION_ROW_TEMPLATE.replace(/888/g, data.questions[i][0]);
+        question_html = question_html.replace(/999/g, data.questions[i][1]);
+        question_html = question_html.replace(/##question_text##/g, data.questions[i][2]);
+        question_html = question_html.replace(/##vote_value##/g, data.questions[i][3]);
         questions_wrapper.append(question_html);
+    }
+
+    if (!data.can_edit) {
+        $(questions_wrapper).find('.question-actions').hide();
     }
 
     subject_questions_element.html(questions_wrapper.html());
