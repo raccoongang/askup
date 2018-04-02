@@ -524,7 +524,7 @@ def qset_user_questions(request, qset_id, user_id):
     questions = Question.objects.filter(qset_id=qset_id, user_id=user_id).order_by(
         '-vote_value', 'text'
     )
-    if request.user.id == user_id or check_user_has_groups(request.user, ['admin', 'teacher']):
+    if request.user.id == int(user_id) or check_user_has_groups(request.user, ['admin', 'teacher']):
         can_edit = True
 
     response = {
