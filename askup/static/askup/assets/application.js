@@ -37,8 +37,8 @@ $(document).ready(function(){
     });
 
     $('.upvote-button, .downvote-button').click(function(e){
-        vote_url = $(this).attr('data-vote-url');
-        question_id = $(this).attr('data-question-id');
+        vote_url = $(this).data('vote-url');
+        question_id = $(this).data('question-id');
 
         $.ajax({
             url: vote_url,
