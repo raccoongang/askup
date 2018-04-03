@@ -74,22 +74,6 @@ def check_user_has_groups(user, required_groups):
     return False
 
 
-def get_user_score_by_id(user_id, organization):
-    """
-    Return total score of the user by id.
-
-    Summarizes all the vote_value of the user questions to count a score.
-    """
-    if organization is None:
-        return 0
-
-    queryset = askup.models.Question.objects.filter(
-        user_id=user_id, qset__top_qset_id=organization.id
-    )
-    values = queryset.aggregate(Sum('vote_value'))
-    return values['vote_value__sum'] or 0
-
-
 def get_user_questions_count(user_id):
     """Return total questions number for the user."""
     user = get_object_or_404(User, pk=user_id)
@@ -213,38 +197,6 @@ def get_rank_list_users_count(organization_id):
     queryset = askup.models.Question.objects.filter(qset__top_qset_id=organization_id)
     result = queryset.aggregate(Count('user_id', distinct=True))
     return result['user_id__count']
-
-
-def get_user_correct_answers_count(user_id, organization):
-    """
-    Return total amount of the correct answers of the user by id.
-    """
-    if organization is None:
-        return 0
-
-    queryset = askup.models.Answer.objects.filter(
-        user_id=user_id,
-        self_evaluation=2,
-        question__qset__top_qset_id=organization.id,
-    )
-    result = queryset.aggregate(Count('id'))
-    return result['id__count']
-
-
-def get_user_incorrect_answers_count(user_id, organization):
-    """
-    Return total amount of the incorrect answers of the user by id.
-    """
-    if organization is None:
-        return 0
-
-    queryset = askup.models.Answer.objects.filter(
-        user_id=user_id,
-        self_evaluation__in=(0, 1),
-        question__qset__top_qset_id=organization.id,
-    )
-    result = queryset.aggregate(Count('id'))
-    return result['id__count']
 
 
 def get_teacher_questions_count(user_id):
@@ -419,11 +371,75 @@ def parse_response_url_to_parameters(response):
     return url_parts[0], parameters
 
 
-def get_student_last_week_questions_count(user_id, organization):
-    """Return last week questions count of the student."""
-    if organization is None:
-        return 0
+def zero_on_organization_is_none(wrapping_function):
+    """
+    Check if first parameter is None.
 
+    If so - return 0 and otherwise - execute the wrapped_function.
+    """
+    def wrapper_function(*args, **kwargs):
+        if kwargs['organization'] is None:
+            return 0
+
+        return wrapping_function(*args, **kwargs)
+
+    return wrapper_function
+
+
+@zero_on_organization_is_none
+def get_user_score_by_id(user_id, organization=None):
+    """
+    Return total score of the user by id.
+
+    Summarizes all the vote_value of the user questions to count a score.
+    """
+    filter_kwargs = {
+        'user_id': user_id,
+        'qset__top_qset_id': organization.id,
+    }
+    return get_model_aggregation(
+        askup.models.Question,
+        filter_kwargs,
+        aggregator_function=Sum,
+        aggregated_field='vote_value',
+    )
+
+
+@zero_on_organization_is_none
+def get_user_correct_answers_count(user_id, organization=None):
+    """
+    Return total amount of the correct answers of the user by id.
+    """
+    filter_kwargs = {
+        'user_id': user_id,
+        'self_evaluation': 2,
+        'question__qset__top_qset_id': organization.id,
+    }
+    return get_model_aggregation(
+        askup.models.Answer,
+        filter_kwargs,
+    )
+
+
+@zero_on_organization_is_none
+def get_user_incorrect_answers_count(user_id, organization=None):
+    """
+    Return total amount of the incorrect answers of the user by id.
+    """
+    filter_kwargs = {
+        'user_id': user_id,
+        'self_evaluation__in': (0, 1),
+        'question__qset__top_qset_id': organization.id,
+    }
+    return get_model_aggregation(
+        askup.models.Answer,
+        filter_kwargs,
+    )
+
+
+@zero_on_organization_is_none
+def get_student_last_week_questions_count(user_id, organization=None):
+    """Return last week questions count of the student."""
     filter_kwargs = {
         'user_id': user_id,
         'qset__top_qset_id': organization.id,
@@ -435,11 +451,9 @@ def get_student_last_week_questions_count(user_id, organization):
     )
 
 
-def get_student_last_week_votes_value(user_id, organization):
+@zero_on_organization_is_none
+def get_student_last_week_votes_value(user_id, organization=None):
     """Return last week thumbs ups student received."""
-    if organization is None:
-        return 0
-
     filter_kwargs = {
         'user_id': user_id,
         'qset__top_qset_id': organization.id,
@@ -448,16 +462,14 @@ def get_student_last_week_votes_value(user_id, organization):
     return get_model_aggregation(
         askup.models.Question,
         filter_kwargs,
-        Sum,
-        'vote__value',
+        aggregator_function=Sum,
+        aggregated_field='vote__value',
     )
 
 
-def get_student_last_week_correct_answers_count(user_id, organization):
+@zero_on_organization_is_none
+def get_student_last_week_correct_answers_count(user_id, organization=None):
     """Return last week correct answers of the student."""
-    if organization is None:
-        return 0
-
     filter_kwargs = {
         'self_evaluation': 2,
         'user_id': user_id,
@@ -470,11 +482,9 @@ def get_student_last_week_correct_answers_count(user_id, organization):
     )
 
 
-def get_student_last_week_incorrect_answers_count(user_id, organization):
+@zero_on_organization_is_none
+def get_student_last_week_incorrect_answers_count(user_id, organization=None):
     """Return last week correct answers of the student."""
-    if organization is None:
-        return 0
-
     filter_kwargs = {
         'self_evaluation__in': (0, 1),
         'user_id': user_id,

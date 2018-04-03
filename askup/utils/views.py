@@ -429,20 +429,20 @@ def get_user_organization_statistics(user_id, organization):
     """
     return {
         'user_rank_place': get_user_place_in_rank_list(organization, user_id),
-        'own_score': get_user_score_by_id(user_id, organization),
-        'own_correct_answers': get_user_correct_answers_count(user_id, organization),
-        'own_incorrect_answers': get_user_incorrect_answers_count(user_id, organization),
+        'own_score': get_user_score_by_id(user_id, organization=organization),
+        'own_correct_answers': get_user_correct_answers_count(user_id, organization=organization),
+        'own_incorrect_answers': get_user_incorrect_answers_count(user_id, organization=organization),
         'own_last_week_questions': get_student_last_week_questions_count(
-            user_id, organization
+            user_id, organization=organization
         ),
         'own_last_week_thumbs_up': get_student_last_week_votes_value(
-            user_id, organization
+            user_id, organization=organization
         ),
         'own_last_week_correct_answers': get_student_last_week_correct_answers_count(
-            user_id, organization
+            user_id, organization=organization
         ),
         'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(
-            user_id, organization
+            user_id, organization=organization
         ),
     }
 
