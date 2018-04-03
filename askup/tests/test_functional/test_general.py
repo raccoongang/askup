@@ -10,7 +10,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
-from askup.models import Answer, Qset, Question, Vote
+from askup.models import Answer, Organization, Qset, Question, Vote
 from askup.utils.general import (
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
@@ -1074,14 +1074,15 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         """
         Check freshly created user stats.
         """
+        organization = Organization.objects.get(id=organization_id)
         rank_place = get_user_place_in_rank_list(user_id, organization_id)
-        user_score = get_user_score_by_id(user_id)
-        correct_answers = get_user_correct_answers_count(user_id)
-        incorrect_answers = get_user_incorrect_answers_count(user_id)
-        week_questions = get_student_last_week_questions_count(user_id)
-        week_thumbs_ups = get_student_last_week_votes_value(user_id)
-        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
-        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+        user_score = get_user_score_by_id(user_id, organization)
+        correct_answers = get_user_correct_answers_count(user_id, organization)
+        incorrect_answers = get_user_incorrect_answers_count(user_id, organization)
+        week_questions = get_student_last_week_questions_count(user_id, organization)
+        week_thumbs_ups = get_student_last_week_votes_value(user_id, organization)
+        week_correct_answers = get_student_last_week_correct_answers_count(user_id, organization)
+        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id, organization)
 
         self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
         self.assertEqual(user_score, 0)
@@ -1096,6 +1097,7 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         """
         Check an active user stats.
         """
+        organization = Organization.objects.get(id=organization_id)
         self.client.login(username='testuser_stat', password='tu_stat01')
         question_text = 'Question text'
         question_answer = 'Question answer'
@@ -1124,13 +1126,13 @@ class StudentDashboardStatisticsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.answer_and_evaluate('student01', 'student01', question.id, 'Unique answer 04', 2)
 
         rank_place = get_user_place_in_rank_list(organization_id, user_id)
-        user_score = get_user_score_by_id(user_id)
-        correct_answers = get_user_correct_answers_count(user_id)
-        incorrect_answers = get_user_incorrect_answers_count(user_id)
-        week_questions = get_student_last_week_questions_count(user_id)
-        week_thumbs_ups = get_student_last_week_votes_value(user_id)
-        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
-        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+        user_score = get_user_score_by_id(user_id, organization)
+        correct_answers = get_user_correct_answers_count(user_id, organization)
+        incorrect_answers = get_user_incorrect_answers_count(user_id, organization)
+        week_questions = get_student_last_week_questions_count(user_id, organization)
+        week_thumbs_ups = get_student_last_week_votes_value(user_id, organization)
+        week_correct_answers = get_student_last_week_correct_answers_count(user_id, organization)
+        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id, organization)
 
         self.assertEqual(rank_place, 1)
         self.assertEqual(user_score, 3)
@@ -1246,14 +1248,15 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
         """
         Check freshly created user stats.
         """
+        organization = Organization.objects.get(id=organization_id)
         rank_place = get_user_place_in_rank_list(organization_id, user_id)
-        user_score = get_user_score_by_id(user_id)
-        correct_answers = get_user_correct_answers_count(user_id)
-        incorrect_answers = get_user_incorrect_answers_count(user_id)
-        week_questions = get_student_last_week_questions_count(user_id)
-        week_thumbs_ups = get_student_last_week_votes_value(user_id)
-        week_correct_answers = get_student_last_week_correct_answers_count(user_id)
-        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id)
+        user_score = get_user_score_by_id(user_id, organization)
+        correct_answers = get_user_correct_answers_count(user_id, organization)
+        incorrect_answers = get_user_incorrect_answers_count(user_id, organization)
+        week_questions = get_student_last_week_questions_count(user_id, organization)
+        week_thumbs_ups = get_student_last_week_votes_value(user_id, organization)
+        week_correct_answers = get_student_last_week_correct_answers_count(user_id, organization)
+        week_incorrect_answers = get_student_last_week_incorrect_answers_count(user_id, organization)
 
         self.assertEqual(rank_place, 0)  # 6-th user after the mockup ones
         self.assertEqual(user_score, 0)

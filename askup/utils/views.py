@@ -380,20 +380,12 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
     """
     Return the context data used in the user profile view template.
     """
-    return {
+    context_data = {
         'profile_user': profile_user,
         'full_name': compose_user_full_name_from_object(profile_user),
         'viewer_user_id': request.user.id,
-        'own_score': get_user_score_by_id(user_id),
         'is_owner': user_id == request.user.id,
         'is_student': check_user_has_groups(profile_user, 'student'),
-        'own_correct_answers': get_user_correct_answers_count(user_id),
-        'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-        'user_rank_place': get_user_place_in_rank_list(selected_organization, user_id),
-        'own_last_week_questions': get_student_last_week_questions_count(user_id),
-        'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-        'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
-        'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
         'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': tuple(),
         'rank_list_total_users': 0,
@@ -401,6 +393,8 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
         'selected_organization': selected_organization,
         'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }
+    context_data.update(get_user_organization_statistics(user_id, selected_organization))
+    return context_data
 
 
 def get_user_profile_rank_list_context_data(
@@ -412,26 +406,44 @@ def get_user_profile_rank_list_context_data(
     rank_list, total_users = get_user_profile_rank_list_and_total_users(
         profile_user.id, request.user.id, selected_organization.id
     )
-    return {
+    context_data = {
         'profile_user': profile_user,
         'full_name': compose_user_full_name_from_object(profile_user),
         'viewer_user_id': request.user.id,
-        'own_score': get_user_score_by_id(user_id),
         'is_owner': user_id == request.user.id,
         'is_student': check_user_has_groups(profile_user, 'student'),
-        'own_correct_answers': get_user_correct_answers_count(user_id),
-        'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-        'user_rank_place': get_user_place_in_rank_list(selected_organization, user_id),
-        'own_last_week_questions': get_student_last_week_questions_count(user_id),
-        'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-        'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
-        'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
         'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': rank_list,
         'rank_list_total_users': total_users,
         'own_subjects': tuple(),
         'selected_organization': selected_organization,
         'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
+    }
+    context_data.update(get_user_organization_statistics(user_id, selected_organization))
+    return context_data
+
+
+def get_user_organization_statistics(user_id, organization):
+    """
+    Return a dictionary with the statistics parameters to pass into the user_profile template.
+    """
+    return {
+        'user_rank_place': get_user_place_in_rank_list(organization, user_id),
+        'own_score': get_user_score_by_id(user_id, organization),
+        'own_correct_answers': get_user_correct_answers_count(user_id, organization),
+        'own_incorrect_answers': get_user_incorrect_answers_count(user_id, organization),
+        'own_last_week_questions': get_student_last_week_questions_count(
+            user_id, organization
+        ),
+        'own_last_week_thumbs_up': get_student_last_week_votes_value(
+            user_id, organization
+        ),
+        'own_last_week_correct_answers': get_student_last_week_correct_answers_count(
+            user_id, organization
+        ),
+        'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(
+            user_id, organization
+        ),
     }
 
 
