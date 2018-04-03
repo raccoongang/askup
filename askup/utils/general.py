@@ -87,7 +87,7 @@ def get_user_score_by_id(user_id, organization):
         user_id=user_id, qset__top_qset_id=organization.id
     )
     values = queryset.aggregate(Sum('vote_value'))
-    return values['vote_value__sum'] if values['vote_value__sum'] else 0
+    return values['vote_value__sum'] or 0
 
 
 def get_user_questions_count(user_id):
@@ -228,7 +228,7 @@ def get_user_correct_answers_count(user_id, organization):
         question__qset__top_qset_id=organization.id,
     )
     result = queryset.aggregate(Count('id'))
-    return result['id__count'] if result['id__count'] else 0
+    return result['id__count']
 
 
 def get_user_incorrect_answers_count(user_id, organization):
@@ -244,7 +244,7 @@ def get_user_incorrect_answers_count(user_id, organization):
         question__qset__top_qset_id=organization.id,
     )
     result = queryset.aggregate(Count('id'))
-    return result['id__count'] if result['id__count'] else 0
+    return result['id__count']
 
 
 def get_teacher_questions_count(user_id):
@@ -424,13 +424,15 @@ def get_student_last_week_questions_count(user_id, organization):
     if organization is None:
         return 0
 
-    queryset = askup.models.Question.objects.filter(
-        user_id=user_id,
-        qset__top_qset_id=organization.id,
-        created_at__gte=(timezone.now() - timedelta(weeks=1)),
+    filter_kwargs = {
+        'user_id': user_id,
+        'qset__top_qset_id': organization.id,
+        'created_at__gte': timezone.now() - timedelta(weeks=1),
+    }
+    return get_model_aggregation(
+        askup.models.Question,
+        filter_kwargs,
     )
-    result = queryset.aggregate(Count('id'))
-    return result['id__count'] if result['id__count'] else 0
 
 
 def get_student_last_week_votes_value(user_id, organization):
@@ -438,13 +440,17 @@ def get_student_last_week_votes_value(user_id, organization):
     if organization is None:
         return 0
 
-    queryset = askup.models.Question.objects.filter(
-        user_id=user_id,
-        qset__top_qset_id=organization.id,
-        vote__created_at__gte=(timezone.now() - timedelta(weeks=1)),
+    filter_kwargs = {
+        'user_id': user_id,
+        'qset__top_qset_id': organization.id,
+        'vote__created_at__gte': timezone.now() - timedelta(weeks=1),
+    }
+    return get_model_aggregation(
+        askup.models.Question,
+        filter_kwargs,
+        Sum,
+        'vote__value',
     )
-    result = queryset.aggregate(Sum('vote__value'))
-    return result['vote__value__sum'] if result['vote__value__sum'] else 0
 
 
 def get_student_last_week_correct_answers_count(user_id, organization):
@@ -452,14 +458,16 @@ def get_student_last_week_correct_answers_count(user_id, organization):
     if organization is None:
         return 0
 
-    queryset = askup.models.Answer.objects.filter(
-        self_evaluation=2,
-        user_id=user_id,
-        question__qset__top_qset_id=organization.id,
-        created_at__gte=(timezone.now() - timedelta(weeks=1)),
+    filter_kwargs = {
+        'self_evaluation': 2,
+        'user_id': user_id,
+        'question__qset__top_qset_id': organization.id,
+        'created_at__gte': timezone.now() - timedelta(weeks=1),
+    }
+    return get_model_aggregation(
+        askup.models.Answer,
+        filter_kwargs,
     )
-    result = queryset.aggregate(Count('id'))
-    return result['id__count'] if result['id__count'] else 0
 
 
 def get_student_last_week_incorrect_answers_count(user_id, organization):
@@ -467,14 +475,41 @@ def get_student_last_week_incorrect_answers_count(user_id, organization):
     if organization is None:
         return 0
 
-    queryset = askup.models.Answer.objects.filter(
-        self_evaluation__in=(0, 1),
-        user_id=user_id,
-        question__qset__top_qset_id=organization.id,
-        created_at__gte=(timezone.now() - timedelta(weeks=1)),
+    filter_kwargs = {
+        'self_evaluation__in': (0, 1),
+        'user_id': user_id,
+        'question__qset__top_qset_id': organization.id,
+        'created_at__gte': (timezone.now() - timedelta(weeks=1)),
+    }
+    return get_model_aggregation(
+        askup.models.Answer,
+        filter_kwargs,
     )
-    result = queryset.aggregate(Count('id'))
-    return result['id__count'] if result['id__count'] else 0
+
+
+def get_model_aggregation(model, filter_kwargs, aggregator_function=Count, aggregated_field='id'):
+    """
+    Return an aggregation result.
+
+    Example:
+        get_model_aggregation(
+            organization,
+            askup.models.Question,
+            {
+                'qset_id': 4,
+                'user_id': 3,
+            },
+            Sum,
+            'vote_value',
+        )
+
+    This example will return the total vote_value of the questions of the user with id = 3 and
+    qset_id = 4.
+    """
+    queryset = model.objects.filter(**filter_kwargs)
+    result = queryset.aggregate(aggregator_function(aggregated_field))
+    result_key = '{}__{}'.format(aggregated_field, aggregator_function.__name__.lower())
+    return result[result_key] or 0
 
 
 def get_user_organizations_queryset(user_id, viewer_id=None, organization_id=None):
