@@ -12,14 +12,14 @@
                         <div class="net-votes valign"><p class="question-{{ question_id }}-net-votes">{{ question.vote_value }}</p><br></div>
                         <div class="question-voting-wrapper valign">
                             <div class="question-voting">
-                                  <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote="upvote" data-vote-qid="{{ question_id }}"></div>
-                                  <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote="downvote" data-vote-qid="{{ question_id }}"></div>
+                                <div class="glyphicon glyphicon-triangle-top upvote-button" data-vote-url="{% url 'askup:question_upvote' question_id %}" data-question-id="{{ question_id }}"></div>
+                                <div class="glyphicon glyphicon-triangle-bottom downvote-button" data-vote-url="{% url 'askup:question_downvote' question_id %}" data-question-id="{{ question_id }}"></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-xs-8">
                         <div class="question-content">
-                            <a href="{% url 'askup:question_answer' question_id %}">
+                            <a href="{% url 'askup:question_answer' question_id question.qset_id %}">
                                 {{ question_text }}
                             </a>          
                         </div>

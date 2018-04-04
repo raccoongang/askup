@@ -5,7 +5,6 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.cache import cache
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -13,7 +12,6 @@ from django.urls import reverse
 from django.views import generic
 
 from .forms import (
-    AnswerModelForm,
     OrganizationModelForm,
     QsetDeleteModelForm,
     QsetModelForm,
@@ -32,28 +30,23 @@ from .tokens import account_activation_token
 from .utils.general import (
     add_notification_to_url,
     check_user_has_groups,
-    compose_user_full_name_from_object,
     get_real_questions_queryset,
-    get_student_last_week_correct_answers_count,
-    get_student_last_week_incorrect_answers_count,
-    get_student_last_week_questions_count,
-    get_student_last_week_votes_value,
-    get_user_correct_answers_count,
-    get_user_incorrect_answers_count,
-    get_user_organizations_string,
-    get_user_place_in_rank_list,
-    get_user_profile_rank_list_and_total_users,
-    get_user_score_by_id,
-    get_user_subjects,
 )
 from .utils.views import (
-    apply_filter_to_queryset,
     compose_qset_form,
     compose_question_form_and_create,
     delete_qset_by_form,
+    do_make_answer_form,
+    do_user_checks_and_evaluate,
     get_clean_filter_parameter,
+    get_next_quiz_question,
+    get_question_to_answer,
+    get_redirect_on_answer_fail,
+    get_user_profile_context_data,
+    get_user_profile_rank_list_context_data,
     qset_update_form_template,
     question_vote,
+    select_user_organization,
     user_group_required,
     validate_and_send_feedback_form,
     validate_answer_form_and_create,
@@ -236,63 +229,50 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 
 
 @login_required
-def user_profile_view(request, user_id):
+def user_profile_view(request, user_id, organization_id=None):
     """Provide the user profile my questions view."""
     profile_user = get_object_or_404(User, pk=user_id)
-    user_id = int(user_id)
+    viewer_id = None if check_user_has_groups(request.user, 'admin') else request.user.id
+    selected_organization = select_user_organization(
+        profile_user.id, organization_id, viewer_id
+    )
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
+
     return render(
         request,
         'askup/user_profile.html',
-        {
-            'profile_user': profile_user,
-            'full_name': compose_user_full_name_from_object(profile_user),
-            'viewer_user_id': request.user.id,
-            'own_score': get_user_score_by_id(user_id),
-            'is_owner': user_id == request.user.id,
-            'is_student': check_user_has_groups(profile_user, 'student'),
-            'own_correct_answers': get_user_correct_answers_count(user_id),
-            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-            'user_rank_place': get_user_place_in_rank_list(user_id),
-            'own_last_week_questions': get_student_last_week_questions_count(user_id),
-            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
-            'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-            'user_organizations': get_user_organizations_string(profile_user),
-            'rank_list': tuple(),
-            'rank_list_total_users': 0,
-            'own_subjects': get_user_subjects(user_id),
-        },
+        get_user_profile_context_data(
+            request, profile_user, profile_user.id, selected_organization, viewer_id
+        ),
     )
 
 
 @login_required
-def user_profile_rank_list_view(request, user_id):
-    """Provide the user profile rank list view."""
+def user_profile_rank_list_view(request, user_id, organization_id=None):
+    """
+    Provide the user profile rank list view.
+    """
     profile_user = get_object_or_404(User, pk=user_id)
-    rank_list, total_users = get_user_profile_rank_list_and_total_users(profile_user.id, request.user.id)
-    user_id = int(user_id)
+    viewer_id = None if check_user_has_groups(request.user, 'admin') else request.user.id
+    selected_organization = select_user_organization(
+        profile_user.id, organization_id, viewer_id
+    )
+
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:user_profile_rank_list', kwargs={'user_id': profile_user.id}))
+
+    if selected_organization is None:
+        return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
+
     return render(
         request,
         'askup/user_profile.html',
-        {
-            'profile_user': profile_user,
-            'full_name': compose_user_full_name_from_object(profile_user),
-            'viewer_user_id': request.user.id,
-            'own_score': get_user_score_by_id(user_id),
-            'is_owner': user_id == request.user.id,
-            'is_student': check_user_has_groups(profile_user, 'student'),
-            'own_correct_answers': get_user_correct_answers_count(user_id),
-            'own_incorrect_answers': get_user_incorrect_answers_count(user_id),
-            'user_rank_place': get_user_place_in_rank_list(user_id),
-            'own_last_week_questions': get_student_last_week_questions_count(user_id),
-            'own_last_week_thumbs_up': get_student_last_week_votes_value(user_id),
-            'own_last_week_correct_answers': get_student_last_week_correct_answers_count(user_id),
-            'own_last_week_incorrect_answers': get_student_last_week_incorrect_answers_count(user_id),
-            'user_organizations': get_user_organizations_string(profile_user),
-            'rank_list': rank_list,
-            'rank_list_total_users': total_users,
-            'own_subjects': tuple(),
-        },
+        get_user_profile_rank_list_context_data(
+            request, profile_user, profile_user.id, selected_organization, viewer_id
+        ),
     )
 
 
@@ -392,7 +372,7 @@ def sign_up_activate(request, uid, token):
             'You\'ve successfuly registered{0}'.format(organization_text)
         )
 
-        return redirect(add_notification_to_url(notification, '/'))
+        return redirect(add_notification_to_url(notification, reverse('index')))
 
     return(render(request, 'askup/sign_up_activation_invalid.html'))
 
@@ -400,10 +380,10 @@ def sign_up_activate(request, uid, token):
 def login_view(request):
     """Provide the login view and functionality."""
     if request.user.is_authenticated():
-        return redirect('/')
+        return redirect(reverse('index'))
 
     form = UserLoginForm(request.POST or None, request=request)
-    next_page = request.GET.get('next', '/')
+    next_page = request.GET.get('next', reverse('index'))
 
     if form.is_valid():
         if request.user.is_authenticated():
@@ -423,7 +403,7 @@ def logout_view(request):
     return redirect(
         add_notification_to_url(
             ('danger', 'You were logged out'),
-            '/',
+            reverse('index'),
         ),
     )
 
@@ -540,27 +520,31 @@ def qset_delete(request, pk):
 @login_required
 def qset_user_questions(request, qset_id, user_id):
     """Provide a create question view for the student/teacher/admin."""
-    log.debug(
-        'Got the qset user questions request for the qset_id - %s and user_id - %s', qset_id, user_id
-    )
+    can_edit = False
     questions = Question.objects.filter(qset_id=qset_id, user_id=user_id).order_by(
         '-vote_value', 'text'
     )
-    response = list(questions.values_list("id", "text", "vote_value"))
+    if request.user.id == int(user_id) or check_user_has_groups(request.user, ['admin', 'teacher']):
+        can_edit = True
+
+    response = {
+        'can_edit': can_edit,
+        'questions': list(questions.values_list("id", "qset_id", "text", "vote_value")),
+    }
     return JsonResponse(response, safe=False)
 
 
 @login_required
-def question_answer(request, question_id=None):
+def question_answer(request, question_id, qset_id):
     """Provide a create question view for the student/teacher/admin."""
     log.debug('Got the question answering request for the question_id: %s', question_id)
-    is_quiz = request.GET.get('filter') is not None
-    question = Question.objects.filter(id=question_id).first()
+    is_quiz = bool(request.GET.get('filter'))
+    filter = get_clean_filter_parameter(request)
+    question = get_question_to_answer(request, question_id)
 
     if question is None:
-        return redirect(reverse('askup:organizations'))
+        return get_redirect_on_answer_fail(request, qset_id, filter, is_quiz)
 
-    filter = get_clean_filter_parameter(request)
     form = do_make_answer_form(request, question)
 
     if request.method == 'GET':
@@ -580,14 +564,6 @@ def question_answer(request, question_id=None):
     else:
         response = validate_answer_form_and_create(form, request, question)
         return JsonResponse(response)
-
-
-def do_make_answer_form(request, question):
-    """Compose and return answer form."""
-    if request.method == 'POST':
-        return AnswerModelForm(request.POST or None, parent_qset_id=question.qset_id)
-    else:
-        return AnswerModelForm(parent_qset_id=question.qset_id)
 
 
 @login_required
@@ -726,7 +702,7 @@ def do_make_form_and_delete(request, question):
 
 
 @login_required
-def answer_evaluate(request, answer_id, evaluation):
+def answer_evaluate(request, qset_id, answer_id, evaluation):
     """Provide a self-evaluation for the student/teacher/admin."""
     log.debug(
         'Got the "%s" evaluation for the answer_id - %s',
@@ -735,61 +711,22 @@ def answer_evaluate(request, answer_id, evaluation):
     )
     filter = request.GET.get('filter', None)
     is_quiz_start = request.GET.get('quiz_start', None)
-    answer = get_object_or_404(Answer, pk=answer_id)
+    answer = Answer.objects.filter(pk=answer_id).first()
 
-    if not do_user_checks_and_evaluate(request.user, answer, evaluation):
+    if not do_user_checks_and_evaluate(request.user, answer, evaluation, qset_id):
         return redirect(reverse('askup:organizations'))
 
     if filter:
         # If it's a Quiz
         filter = get_clean_filter_parameter(request)
-        previous_question = answer.question
-        qset_id = previous_question.qset_id
         next_question_id = get_next_quiz_question(
-            request, filter, qset_id, is_quiz_start
+            request.user.id, filter, qset_id, is_quiz_start
         )
 
         if next_question_id:
-            return get_quiz_question_redirect(next_question_id, filter)
+            return get_quiz_question_redirect(qset_id, next_question_id, filter)
 
-    return redirect(reverse('askup:qset', kwargs={'pk': answer.question.qset_id}))
-
-
-def get_next_quiz_question(request, filter, qset_id, is_quiz_start):
-    """
-    Get next quiz question id from the db/cache.
-    """
-    cache_key = 'quiz_user_{}_qset_{}'.format(request.user.id, qset_id)
-    cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
-
-    if cached_quiz_questions is None:
-        questions_queryset = get_real_questions_queryset(qset_id)
-        questions_queryset = apply_filter_to_queryset(request, filter, questions_queryset)
-        cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
-
-    if not cached_quiz_questions:
-        cache.delete(cache_key)
-        return None
-
-    next_question_id = cached_quiz_questions.pop(0)
-    cache.set(cache_key, cached_quiz_questions)  # Setting the cache for the 24 hours
-
-    return next_question_id
-
-
-def do_user_checks_and_evaluate(user, answer, evaluation):
-    """Do user checks and evaluate answer for the answer evaluation view."""
-    evaluation_int = int(evaluation)
-    is_admin = check_user_has_groups(user, 'admin')
-
-    if not is_admin and user not in answer.question.qset.top_qset.users.all():
-        return False
-
-    if evaluation_int in tuple(zip(*Answer.EVALUATIONS))[0]:
-        answer.self_evaluation = evaluation_int
-        answer.save()
-
-    return True
+    return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
 
 
 def index_view(request):
@@ -805,7 +742,7 @@ def start_quiz_all(request, qset_id):
     filter = get_clean_filter_parameter(request)
     user = request.user
     first_question_id = get_next_quiz_question(
-        request, filter, qset.id, True
+        request.user.id, filter, qset.id, True
     )
 
     if not check_user_has_groups(user, 'admin') and user not in qset.top_qset.users.all():
@@ -815,16 +752,19 @@ def start_quiz_all(request, qset_id):
         raise Http404
 
     if request.method == 'GET':
-        return get_quiz_question_redirect(first_question_id, filter)
+        return get_quiz_question_redirect(qset_id, first_question_id, filter)
     else:
         return redirect(reverse('askup:organizations'))
 
 
-def get_quiz_question_redirect(next_question_id, filter):
+def get_quiz_question_redirect(qset_id, next_question_id, filter):
     """Get quiz question redirect."""
     return redirect(
         '{0}?filter={1}'.format(
-            reverse('askup:question_answer', kwargs={'question_id': next_question_id}),
+            reverse(
+                'askup:question_answer',
+                kwargs={'question_id': next_question_id, 'qset_id': qset_id}
+            ),
             filter,
         )
     )
