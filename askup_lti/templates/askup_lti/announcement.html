@@ -1,0 +1,17 @@
+{% extends "askup/base.html" %}
+{% load staticfiles %}
+
+
+{% block body %}
+
+<div class="container-fluid toolbar">
+  <div class="row">
+    <div class="jumbotron">
+      <h2>{{ title|capfirst }}</h2>
+      <p>{{ message|capfirst }}</p>
+      <p class="text-muted"><small>Tip: {{ tip }}</small></p>
+    </div>
+  </div>
+</div>
+
+{% endblock body %}

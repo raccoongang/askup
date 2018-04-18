@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'debug_toolbar',
     'askup',
+    'askup_lti',
 ]
 
 MIDDLEWARE = [

@@ -1,6 +1,9 @@
 from .base import * # noqa F403
 
 DEBUG = True
+
+LTI_SSL = False
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
