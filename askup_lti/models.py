@@ -3,7 +3,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth import login
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.db import models
 from django.db.models import fields
 import shortuuid
@@ -85,6 +85,8 @@ class LtiUser(models.Model):
         Connect LTI user with the AskUp user account.
         """
         askup_user, _ = User.objects.get_or_create(username=self.user_id)
+        askup_user.groups = [Group.objects.get(name='Student')]
+        askup_user.save()
         self.askup_user = askup_user
         self.save()
 
