@@ -49,6 +49,9 @@ urlpatterns = [
         name='password_reset_complete',
     ),
     url(r'^askup/', include('askup.urls')),
+
+    # LTI endpoint
+    url(r'^lti/', include('askup_lti.urls', namespace='lti'))
 ]
 
 if settings.DEBUG:
