@@ -72,7 +72,7 @@ $(document).ready(function(){
 
     $('.my-subject-row').click(on_click_my_subject);
 
-    $('#user_organization_filter').on('change', function(event) {
+    $('#user_organization_filter, .all-mine-other-filter').on('change', function(event) {
         window.location.href = $(this).val();
     });
 

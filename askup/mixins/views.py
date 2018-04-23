@@ -5,7 +5,7 @@ from django.utils.decorators import method_decorator
 
 from askup.models import Qset
 from askup.utils.general import check_user_has_groups
-from askup.utils.views import apply_filter_to_queryset, get_clean_filter_parameter
+from askup.utils.views import apply_filter_to_queryset, get_clean_filter_parameter, QSET_QUESTION_FILTERS
 
 
 class CheckSelfForRedirectMixIn(object):
@@ -88,17 +88,11 @@ class ListViewUserContextDataMixIn(object):
     def fill_user_filter_context(self, context):
         """Fill a filter related context data."""
         context['filter'] = get_clean_filter_parameter(self.request)
-        context['filter_all_active'] = 'active'
-        context['filter_mine_active'] = ''
-        context['filter_other_active'] = ''
+        context['filter_label'] = QSET_QUESTION_FILTERS[context['filter']][0]
+        context['active_filter'] = context['filter']
+        context['qset_question_filters'] = QSET_QUESTION_FILTERS
 
-        if context['filter'] == 'all':
-            return
-
-        context['filter_all_active'] = ''
-        context['filter_mine_active'] = 'active' * (context['filter'] == 'mine')
-        context['filter_other_active'] = 'active' * (context['filter'] == 'other')
-        return context['filter']
+        return None if context['filter'] == 'all' else context['filter']
 
     def process_user_filter(self, context, queryset):
         """Process user filter and return queryset with the correspondent changes."""

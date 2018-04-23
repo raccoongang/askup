@@ -1,10 +1,13 @@
+from datetime import timedelta
 import logging
 
 from django.core.cache import cache
 from django.core.handlers.wsgi import WSGIRequest
+from django.db.models import F, Max
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from askup.forms import AnswerModelForm, FeedbackForm, QsetModelForm, QuestionModelForm
 from askup.models import Answer, Organization, Qset, Question
@@ -33,6 +36,14 @@ from askup.utils.models import check_user_and_create_question
 
 log = logging.getLogger(__name__)
 QUESTION_DELETED_TEXT = 'This question was deleted since you\'ve opened it! Redirecting you to {}'
+QSET_QUESTION_FILTERS = {
+    'all': ('All', 'All the questions'),
+    'mine': ('Mine', 'My question'),
+    'others': ('Others', 'The questions of the others'),
+    'unanswered': ('Unanswered', 'The questions that I didn\'t answer before'),
+    'incorrect': ('Incorrect', 'The questions that I was incorrectly answered last time'),
+    'last_7_days': ('Last 7 days', 'The questions that were created in the last 7 days'),
+}
 
 
 def do_redirect_unauthenticated(user, back_url):
@@ -327,19 +338,38 @@ def clean_filter_parameter(parameter):
     """
     Return a clean filter parameter.
     """
-    allowed_filters = ('all', 'mine', 'other')
+    allowed_filters = QSET_QUESTION_FILTERS.keys()
     return 'all' if parameter not in allowed_filters else parameter
 
 
 def apply_filter_to_queryset(user_id, filter, queryset):
     """Return a queryset with user filter applied."""
+    if filter in ('mine', 'others'):
+        return apply_mine_or_others_filter(user_id, filter, queryset)
+
+    if filter == 'unanswered':
+        return queryset.filter(answer__isnull=True)
+
+    if filter == 'incorrect':
+        return queryset.annotate(last_answer_date=Max('answer__created_at')).filter(
+            answer__created_at=F('last_answer_date'),
+            answer__self_evaluation__lte=1,  # only "wrong" or sort-of "answers"
+        )
+
+    if filter == 'last_7_days':
+        return queryset.filter(created_at__gte=(timezone.now() - timedelta(weeks=1)))
+
+    return queryset
+
+
+def apply_mine_or_others_filter(user_id, filter, queryset):
+    """
+    Apply the "mine" or the "others" user filters to the given queryset.
+    """
     if filter == 'mine':
         return queryset.filter(user_id=user_id)
 
-    if filter == 'other':
-        return queryset.exclude(user_id=user_id)
-
-    return queryset
+    return queryset.exclude(user_id=user_id)
 
 
 def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
