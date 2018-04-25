@@ -18,11 +18,7 @@ services:
       dockerfile: .dc-prod/django/Dockerfile
     restart: $RESTARTPOLICY
     stdin_open: $STDINOPEN
-    environment:
-      ASKUPENV: $ASKUPENV
-      DJANGO_SETTINGS_MODULE: config.settings.$ASKUPENV
-      PGPASSWORD: pass
-      LOADMOCKUPDATA: $LOADMOCKUPDATA
+    env_file: .django.env
     volumes:
       - ./.volumes/askup/log:/var/log
       - ..:/askup
@@ -32,6 +28,34 @@ services:
       options:
         max-size: "10m"
         max-file: "10"
+  # Celery worker
+  celery_worker:
+    image: $DJANGO_IMAGE_NAME
+    command: bash -c "sleep 5 && celery -A askup worker -l info"
+    env_file: .django.env
+    volumes:
+      - ./.volumes/celery_worker/log:/var/log
+      - ..:/askup
+    links:
+      - rabbit
+      - postgres
+    depends_on:
+      - django
+  # Celery beat
+  celery_beat:
+    image: $DJANGO_IMAGE_NAME
+    command: bash -c "sleep 5 && celery -A askup beat -l info"
+    env_file: .django.env
+    volumes:
+      - ..:/askup
+    links:
+      - rabbit
+    depends_on:
+      - django
+  rabbit:
+    container_name: rabbitmq
+    image: rabbitmq
+    env_file: .rabbit.env
   nginx:
     image: nginx:1.9.12
     depends_on:
