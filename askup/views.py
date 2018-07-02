@@ -236,6 +236,7 @@ def user_profile_view(request, user_id, organization_id=None):
     selected_organization = select_user_organization(
         profile_user.id, organization_id, viewer_id
     )
+
     if organization_id and selected_organization is None:
         # Case, when organization_id is specified in the link and restricted to this user
         return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
@@ -255,10 +256,11 @@ def my_subscriptions_view(request, organization_id=None):
     Provide the user profile "My Subscriptions" view.
     """
     user = request.user
-    user_id = user.id
+    viewer_id = None if check_user_has_groups(user, 'admin') else user.id
     selected_organization = select_user_organization(
-        user.id, organization_id, user_id
+        user.id, organization_id, viewer_id
     )
+
     if organization_id and selected_organization is None:
         # Case, when organization_id is specified in the link and restricted to this user
         return redirect(reverse('askup:my_subscriptions'))
@@ -267,7 +269,7 @@ def my_subscriptions_view(request, organization_id=None):
         request,
         'askup/user_profile.html',
         get_user_profile_context_data(
-            request, user, user.id, selected_organization, user.id
+            request, user, user.id, selected_organization, viewer_id
         ),
     )
 
