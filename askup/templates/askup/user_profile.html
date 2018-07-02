@@ -148,7 +148,7 @@
         <div class="col-sm-7 col-md-9">
             <div class="row" style="margin: 0 25px">
                 {% include 'askup/user_profile_organizations.html' %}
-                {% if is_student and user_organizations %}
+                {% if is_owner and user_organizations or is_student and user_organizations %}
                 <div class="profile-nav-bar">
                     <div>
                         <a href="{% url 'askup:user_profile' profile_user.id selected_organization.id %}"
@@ -158,6 +158,15 @@
                                 {% endif %}">
                             {% if is_owner %}My{% else %}User's{% endif %} questions
                         </a>
+                        {% if is_owner %}
+                        <a href="{% url 'askup:my_subscriptions' selected_organization.id %}"
+                            class="btn btn-info
+                                {% if request.resolver_match.url_name == "my_subscriptions" %}
+                                active
+                                {% endif %}">
+                                My subscriptions
+                        </a>
+                        {% endif %}
                         <a href="{% url 'askup:user_profile_rank_list' profile_user.id selected_organization.id  %}"
                             class="btn btn-info
                                 {% if request.resolver_match.url_name == "user_profile_rank_list" %}
@@ -170,6 +179,8 @@
                 <div class="list">
                     {% if request.resolver_match.url_name == "user_profile" %}
                         {% include "askup/user_profile_own_questions.html" %}
+                    {% elif request.resolver_match.url_name == "my_subscriptions" %}
+                        {% include "askup/user_profile_my_subscriptions.html" %}
                     {% else %}
                         {% include "askup/user_profile_rank_list.html" %}
                     {% endif %}

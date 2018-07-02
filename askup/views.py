@@ -250,6 +250,29 @@ def user_profile_view(request, user_id, organization_id=None):
 
 
 @login_required
+def my_subscriptions_view(request, organization_id=None):
+    """
+    Provide the user profile "My Subscriptions" view.
+    """
+    user = request.user
+    user_id = user.id
+    selected_organization = select_user_organization(
+        user.id, organization_id, user_id
+    )
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:my_subscriptions'))
+
+    return render(
+        request,
+        'askup/user_profile.html',
+        get_user_profile_context_data(
+            request, user, user.id, selected_organization, user.id
+        ),
+    )
+
+
+@login_required
 def user_profile_rank_list_view(request, user_id, organization_id=None):
     """
     Provide the user profile rank list view.

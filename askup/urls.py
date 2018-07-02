@@ -68,6 +68,11 @@ urlpatterns = [
         name='user_profile'
     ),
     url(
+        r'^user/my-subscriptions/(?:organization/(?P<organization_id>\d+)/)?$',
+        views.my_subscriptions_view,
+        name='my_subscriptions'
+    ),
+    url(
         r'^user/(?P<user_id>\d+)/profile/rank-list/(?:organization/(?P<organization_id>\d+)/)?$',
         views.user_profile_rank_list_view,
         name='user_profile_rank_list'
