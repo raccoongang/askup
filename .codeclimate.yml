@@ -87,6 +87,9 @@ checks:
   file-lines:
     config:
       threshold: 2000
+  return-statements:
+      config:
+        threshold: 6
 
 ratings:
    paths:
