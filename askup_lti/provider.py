@@ -40,7 +40,7 @@ def lti_launch(request, qset_id=None):
         context={
             'title': 'announcement',
             'message': 'coming soon!',
-            'tip': 'this adaptivity sequence is about to start.',
+            'tip': 'this subject is about to open.',
         }
     )
 
