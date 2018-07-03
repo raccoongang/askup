@@ -8,7 +8,8 @@ from smtplib import SMTPException
 from django.contrib.auth.models import User
 from django.core.mail.message import EmailMessage
 from django.db import connection
-from django.db.models import Count, Sum
+from django.db.models import Count, Exists, IntegerField, OuterRef, Sum
+from django.db.models.expressions import Value
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -614,8 +615,11 @@ def get_organization_subjects(organization, user_id):
     if organization is None:
         return []
 
-    queryset = askup.models.Qset.objects.filter(parent_qset_id=organization.id)
-    result = queryset.order_by('name').values_list('id', 'name')
+    exists_subquery = askup.models.QsetUserSubscription.objects.filter(qset=OuterRef('pk'), user_id=user_id)
+    main_queryset = askup.models.Qset.objects.filter(parent_qset_id=organization.id)
+    result = main_queryset.annotate(
+        is_subscribed=Exists(exists_subquery)
+    ).order_by('-is_subscribed', 'name').values_list('id', 'name', 'is_subscribed')
     return result
 
 

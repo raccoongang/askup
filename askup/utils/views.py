@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from askup.forms import AnswerModelForm, FeedbackForm, QsetModelForm, QuestionModelForm
-from askup.models import Answer, Organization, Qset, Question
+from askup.models import Answer, Organization, Qset, QsetUserSubscription, Question
 from askup.utils.general import (
     add_notification_to_url,
     check_user_has_groups,
@@ -605,3 +605,21 @@ def get_question_to_answer(request, question_id):
         question_queryset = question_queryset.filter(qset__top_qset__users__id=request.user.id)
 
     return question_queryset.first()
+
+
+def create_destroy_subscription(subject_id, user_id, subscribe):
+    """
+    Create or destroy subscription object for specified user to the specified subject.
+
+    @param subject_id: int
+    @param user_id: int
+    @param subscribe: bool
+    @return bool: Return True on subscription and False on the unsubscription.
+    """
+    if subscribe:
+        QsetUserSubscription.objects.get_or_create(qset_id=subject_id, user_id=user_id)
+    else:
+        subscription = QsetUserSubscription.objects.filter(qset_id=subject_id, user_id=user_id).first()
+
+        if subscription:
+            subscription.delete()

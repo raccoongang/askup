@@ -497,3 +497,19 @@ class Vote(models.Model):
 
     class Meta:
         unique_together = ('question', 'voter')
+
+
+class QsetUserSubscription(models.Model):
+    """
+    Describes the subject user subscription and it's behaviour.
+
+    If object with qset_id and user_id exists in the DB - the user with this id will
+    receive scheduled quizes on this subject.
+    """
+    qset = models.ForeignKey(Qset, on_delete=models.CASCADE, default=0)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
+
+    class Meta:
+        unique_together = ('qset', 'user')
+        verbose_name = 'Subject User Subscription'
+        verbose_name_plural = 'Subject User Subscriptions'

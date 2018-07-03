@@ -1,18 +1,21 @@
 <div
-    class="box valign row my-subject-row rounded-5"
+    class="box valign row subject-row rounded-5"
     data-subject-id="{{ subject_id }}"
-    data-questions-url="{% url 'askup:qset_user_questions' subject_id profile_user.id %}"
+    {% if is_subscribed %}
+    data-subscription-url="{% url 'askup:qset_subscription' subject_id 0 %}"
+    {% else %}
+    data-subscription-url="{% url 'askup:qset_subscription' subject_id 1 %}"
+    {% endif %}
     >
     <div class="col-xs-9 valign">
-        <div class="col-xs-1 glyphicon glyphicon-triangle-right">
-        </div>
         <div class="col-xs-11">
             {{ subject_name }}
         </div>
     </div>
     <div class="col-xs-3">
-        <span class="pull-right badge">
-            SUBSCRIBE
+        <span class="pull-right btn btn-{% if is_subscribed %}info{% else %}success{% endif %} subject-subscription-button"
+              data-is-subscribed="{{ is_subscribed }}">
+            {% if is_subscribed %}UN{% endif %}SUBSCRIBE
         </span>
     </div>
 </div>

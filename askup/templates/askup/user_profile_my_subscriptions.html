@@ -1,5 +1,5 @@
 <div class="own-questions-list" data-profile-user-id="{{ profile_user.id }}">
-    {% for subject_id, subject_name in organization_subjects %}
+    {% for subject_id, subject_name, is_subscribed in organization_subjects %}
         {% include 'askup/user_profile_organization_subjects_row.html' %}
     {% empty %}
     <div class="box valign row no-questions-placeholder rounded-5">

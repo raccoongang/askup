@@ -9373,7 +9373,7 @@ select.form-control, input.form-control {
     margin-bottom: 20px;
 }
 
-.my-subject-row {
+.subject-row {
     margin-left: -15px;
     margin-right: -15px;
     padding: 5px;
@@ -9509,4 +9509,11 @@ select.btn-primary {
     border-style: solid;
     border-width: 5px 5px 0 5px;
     border-color: #ffffff transparent transparent transparent;
+}
+
+.subject-subscription-button {
+    -webkit-transition: background-color ease-in-out 0.2s, width ease-in-out 0.12s;
+    -o-transition: background-color ease-in-out 0.2s, width ease-in-out 0.12s;
+    transition: background-color ease-in-out 0.2s, width ease-in-out 0.12s;
+    text-align: center;
 }

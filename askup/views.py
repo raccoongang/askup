@@ -35,15 +35,16 @@ from .utils.general import (
 from .utils.views import (
     compose_qset_form,
     compose_question_form_and_create,
+    create_destroy_subscription,
     delete_qset_by_form,
     do_make_answer_form,
     do_user_checks_and_evaluate,
     get_clean_filter_parameter,
+    get_my_subscriptions_context_data,
     get_next_quiz_question,
     get_question_to_answer,
     get_redirect_on_answer_fail,
     get_user_profile_context_data,
-    get_my_subscriptions_context_data,
     get_user_profile_rank_list_context_data,
     qset_update_form_template,
     question_vote,
@@ -557,6 +558,34 @@ def qset_user_questions(request, qset_id, user_id):
         'can_edit': can_edit,
         'questions': list(questions.values_list("id", "qset_id", "text", "vote_value")),
     }
+    return JsonResponse(response, safe=False)
+
+
+@user_group_required('student', 'teacher', 'admin')
+def qset_subscription(request, qset_id, subscribe):
+    """
+    Provide a view for the user to subscribe/unsubscribe to the specified subject.
+    """
+    if request._is_admin:
+        qset = Qset.objects.filter(id=qset_id).first()
+    else:
+        qset = Qset.objects.filter(id=qset_id, top_qset__users__id=request.user.id).first()
+
+    if qset is None:
+        response = {
+            'result': 'fail',
+            'message': 'You have no permissions to subscribe to this subject',
+            'url': reverse('askup:qset_subscription', kwargs={'qset_id': qset_id, 'subscribe': subscribe}),
+        }
+    else:
+        subscribe_int = int(subscribe)
+        create_destroy_subscription(qset.id, request.user.id, subscribe_int)
+        response = {
+            'result': 'success',
+            'message': 'You\'ve successfuly subscribed to the subject: {}',
+            'url': reverse('askup:qset_subscription', kwargs={'qset_id': qset_id, 'subscribe': int(not subscribe_int)}),
+        }
+
     return JsonResponse(response, safe=False)
 
 
