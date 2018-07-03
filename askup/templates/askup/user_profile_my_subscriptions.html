@@ -1,13 +1,9 @@
 <div class="own-questions-list" data-profile-user-id="{{ profile_user.id }}">
-    {% for subject_id, subject_name, questions_count in own_subjects %}
+    {% for subject_id, subject_name in organization_subjects %}
         {% include 'askup/user_profile_organization_subjects_row.html' %}
     {% empty %}
     <div class="box valign row no-questions-placeholder rounded-5">
-        {% if is_owner %}
-        <span class="rank-no-questions-row">You haven’t created any questions yet.</span>
-        {% else %}
-        <span class="rank-no-questions-row">This user hasn’t created any questions yet.</span>
-        {% endif %}
+        <span class="rank-no-questions-row">This organization don't have any subjects.</span>
     </div>
     {% endfor %}
 </div>

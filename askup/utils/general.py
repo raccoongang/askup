@@ -607,6 +607,18 @@ def get_user_subjects(organization, user_id):
         return cursor.fetchall()
 
 
+def get_organization_subjects(organization, user_id):
+    """
+    Return the list of subjects prepared data by the user_id.
+    """
+    if organization is None:
+        return []
+
+    queryset = askup.models.Qset.objects.filter(parent_qset_id=organization.id)
+    result = queryset.order_by('name').values_list('id', 'name')
+    return result
+
+
 def get_real_questions_queryset(qset_id):
     """
     Get a questions queryset for the questions type qset (subject) by qset_id.

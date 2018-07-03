@@ -43,6 +43,7 @@ from .utils.views import (
     get_question_to_answer,
     get_redirect_on_answer_fail,
     get_user_profile_context_data,
+    get_my_subscriptions_context_data,
     get_user_profile_rank_list_context_data,
     qset_update_form_template,
     question_vote,
@@ -268,7 +269,7 @@ def my_subscriptions_view(request, organization_id=None):
     return render(
         request,
         'askup/user_profile.html',
-        get_user_profile_context_data(
+        get_my_subscriptions_context_data(
             request, user, user.id, selected_organization, viewer_id
         ),
     )

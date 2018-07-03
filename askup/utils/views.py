@@ -17,6 +17,7 @@ from askup.utils.general import (
     compose_user_full_name_from_object,
     get_checked_user_organization_by_id,
     get_first_user_organization,
+    get_organization_subjects,
     get_real_questions_queryset,
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
@@ -420,6 +421,27 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
         'rank_list': tuple(),
         'rank_list_total_users': 0,
         'own_subjects': get_user_subjects(selected_organization, user_id),
+        'selected_organization': selected_organization,
+        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
+    }
+    context_data.update(get_user_organization_statistics(user_id, selected_organization))
+    return context_data
+
+
+def get_my_subscriptions_context_data(request, profile_user, user_id, selected_organization, viewer_id):
+    """
+    Return the context data used in the user profile view template.
+    """
+    context_data = {
+        'profile_user': profile_user,
+        'full_name': compose_user_full_name_from_object(profile_user),
+        'viewer_user_id': request.user.id,
+        'is_owner': user_id == request.user.id,
+        'is_student': check_user_has_groups(profile_user, 'student'),
+        'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
+        'rank_list': tuple(),
+        'rank_list_total_users': 0,
+        'organization_subjects': get_organization_subjects(selected_organization, user_id),
         'selected_organization': selected_organization,
         'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }
