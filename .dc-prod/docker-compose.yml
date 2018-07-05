@@ -37,7 +37,7 @@ services:
       - ./.volumes/celery_worker/log:/var/log
       - ..:/askup
     links:
-      - rabbit
+      - rabbitmq
       - postgres
     depends_on:
       - django
@@ -49,11 +49,10 @@ services:
     volumes:
       - ..:/askup
     links:
-      - rabbit
+      - rabbitmq
     depends_on:
       - django
-  rabbit:
-    container_name: rabbitmq
+  rabbitmq:
     image: rabbitmq
     env_file: .rabbit.env
   nginx:

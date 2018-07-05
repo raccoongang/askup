@@ -315,6 +315,50 @@ def send_feedback_to_recipient(admins, body, from_email):
             )
 
 
+def send_scheduled_quizes_to_recipients(users_subscriptions, body, from_email):
+    """
+    """
+    pass
+
+
+def send_scheduled_quizes_to_recipients(users_subscriptions, body, from_email):
+    """
+    Actually send a feedback email to recipients list serially.
+    """
+    quizzes = []
+
+    for email, subscriptions in users_subscriptions.items():
+        try:
+            quizzes_html = compose_user_subscriptions_html(subscriptions)
+            body = body.replace('## quizzes ##', quizzes_html)
+            send_mail(
+                "Subscription Quizes",
+                body,
+                'AskUp Mailer <mailer@askup.net>',
+                (to_email,),
+                reply_to=('AskUp mailer <{}>'.format(from_email),)
+            )
+        except SMTPException:
+            log.exception(
+                "Exception caught on email send:\n{}\n{}\n{}\n{}\n{}\n".format(
+                    "Subscription Quizes",
+                    body,
+                    'AskUp Mailer <mailer@askup.net>',
+                    (to_email,),
+                    ('AskUp mailer {}'.format(from_email),)
+                )
+            )
+
+
+def compose_user_subscriptions_html(subscriptions):
+    """
+    Compose quizzes links html.
+    """
+    html = '\n<br/>'.join(subscriptions)
+
+    return html
+
+
 def send_mail(subject, message, from_email, recipient_list, reply_to=None):
     """
     Send mail with the specific parameters.
