@@ -804,7 +804,12 @@ def start_quiz_all(request, qset_id):
         return redirect(reverse('askup:organizations'))
 
     if first_question_id is None:
-        raise Http404
+        return redirect(
+            add_notification_to_url(
+                ('danger', 'This subject is unavailable'),
+                reverse('askup:organizations'),
+            )
+        )
 
     if request.method == 'GET':
         return get_quiz_question_redirect(qset_id, first_question_id, filter)

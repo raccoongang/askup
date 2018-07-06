@@ -7,13 +7,17 @@ from smtplib import SMTPException
 
 from django.contrib.auth.models import User
 from django.core.mail.message import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.db import connection
 from django.db.models import Count, Exists, IntegerField, OuterRef, Sum
 from django.db.models.expressions import Value
 from django.shortcuts import get_object_or_404
+from django.urls.base import reverse
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 import askup.models
+from config.settings.secure import DEFAULT_FROM_EMAIL, SERVER_HOSTNAME, SERVER_PROTOCOL
 
 log = logging.getLogger(__name__)
 PROFILE_RANK_LIST_ELEMENTS_QUERY = """
@@ -315,48 +319,69 @@ def send_feedback_to_recipient(admins, body, from_email):
             )
 
 
-def send_scheduled_quizes_to_recipients(users_subscriptions, body, from_email):
+def send_subscription_quizzes():
     """
-    """
-    pass
+    Send the scheduled quizes to their recipients.
 
-
-def send_scheduled_quizes_to_recipients(users_subscriptions, body, from_email):
+    Gets all the scheduled quizzes from the db QsetUserSubscription and sends to the users their subscripted quizzes.
     """
-    Actually send a feedback email to recipients list serially.
-    """
-    quizzes = []
+    queryset = askup.models.QsetUserSubscription.objects.filter(user__is_active=True)
+    user_subscriptions = {}
+    queryset = queryset.select_related('user', 'qset')
+    result = queryset.order_by('user__email', 'qset__name').values_list('user__email', 'qset_id', 'qset__name')
 
-    for email, subscriptions in users_subscriptions.items():
-        try:
-            quizzes_html = compose_user_subscriptions_html(subscriptions)
-            body = body.replace('## quizzes ##', quizzes_html)
-            send_mail(
-                "Subscription Quizes",
-                body,
-                'AskUp Mailer <mailer@askup.net>',
-                (to_email,),
-                reply_to=('AskUp mailer <{}>'.format(from_email),)
-            )
-        except SMTPException:
-            log.exception(
-                "Exception caught on email send:\n{}\n{}\n{}\n{}\n{}\n".format(
-                    "Subscription Quizes",
-                    body,
-                    'AskUp Mailer <mailer@askup.net>',
-                    (to_email,),
-                    ('AskUp mailer {}'.format(from_email),)
-                )
-            )
+    for user_email, qset_id, qset_name,  in result:
+        if user_email not in user_subscriptions:
+            user_subscriptions[user_email] = []
+
+        user_subscriptions[user_email].append((qset_id, qset_name))
+
+    do_send_subscription_quizzes_to_recipients(user_subscriptions)
 
 
 def compose_user_subscriptions_html(subscriptions):
     """
     Compose quizzes links html.
     """
-    html = '\n<br/>'.join(subscriptions)
+    subscription_links = []
+    link_template = '<a href="{}://{}{}" target="_blank" title={}>{}</a>'
 
-    return html
+    for qset_id, qset_name in subscriptions:
+        url = reverse('askup:qset', kwargs={'pk': qset_id})
+        subscription_links.append(link_template.format(SERVER_PROTOCOL, SERVER_HOSTNAME, url, qset_name, qset_name))
+
+    return '\n<br/>'.join(subscription_links)
+
+
+def do_send_subscription_quizzes_to_recipients(users_subscriptions):
+    """
+    Actually send a feedback email to recipients list serially.
+    """
+    quizzes = []
+    body = "Hello!<br/>\n\n Here the subjects you've subscribed for, that have new questions for the last 7 days:<br/>\n<br/>\n{}\n"
+
+    for to_email, subscriptions in users_subscriptions.items():
+        try:
+            body = body.format(compose_user_subscriptions_html(subscriptions))
+            message = EmailMultiAlternatives(
+                "Subscription Quizzes",
+                strip_tags(body),
+                DEFAULT_FROM_EMAIL,
+                (to_email,),
+                reply_to=(DEFAULT_FROM_EMAIL,),
+            )
+            message.attach_alternative(body, "text/html")
+            message.send()
+        except SMTPException:
+            log.exception(
+                "Exception caught on email send:\n{}\n{}\n{}\n{}\n{}\n".format(
+                    "Subscription Quizzes",
+                    body,
+                    DEFAULT_FROM_EMAIL,
+                    (to_email,),
+                    (DEFAULT_FROM_EMAIL,),
+                )
+            )
 
 
 def send_mail(subject, message, from_email, recipient_list, reply_to=None):

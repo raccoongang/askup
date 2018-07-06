@@ -1,3 +1,6 @@
+SERVER_PROTOCOL = 'https'
+SERVER_HOSTNAME = 'askup.net'
+
 # SENTRY could contain sentry dsn string or None. If contains a sentry dsn string,
 # then all exceptions from the application will be forwarded to this url.
 SENTRY_DSN = None
