@@ -506,6 +506,7 @@ class QsetUserSubscription(models.Model):
     If object with qset_id and user_id exists in the DB - the user with this id will
     receive scheduled quizes on this subject.
     """
+
     qset = models.ForeignKey(Qset, on_delete=models.CASCADE, default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
 
