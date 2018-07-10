@@ -1443,3 +1443,111 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
         response = self.get_user_profile(user_id, 1)
 
         self.assertContains(response, 'This user hasn’t created any questions yet.')
+
+
+class UserDashboardMySubscriptionsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
+    """
+    Tests the "My subscriptions" section of the user dashboard.
+    """
+
+    def get_my_subscriptions(self):
+        """
+        Return My subscriptions response.
+        """
+        return self.client.get(
+            reverse(
+                'askup:my_subscriptions',
+                kwargs={}
+            )
+        )
+
+    def change_qset_subscription(self, qset_id, subscribe):
+        return self.client.get(
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': subscribe}
+            )
+        )
+
+    @client_user('student01', 'student01')
+    def test_my_subscriptions(self):
+        """
+        Test my subscriptions.
+        """
+        user_id = 3  # student01 from the mockups
+        qset_id = 4  # Qset 1-1 from the mockups
+        response = self.get_my_subscriptions()
+
+        self.assertContains(response, 'Organization 1')
+        self.assertContains(response, 'Qset 1-1')
+        self.assertContains(response, 'Qset 1-2')
+        self.assertContains(response, 'Qset 1-3')
+        self.assertContains(response, 'Qset 1-4')
+        self.assertContains(response, 'SUBSCRIBE')
+        self.assertNotContains(response, 'UNSUBSCRIBE')
+
+        self.change_qset_subscription(4, 1)  # Subscribe current user to the "Qset 1"
+
+        response = self.get_my_subscriptions()
+        self.assertContains(response, 'UNSUBSCRIBE')
+
+        self.change_qset_subscription(4, 0)  # Unsubscribe current user from the "Qset 1"
+
+        response = self.get_my_subscriptions()
+        self.assertNotContains(response, 'UNSUBSCRIBE')
+
+    @client_user('student01', 'student01')
+    def test_subscription_success(self):
+        """
+        Test successful subscription.
+        """
+        qset_id = 4  # Qset 1-1 from the mockups
+        # Subscribe current user to the selected qset
+        response = self.change_qset_subscription(qset_id, 1).json()
+        self.assertEqual(response['result'], 'success')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 0}
+            )
+        )
+
+        # Unsubscribe current user to the selected qset
+        response = self.change_qset_subscription(qset_id, 0).json()
+        self.assertEqual(response['result'], 'success')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 1}
+            )
+        )
+
+    @client_user('student01', 'student01')
+    def test_subscription_fail(self):
+        """
+        Test failed on permission basis subscription.
+        """
+        qset_id = 10  # Qset 4-1 from the mockups
+        # Subscribe current user to the selected qset
+        response = self.change_qset_subscription(qset_id, 1).json()
+        self.assertEqual(response['result'], 'fail')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 1}
+            )
+        )
+
+        # Unsubscribe current user to the selected qset
+        response = self.change_qset_subscription(qset_id, 0).json()
+        self.assertEqual(response['result'], 'fail')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 0}
+            )
+        )
