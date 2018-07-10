@@ -1462,6 +1462,9 @@ class UserDashboardMySubscriptionsCase(LoginAdminByDefaultMixIn, GeneralTestCase
         )
 
     def change_qset_subscription(self, qset_id, subscribe):
+        """
+        Change qset subscription status (subscribe/unsubscribe).
+        """
         return self.client.get(
             reverse(
                 'askup:qset_subscription',
@@ -1474,7 +1477,6 @@ class UserDashboardMySubscriptionsCase(LoginAdminByDefaultMixIn, GeneralTestCase
         """
         Test my subscriptions.
         """
-        user_id = 3  # student01 from the mockups
         qset_id = 4  # Qset 1-1 from the mockups
         response = self.get_my_subscriptions()
 
@@ -1486,12 +1488,12 @@ class UserDashboardMySubscriptionsCase(LoginAdminByDefaultMixIn, GeneralTestCase
         self.assertContains(response, 'SUBSCRIBE')
         self.assertNotContains(response, 'UNSUBSCRIBE')
 
-        self.change_qset_subscription(4, 1)  # Subscribe current user to the "Qset 1"
+        self.change_qset_subscription(qset_id, 1)  # Subscribe current user to the selected qset
 
         response = self.get_my_subscriptions()
         self.assertContains(response, 'UNSUBSCRIBE')
 
-        self.change_qset_subscription(4, 0)  # Unsubscribe current user from the "Qset 1"
+        self.change_qset_subscription(qset_id, 0)  # Unsubscribe current user from the selected qset
 
         response = self.get_my_subscriptions()
         self.assertNotContains(response, 'UNSUBSCRIBE')
