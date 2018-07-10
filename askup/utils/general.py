@@ -1,5 +1,6 @@
 import base64
 import binascii
+from collections import defaultdict
 from datetime import timedelta
 import json
 import logging
@@ -329,7 +330,9 @@ def send_subscription_emails():
     queryset = queryset.select_related('user', 'qset')
     count_queryset = askup.models.Question.objects.filter(
         qset_id=OuterRef('qset_id'),
-        qset__question__created_at__gte=(timezone.now() - timedelta(days=7)),
+        qset__question__created_at__gte=(
+            timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1)
+        ),
     )
     count_queryset = count_queryset.annotate(questions_count=Count('*')).values('questions_count')
     queryset = queryset.annotate(recent_questions_count=Subquery(count_queryset[:1], output_field=IntegerField()))
@@ -350,17 +353,13 @@ def get_subscriptions_and_qset_ids(result):
     Get the user_subscriptions and the qsets_to_select_questions dictionaries.
     """
     qsets_to_select_questions = {}
-    user_subscriptions = {}
+    user_subscriptions = defaultdict(list)
 
     for user_email, user_first_name, qset_id, qset_name, recent_questions_count in result:
         if recent_questions_count is None:
             continue
 
         key = '{}###{}'.format(user_email, user_first_name)
-
-        if key not in user_subscriptions:
-            user_subscriptions[key] = []
-
         user_subscriptions[key].append((qset_id, qset_name, recent_questions_count))
         qsets_to_select_questions[qset_id] = recent_questions_count
 
@@ -376,7 +375,7 @@ def get_qset_questions_links(qset_id, total_questions_count):
     questions_limit = 5
     questions_queryset = askup.models.Question.objects.filter(
         qset_id=qset_id,
-        created_at__gte=(timezone.now() - timedelta(days=7)),
+        created_at__gte=(timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1)),
     )
     questions_queryset = questions_queryset.order_by('-created_at')[:questions_limit]
     questions = questions_queryset.values('id', 'text')
@@ -628,7 +627,7 @@ def get_student_last_week_questions_count(user_id, organization=None):
     filter_kwargs = {
         'user_id': user_id,
         'qset__top_qset_id': organization.id,
-        'created_at__gte': timezone.now() - timedelta(weeks=1),
+        'created_at__gte': (timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1)),
     }
     return get_model_aggregation(
         askup.models.Question,
@@ -642,7 +641,7 @@ def get_student_last_week_votes_value(user_id, organization=None):
     filter_kwargs = {
         'user_id': user_id,
         'qset__top_qset_id': organization.id,
-        'vote__created_at__gte': timezone.now() - timedelta(weeks=1),
+        'vote__created_at__gte': timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1),
     }
     return get_model_aggregation(
         askup.models.Question,
@@ -659,7 +658,7 @@ def get_student_last_week_correct_answers_count(user_id, organization=None):
         'self_evaluation': 2,
         'user_id': user_id,
         'question__qset__top_qset_id': organization.id,
-        'created_at__gte': timezone.now() - timedelta(weeks=1),
+        'created_at__gte': timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1),
     }
     return get_model_aggregation(
         askup.models.Answer,
@@ -674,7 +673,7 @@ def get_student_last_week_incorrect_answers_count(user_id, organization=None):
         'self_evaluation__in': (0, 1),
         'user_id': user_id,
         'question__qset__top_qset_id': organization.id,
-        'created_at__gte': (timezone.now() - timedelta(weeks=1)),
+        'created_at__gte': (timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1)),
     }
     return get_model_aggregation(
         askup.models.Answer,

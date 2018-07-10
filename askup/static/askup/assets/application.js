@@ -216,7 +216,7 @@ function show_blooms_taxonomy_hint(taxonomy_element) {
 }
 
 function on_click_my_subject() {
-    var subject_id = $(this).attr('data-subject-id');
+    var subject_id = $(this).data('subject-id');
     var subject_questions_url = $(this).attr('data-questions-url');
     var subject_element_id = 'my-subject-' + subject_id + '-questions';
     var subject_element = $(this);
@@ -246,7 +246,7 @@ function on_click_my_subject() {
 function on_click_subscribe_to_subject() {
     var button_element = $(this);
     var subject_element = $(this).parent().parent();
-    var subject_id = subject_element.attr('data-subject-id');
+    var subject_id = subject_element.data('subject-id');
     var subject_subscription_url = subject_element.data('subscription-url');
     do_user_subject_subscription_request(subject_id, subject_subscription_url, subject_element, button_element);
     return false;
@@ -270,7 +270,7 @@ function do_user_subject_subscription_request(
 function on_subject_subscription_response(data, subject_id, subject_element, subscribe_button_element) {
     new_url = data['url'];
 
-    if (new_url.search('/subscription/1') > -1) {
+    if (new_url.search('/subscribe/') > -1) {
         button_text = 'SUBSCRIBE';
         button_class_add = 'btn-success';
         button_class_remove = 'btn-info';

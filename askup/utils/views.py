@@ -358,7 +358,11 @@ def apply_filter_to_queryset(user_id, filter, queryset):
         )
 
     if filter == 'last_7_days':
-        return queryset.filter(created_at__gte=(timezone.now() - timedelta(weeks=1)))
+        return queryset.filter(
+            created_at__gte=(
+                timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1)
+            )
+        )
 
     return queryset
 
@@ -613,10 +617,9 @@ def create_destroy_subscription(subject_id, user_id, subscribe):
 
     @param subject_id: int
     @param user_id: int
-    @param subscribe: bool
-    @return bool: Return True on subscription and False on the unsubscription.
+    @param subscribe: str
     """
-    if subscribe:
+    if subscribe == 'subscribe':
         QsetUserSubscription.objects.get_or_create(qset_id=subject_id, user_id=user_id)
     else:
         subscription = QsetUserSubscription.objects.filter(qset_id=subject_id, user_id=user_id).first()

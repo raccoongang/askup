@@ -38,7 +38,7 @@ urlpatterns = [
         name='qset_user_questions'
     ),
     url(
-        r'^qset/(?P<qset_id>\d+)/subscription/(?P<subscribe>[01])/$',
+        r'^qset/(?P<qset_id>\d+)/(?P<subscribe>(un)?subscribe)/$',
         views.qset_subscription,
         name='qset_subscription'
     ),

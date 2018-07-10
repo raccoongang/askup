@@ -2,9 +2,9 @@
     class="box valign row subject-row rounded-5"
     data-subject-id="{{ subject_id }}"
     {% if is_subscribed %}
-    data-subscription-url="{% url 'askup:qset_subscription' subject_id 0 %}"
+    data-subscription-url="{% url 'askup:qset_subscription' subject_id 'unsubscribe' %}"
     {% else %}
-    data-subscription-url="{% url 'askup:qset_subscription' subject_id 1 %}"
+    data-subscription-url="{% url 'askup:qset_subscription' subject_id 'subscribe' %}"
     {% endif %}
     >
     <div class="col-xs-9 valign">

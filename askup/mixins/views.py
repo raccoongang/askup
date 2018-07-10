@@ -89,7 +89,6 @@ class ListViewUserContextDataMixIn(object):
         """Fill a filter related context data."""
         context['filter'] = get_clean_filter_parameter(self.request)
         context['filter_label'] = QSET_QUESTION_FILTERS[context['filter']][0]
-        context['active_filter'] = context['filter']
         context['qset_question_filters'] = QSET_QUESTION_FILTERS
 
         return None if context['filter'] == 'all' else context['filter']

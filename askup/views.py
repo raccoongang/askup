@@ -578,15 +578,29 @@ def qset_subscription(request, qset_id, subscribe):
             'url': reverse('askup:qset_subscription', kwargs={'qset_id': qset_id, 'subscribe': subscribe}),
         }
     else:
-        subscribe_int = int(subscribe)
-        create_destroy_subscription(qset.id, request.user.id, subscribe_int)
+        create_destroy_subscription(qset.id, request.user.id, subscribe)
         response = {
             'result': 'success',
             'message': 'You\'ve successfuly subscribed to the subject: {}',
-            'url': reverse('askup:qset_subscription', kwargs={'qset_id': qset_id, 'subscribe': int(not subscribe_int)}),
+            'url': reverse(
+                'askup:qset_subscription',
+                kwargs={
+                    'qset_id': qset_id,
+                    'subscribe': revert_subscribe_command(subscribe),
+                }
+            ),
         }
 
     return JsonResponse(response, safe=False)
+
+
+def revert_subscribe_command(subscribe):
+    """
+    Revert subscribe command and return it.
+
+    @return str
+    """
+    return '{}subscribe'.format('un' if subscribe == 'subscribe' else '')
 
 
 @login_required
