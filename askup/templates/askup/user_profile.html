@@ -159,6 +159,13 @@
                                 {% endif %}">
                             {% if is_owner %}My{% else %}User's{% endif %} questions
                         </a>
+                        <a href="{% url 'askup:user_profile_rank_list' profile_user.id selected_organization.id  %}"
+                            class="btn btn-info
+                                {% if request.resolver_match.url_name == "user_profile_rank_list" %}
+                                active
+                                {% endif %}">
+                            Rank list
+                        </a>
                         {% endif %}
                         {% if is_owner %}
                         <a href="{% url 'askup:my_subscriptions' selected_organization.id %}"
@@ -167,15 +174,6 @@
                                 active
                                 {% endif %}">
                                 My subscriptions
-                        </a>
-                        {% endif %}
-                        {% if is_student %}
-                        <a href="{% url 'askup:user_profile_rank_list' profile_user.id selected_organization.id  %}"
-                            class="btn btn-info
-                                {% if request.resolver_match.url_name == "user_profile_rank_list" %}
-                                active
-                                {% endif %}">
-                            Rank list
                         </a>
                         {% endif %}
                     </div>
