@@ -28,7 +28,6 @@ services:
       options:
         max-size: "10m"
         max-file: "10"
-  # Celery worker
   celery_worker:
     image: $DJANGO_IMAGE_NAME
     command: bash -c "sleep 15 && celery -A askup worker -l info"
@@ -36,12 +35,9 @@ services:
     volumes:
       - ./.volumes/celery_worker/log:/var/log
       - ..:/askup
-    links:
-      - rabbitmq
     depends_on:
       - rabbitmq
       - django
-  # Celery beat
   celery_beat:
     image: $DJANGO_IMAGE_NAME
     command: bash -c "sleep 15 && celery -A askup beat -l info"
@@ -49,8 +45,6 @@ services:
     volumes:
       - ./.volumes/askup/log:/var/log
       - ..:/askup
-    links:
-      - rabbitmq
     depends_on:
       - rabbitmq
       - django

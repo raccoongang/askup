@@ -6,6 +6,7 @@ import json
 import logging
 from smtplib import SMTPException
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives
 from django.core.mail.message import EmailMessage
@@ -18,7 +19,6 @@ from django.utils.html import strip_tags
 
 import askup.models
 
-from config.settings.secure import DEFAULT_FROM_EMAIL, SERVER_HOSTNAME, SERVER_PROTOCOL  # noqa I100
 
 log = logging.getLogger(__name__)
 PROFILE_RANK_LIST_ELEMENTS_QUERY = """
@@ -345,7 +345,8 @@ def send_subscription_emails():
     for qset_id, recent_questions_count in qsets_to_select_questions.items():
         qset_questions[qset_id] = get_qset_questions_links(qset_id, recent_questions_count)
 
-    do_send_subscription_quizzes_to_recipients(user_subscriptions, qset_questions)
+    if user_subscriptions:
+        do_send_subscriptions_to_recipients(user_subscriptions, qset_questions)
 
 
 def get_subscriptions_and_qset_ids(result):
@@ -370,7 +371,7 @@ def get_qset_questions_links(qset_id, total_questions_count):
     """
     Get top 5 subject's questions in a link format.
 
-    @return: html code for the bulleted list of questions
+    :return: html code for the bulleted list of questions
     """
     questions_limit = 5
     questions_queryset = askup.models.Question.objects.filter(
@@ -388,15 +389,15 @@ def compose_questions_list(questions, qset_id, total_questions_count, questions_
     """
     Compose questions list items to join to the final HTML afterwards.
 
-    @return list: list of html items to join.
+    :return: list of html items to join.
     """
     list_items = []
 
     for question in questions:
         list_items.append(
             question_template.format(
-                SERVER_PROTOCOL,
-                SERVER_HOSTNAME,
+                settings.SERVER_PROTOCOL,
+                settings.SERVER_HOSTNAME,
                 reverse('askup:question_answer', kwargs={'question_id': question['id'], 'qset_id': qset_id}),
                 question['text'],
                 question['text'],
@@ -413,7 +414,7 @@ def compose_questions_list(questions, qset_id, total_questions_count, questions_
     return list_items
 
 
-def do_send_subscription_quizzes_to_recipients(users_subscriptions, qset_questions):
+def do_send_subscriptions_to_recipients(users_subscriptions, qset_questions):
     """
     Actually send a feedback email to recipients list serially.
     """
@@ -443,9 +444,9 @@ def do_send_subscription_email(body, to_email):
         message = EmailMultiAlternatives(
             "Your subscriptions",
             strip_tags(body),
-            DEFAULT_FROM_EMAIL,
+            settings.DEFAULT_FROM_EMAIL,
             [to_email],
-            reply_to=[DEFAULT_FROM_EMAIL],
+            reply_to=[settings.DEFAULT_FROM_EMAIL],
         )
         message.attach_alternative(body, "text/html")
         message.send()
@@ -454,9 +455,9 @@ def do_send_subscription_email(body, to_email):
             "Exception caught on email send:\n{}\n{}\n{}\n{}\n{}\n".format(
                 "Your subscriptions",
                 body,
-                DEFAULT_FROM_EMAIL,
+                settings.DEFAULT_FROM_EMAIL,
                 [to_email],
-                [DEFAULT_FROM_EMAIL],
+                [settings.DEFAULT_FROM_EMAIL],
             )
         )
 
@@ -466,8 +467,8 @@ def get_my_subscriptions_link():
     Get my subscriptions section link.
     """
     return '<a href="{}://{}{}" title="My subscriptions">here</a>'.format(
-        SERVER_PROTOCOL,
-        SERVER_HOSTNAME,
+        settings.SERVER_PROTOCOL,
+        settings.SERVER_HOSTNAME,
         reverse('askup:my_subscriptions'),
     )
 
@@ -484,8 +485,8 @@ def compose_user_subscriptions_html(subscriptions, qset_questions):
         plural_text = '' if recent_questions_count == 1 else 's'
         subscription_links.append(
             link_template.format(
-                SERVER_PROTOCOL,
-                SERVER_HOSTNAME,
+                settings.SERVER_PROTOCOL,
+                settings.SERVER_HOSTNAME,
                 url,
                 qset_name,
                 qset_name,

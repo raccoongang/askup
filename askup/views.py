@@ -598,7 +598,7 @@ def revert_subscribe_command(subscribe):
     """
     Revert subscribe command and return it.
 
-    @return str
+    :return: str
     """
     return '{}subscribe'.format('un' if subscribe == 'subscribe' else '')
 

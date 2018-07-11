@@ -339,8 +339,7 @@ def clean_filter_parameter(parameter):
     """
     Return a clean filter parameter.
     """
-    allowed_filters = QSET_QUESTION_FILTERS.keys()
-    return 'all' if parameter not in allowed_filters else parameter
+    return 'all' if parameter not in QSET_QUESTION_FILTERS else parameter
 
 
 def apply_filter_to_queryset(user_id, filter, queryset):
@@ -615,9 +614,9 @@ def create_destroy_subscription(subject_id, user_id, subscribe):
     """
     Create or destroy subscription object for specified user to the specified subject.
 
-    @param subject_id: int
-    @param user_id: int
-    @param subscribe: str
+    :param subject_id: int
+    :param user_id: int
+    :param subscribe: str
     """
     if subscribe == 'subscribe':
         QsetUserSubscription.objects.get_or_create(qset_id=subject_id, user_id=user_id)
