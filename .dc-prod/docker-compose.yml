@@ -40,7 +40,7 @@ services:
       - django
   celery_beat:
     image: $DJANGO_IMAGE_NAME
-    command: bash -c "sleep 15 && celery -A askup beat -l info"
+    command: bash -c "sleep 15 && celery -A askup beat -l info --pidfile /var/run/celerybeat.pid"
     env_file: .django.env
     volumes:
       - ./.volumes/askup/log:/var/log
