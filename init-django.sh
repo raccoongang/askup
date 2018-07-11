@@ -17,6 +17,8 @@ python manage.py loaddata askup/fixtures/groups.json
     psql -c "ALTER USER test CREATEDB;" -U postgres -h postgres &&
     psql -c "GRANT ALL PRIVILEGES on DATABASE travis_test_db to test;" -U postgres -h postgres
 
+[[ "$ASKUPENV" =~ dev ]] && pip install -r requirements_dev.txt
+
 if [[ "$LOADMOCKUPDATA" ]]
 then
     python manage.py loaddata askup/fixtures/mockup_data.json
