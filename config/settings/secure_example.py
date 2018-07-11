@@ -1,7 +1,7 @@
 # Celery settings
 AMQP_USER = 'rabbitmq'
 AMQP_PASS = 'rabbitmq'
-SUBSCRIPTION_SCHEDULE = {'hour': '*', 'minute': '*', 'day_of_week': '*'}
+SUBSCRIPTION_SCHEDULE = {'hour': '9', 'minute': '0', 'day_of_week': '4'}
 
 SERVER_PROTOCOL = 'https'
 SERVER_HOSTNAME = 'askup.net'

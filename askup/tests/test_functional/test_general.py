@@ -1,6 +1,5 @@
 from collections import defaultdict
 import logging
-from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
@@ -10,6 +9,7 @@ from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from mock import patch
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
 from askup.models import Answer, Organization, Qset, Question, Vote
