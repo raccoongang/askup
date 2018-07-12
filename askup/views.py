@@ -40,6 +40,7 @@ from .utils.views import (
     do_make_answer_form,
     do_user_checks_and_evaluate,
     get_clean_filter_parameter,
+    get_general_user_profile_context_data,
     get_my_subscriptions_context_data,
     get_next_quiz_question,
     get_question_to_answer,
@@ -243,12 +244,14 @@ def user_profile_view(request, user_id, organization_id=None):
         # Case, when organization_id is specified in the link and restricted to this user
         return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
 
+    context_data = get_general_user_profile_context_data(
+        request, profile_user, profile_user.id, selected_organization, viewer_id
+    )
+    context_data.update(get_user_profile_context_data(profile_user.id, selected_organization))
     return render(
         request,
         'askup/user_profile.html',
-        get_user_profile_context_data(
-            request, profile_user, profile_user.id, selected_organization, viewer_id
-        ),
+        context_data,
     )
 
 
@@ -267,12 +270,14 @@ def my_subscriptions_view(request, organization_id=None):
         # Case, when organization_id is specified in the link and restricted to this user
         return redirect(reverse('askup:my_subscriptions'))
 
+    context_data = get_general_user_profile_context_data(
+        request, user, user.id, selected_organization, viewer_id
+    )
+    context_data.update(get_my_subscriptions_context_data(user.id, selected_organization))
     return render(
         request,
         'askup/user_profile.html',
-        get_my_subscriptions_context_data(
-            request, user, user.id, selected_organization, viewer_id
-        ),
+        context_data,
     )
 
 

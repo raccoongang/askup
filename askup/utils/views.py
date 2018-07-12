@@ -410,9 +410,9 @@ def select_user_organization(user_id, requested_organization_id, viewer_id=None)
     return get_first_user_organization(user_id, viewer_id)
 
 
-def get_user_profile_context_data(request, profile_user, user_id, selected_organization, viewer_id):
+def get_general_user_profile_context_data(request, profile_user, user_id, selected_organization, viewer_id):
     """
-    Return the context data used in the user profile view template.
+    Return the general context data used in the user profile views templates.
     """
     context_data = {
         'profile_user': profile_user,
@@ -423,33 +423,29 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
         'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': tuple(),
         'rank_list_total_users': 0,
+        'selected_organization': selected_organization,
+        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
+    }
+    context_data.update(get_user_organization_statistics(user_id, selected_organization))
+    return context_data
+
+
+def get_user_profile_context_data(user_id, selected_organization):
+    """
+    Return the context data used in the "User profile" view template.
+    """
+    return {
         'own_subjects': get_user_subjects(selected_organization, user_id),
-        'selected_organization': selected_organization,
-        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }
-    context_data.update(get_user_organization_statistics(user_id, selected_organization))
-    return context_data
 
 
-def get_my_subscriptions_context_data(request, profile_user, user_id, selected_organization, viewer_id):
+def get_my_subscriptions_context_data(user_id, selected_organization):
     """
-    Return the context data used in the user profile view template.
+    Return the context data used in the "My subscriptions" view template.
     """
-    context_data = {
-        'profile_user': profile_user,
-        'full_name': compose_user_full_name_from_object(profile_user),
-        'viewer_user_id': request.user.id,
-        'is_owner': user_id == request.user.id,
-        'is_student': check_user_has_groups(profile_user, 'student'),
-        'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
-        'rank_list': tuple(),
-        'rank_list_total_users': 0,
+    return {
         'organization_subjects': get_organization_subjects(selected_organization, user_id),
-        'selected_organization': selected_organization,
-        'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }
-    context_data.update(get_user_organization_statistics(user_id, selected_organization))
-    return context_data
 
 
 def get_user_profile_rank_list_context_data(
