@@ -1,4 +1,3 @@
-from datetime import timedelta
 import logging
 
 from django.core.cache import cache
@@ -7,7 +6,6 @@ from django.db.models import F, Max
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 
 from askup.forms import AnswerModelForm, FeedbackForm, QsetModelForm, QuestionModelForm
 from askup.models import Answer, Organization, Qset, QsetUserSubscription, Question
@@ -23,6 +21,7 @@ from askup.utils.general import (
     get_student_last_week_incorrect_answers_count,
     get_student_last_week_questions_count,
     get_student_last_week_votes_value,
+    get_tz_past_datetime,
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
     get_user_organizations_for_filter,
@@ -357,11 +356,7 @@ def apply_filter_to_queryset(user_id, filter, queryset):
         )
 
     if filter == 'last_7_days':
-        return queryset.filter(
-            created_at__gte=(
-                timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=1)
-            )
-        )
+        return queryset.filter(created_at__gte=get_tz_past_datetime(weeks=1))
 
     return queryset
 
