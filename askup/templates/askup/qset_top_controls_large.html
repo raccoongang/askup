@@ -14,17 +14,19 @@
             </h3>
         </div>
         <div id="all-mine-other-container" class="col-xs-4">
-            <span id="all-mine-other-group" class="btn-group all-mine-other-filter">
-                <a href="?filter=all" class="btn btn-primary {{ filter_all_active }}">All</a>
-                <a href="?filter=mine" class="btn btn-primary {{ filter_mine_active }}">Mine</a>
-                <a href="?filter=other" class="btn btn-primary {{ filter_other_active }}">Other</a>
-            </span>
+            <label for="all-mine-other-group" class="all-mine-other-label">
+                <select id="all-mine-other-group" class="select btn-primary form-control all-mine-other-filter">
+                    {% for key, qset_filter in qset_question_filters.items %}
+                    <option value="?filter={{ key }}" class="btn btn-primary{% if filter == key %} active" selected="selected{% endif %}" title="{{ qset_filter.1 }}">{{ qset_filter.0 }}</option>
+                    {% endfor %}
+                </select>
+            </label>
         </div>
     </div>
     {% if questions_list %}
     <div class="row center">
         <div class="col-xs-12">
-            <a href="{% url 'askup:start_quiz_all' current_qset_id %}?filter={{ filter }}&quiz_start=1" class="btn btn-primary btn-large quiz-all">Quiz {{ filter }}</a>
+            <a href="{% url 'askup:start_quiz_all' current_qset_id %}?filter={{ filter }}&quiz_start=1" class="btn btn-primary btn-large quiz-all">Quiz: {{ filter_label }}</a>
         </div>
     </div>
     {% endif %}

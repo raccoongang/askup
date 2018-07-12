@@ -9,8 +9,10 @@ Educational project to help the students, graduates and professionals to consoli
 Deployment is based on the `Docker` containers. There are two configurations:
 `.dc-dev/docker-compose.yml` and `.dc-dev/docker-compose.yml` for the development/testing
 and the staging/production purposes respectively.
-Project containers configuration consists of three containers:
+Project containers configuration consists of the five containers:
 - django -- container with the AskUp django application.
+- celery_worker -- celery worker duplicate of the django container.
+- celery_beat -- celery beat duplicate of the django container.
 - postgresql -- container with the postgresql database.
 - nginx -- container with the nginx as reverse proxy frontend and static files provider
 

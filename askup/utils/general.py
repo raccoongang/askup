@@ -1,18 +1,24 @@
 import base64
 import binascii
+from collections import defaultdict
 from datetime import timedelta
 import json
 import logging
 from smtplib import SMTPException
 
+from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.mail import EmailMultiAlternatives
 from django.core.mail.message import EmailMessage
 from django.db import connection
-from django.db.models import Count, Sum
+from django.db.models import Count, Exists, IntegerField, OuterRef, Subquery, Sum
 from django.shortcuts import get_object_or_404
+from django.urls.base import reverse
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 import askup.models
+
 
 log = logging.getLogger(__name__)
 PROFILE_RANK_LIST_ELEMENTS_QUERY = """
@@ -314,6 +320,183 @@ def send_feedback_to_recipient(admins, body, from_email):
             )
 
 
+def send_subscription_emails():
+    """
+    Send the scheduled quizes to their recipients.
+
+    Gets all the scheduled quizzes from the db QsetUserSubscription and sends to the users their subscripted quizzes.
+    """
+    queryset = askup.models.QsetUserSubscription.objects.filter(user__is_active=True)
+    queryset = queryset.select_related('user', 'qset')
+    count_queryset = askup.models.Question.objects.filter(
+        qset_id=OuterRef('qset_id'),
+        qset__question__created_at__gte=get_tz_past_datetime(weeks=1),
+    )
+    count_queryset = count_queryset.annotate(questions_count=Count('*')).values('questions_count')
+    queryset = queryset.annotate(recent_questions_count=Subquery(count_queryset[:1], output_field=IntegerField()))
+    result = queryset.order_by('user__email', 'qset__name').values_list(
+        'user__email', 'user__first_name', 'qset_id', 'qset__name', 'recent_questions_count'
+    )
+    user_subscriptions, qsets_to_select_questions = get_subscriptions_and_qset_ids(result)
+    qset_questions = {}
+
+    for qset_id, recent_questions_count in qsets_to_select_questions.items():
+        qset_questions[qset_id] = get_qset_questions_links(qset_id, recent_questions_count)
+
+    if user_subscriptions:
+        do_send_subscriptions_to_recipients(user_subscriptions, qset_questions)
+
+
+def get_subscriptions_and_qset_ids(result):
+    """
+    Get the user_subscriptions and the qsets_to_select_questions dictionaries.
+    """
+    qsets_to_select_questions = {}
+    user_subscriptions = defaultdict(list)
+
+    for user_email, user_first_name, qset_id, qset_name, recent_questions_count in result:
+        if recent_questions_count is None:
+            continue
+
+        key = '{}###{}'.format(user_email, user_first_name)
+        user_subscriptions[key].append((qset_id, qset_name, recent_questions_count))
+        qsets_to_select_questions[qset_id] = recent_questions_count
+
+    return user_subscriptions, qsets_to_select_questions
+
+
+def get_qset_questions_links(qset_id, total_questions_count):
+    """
+    Get top 5 subject's questions in a link format.
+
+    :return: html code for the bulleted list of questions
+    """
+    questions_limit = 5
+    questions_queryset = askup.models.Question.objects.filter(
+        qset_id=qset_id,
+        created_at__gte=get_tz_past_datetime(weeks=1),
+    )
+    questions_queryset = questions_queryset.order_by('-created_at')[:questions_limit]
+    questions = questions_queryset.values('id', 'text')
+    question_template = '<li><a href="{}://{}{}" title="{}">{}</a></li>'
+    list_items = compose_questions_list(questions, qset_id, total_questions_count, questions_limit, question_template)
+    return '\n'.join(list_items)
+
+
+def compose_questions_list(questions, qset_id, total_questions_count, questions_limit, question_template):
+    """
+    Compose questions list items to join to the final HTML afterwards.
+
+    :return: list of html items to join.
+    """
+    list_items = []
+
+    for question in questions:
+        list_items.append(
+            question_template.format(
+                settings.SERVER_PROTOCOL,
+                settings.SERVER_HOSTNAME,
+                reverse('askup:question_answer', kwargs={'question_id': question['id'], 'qset_id': qset_id}),
+                question['text'],
+                question['text'],
+            )
+        )
+
+    if len(list_items):
+        if total_questions_count > questions_limit:
+            list_items.append('<li>...</li>')
+
+        list_items.insert(0, '<ul>')
+        list_items.append('</ul>')
+
+    return list_items
+
+
+def do_send_subscriptions_to_recipients(users_subscriptions, qset_questions):
+    """
+    Actually send a feedback email to recipients list serially.
+    """
+    subscription_link = get_my_subscriptions_link()
+    body = (
+        "Hello{}!<br/>\n<br/>\nHere are the subjects you've subscribed for," +
+        " that have new questions for the last 7 days:<br/>\n<br/>\n{}\n<br/>" +
+        "\n<br/>\n<br/>\nYou can manage your subscriptions {}."
+    )
+
+    for user_key, subscriptions in users_subscriptions.items():
+        to_email, first_name = user_key.split('###')
+        first_name_text = ', {}'.format(first_name) if first_name else ''
+        body = body.format(
+            first_name_text,
+            compose_user_subscriptions_html(subscriptions, qset_questions),
+            subscription_link,
+        )
+        do_send_subscription_email(body, to_email)
+
+
+def do_send_subscription_email(body, to_email):
+    """
+    Send the subscription email to the specified user.
+    """
+    try:
+        message = EmailMultiAlternatives(
+            "Your subscriptions",
+            strip_tags(body),
+            settings.DEFAULT_FROM_EMAIL,
+            [to_email],
+            reply_to=[settings.DEFAULT_FROM_EMAIL],
+        )
+        message.attach_alternative(body, "text/html")
+        message.send()
+    except SMTPException:
+        log.exception(
+            "Exception caught on email send:\n{}\n{}\n{}\n{}\n{}\n".format(
+                "Your subscriptions",
+                body,
+                settings.DEFAULT_FROM_EMAIL,
+                [to_email],
+                [settings.DEFAULT_FROM_EMAIL],
+            )
+        )
+
+
+def get_my_subscriptions_link():
+    """
+    Get my subscriptions section link.
+    """
+    return '<a href="{}://{}{}" title="My subscriptions">here</a>'.format(
+        settings.SERVER_PROTOCOL,
+        settings.SERVER_HOSTNAME,
+        reverse('askup:my_subscriptions'),
+    )
+
+
+def compose_user_subscriptions_html(subscriptions, qset_questions):
+    """
+    Compose subjects links html.
+    """
+    subscription_links = []
+    link_template = '<h3><a href="{}://{}{}" target="_blank" title={}>{}</a> ({} new question{})</h3>\n{}'
+
+    for qset_id, qset_name, recent_questions_count in subscriptions:
+        url = reverse('askup:qset', kwargs={'pk': qset_id})
+        plural_text = '' if recent_questions_count == 1 else 's'
+        subscription_links.append(
+            link_template.format(
+                settings.SERVER_PROTOCOL,
+                settings.SERVER_HOSTNAME,
+                url,
+                qset_name,
+                qset_name,
+                recent_questions_count,
+                plural_text,
+                qset_questions[qset_id],
+            )
+        )
+
+    return '\n'.join(subscription_links)
+
+
 def send_mail(subject, message, from_email, recipient_list, reply_to=None):
     """
     Send mail with the specific parameters.
@@ -443,7 +626,7 @@ def get_student_last_week_questions_count(user_id, organization=None):
     filter_kwargs = {
         'user_id': user_id,
         'qset__top_qset_id': organization.id,
-        'created_at__gte': timezone.now() - timedelta(weeks=1),
+        'created_at__gte': get_tz_past_datetime(weeks=1),
     }
     return get_model_aggregation(
         askup.models.Question,
@@ -457,7 +640,7 @@ def get_student_last_week_votes_value(user_id, organization=None):
     filter_kwargs = {
         'user_id': user_id,
         'qset__top_qset_id': organization.id,
-        'vote__created_at__gte': timezone.now() - timedelta(weeks=1),
+        'vote__created_at__gte': get_tz_past_datetime(weeks=1),
     }
     return get_model_aggregation(
         askup.models.Question,
@@ -474,7 +657,7 @@ def get_student_last_week_correct_answers_count(user_id, organization=None):
         'self_evaluation': 2,
         'user_id': user_id,
         'question__qset__top_qset_id': organization.id,
-        'created_at__gte': timezone.now() - timedelta(weeks=1),
+        'created_at__gte': get_tz_past_datetime(weeks=1),
     }
     return get_model_aggregation(
         askup.models.Answer,
@@ -489,7 +672,7 @@ def get_student_last_week_incorrect_answers_count(user_id, organization=None):
         'self_evaluation__in': (0, 1),
         'user_id': user_id,
         'question__qset__top_qset_id': organization.id,
-        'created_at__gte': (timezone.now() - timedelta(weeks=1)),
+        'created_at__gte': get_tz_past_datetime(weeks=1),
     }
     return get_model_aggregation(
         askup.models.Answer,
@@ -607,8 +790,32 @@ def get_user_subjects(organization, user_id):
         return cursor.fetchall()
 
 
+def get_organization_subjects(organization, user_id):
+    """
+    Return the list of subjects prepared data by the user_id.
+    """
+    if organization is None:
+        return []
+
+    exists_subquery = askup.models.QsetUserSubscription.objects.filter(qset=OuterRef('pk'), user_id=user_id)
+    main_queryset = askup.models.Qset.objects.filter(parent_qset_id=organization.id)
+    result = main_queryset.annotate(
+        is_subscribed=Exists(exists_subquery)
+    ).order_by('-is_subscribed', 'name').values_list('id', 'name', 'is_subscribed')
+    return result
+
+
 def get_real_questions_queryset(qset_id):
     """
     Get a questions queryset for the questions type qset (subject) by qset_id.
     """
     return askup.models.Question.objects.filter(qset_id=qset_id).order_by('-vote_value', 'text')
+
+
+def get_tz_past_datetime(**kwargs):
+    """
+    Get tz-aware datetime value with the timedelta from now to the past.
+
+    In kwargs it receives the parameters that will be passed to the timedelta.
+    """
+    return timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(**kwargs)

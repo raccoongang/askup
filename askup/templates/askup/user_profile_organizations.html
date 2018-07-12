@@ -6,7 +6,11 @@
     <div class="col-xs-push-3 col-xs-6">
         <select id="user_organization_filter" class="select form-control">
             {% for organization in user_organizations %}
+                {% if select_url_name == "askup:my_subscriptions" %}
+            <option value="{% url select_url_name organization.id %}"{% if organization.id == selected_organization.id %} selected{% endif %}>{{ organization.name }}</option>
+                {% else %}
             <option value="{% url select_url_name profile_user.id organization.id %}"{% if organization.id == selected_organization.id %} selected{% endif %}>{{ organization.name }}</option>
+                {% endif %}
             {% endfor %}
         </select>
     </div>
