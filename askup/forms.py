@@ -519,7 +519,7 @@ class FeedbackForm(InitFormWithCancelButtonMixIn, forms.Form):
         user = kwargs.pop('user', None)
         self.fields['email'].widget.attrs['placeholder'] = 'Your email...'
 
-        if user and user.id:
+        if user and user.id and user.email:
             self.fields['email'].initial = user.email
             self.fields['email'].widget.attrs['readonly'] = True
 
