@@ -2,23 +2,26 @@ import logging
 
 from django.core.cache import cache
 from django.core.handlers.wsgi import WSGIRequest
+from django.db.models import F, Max
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from askup.forms import AnswerModelForm, FeedbackForm, QsetModelForm, QuestionModelForm
-from askup.models import Answer, Organization, Qset, Question
+from askup.models import Answer, Organization, Qset, QsetUserSubscription, Question
 from askup.utils.general import (
     add_notification_to_url,
     check_user_has_groups,
     compose_user_full_name_from_object,
     get_checked_user_organization_by_id,
     get_first_user_organization,
+    get_organization_subjects,
     get_real_questions_queryset,
     get_student_last_week_correct_answers_count,
     get_student_last_week_incorrect_answers_count,
     get_student_last_week_questions_count,
     get_student_last_week_votes_value,
+    get_tz_past_datetime,
     get_user_correct_answers_count,
     get_user_incorrect_answers_count,
     get_user_organizations_for_filter,
@@ -33,6 +36,14 @@ from askup.utils.models import check_user_and_create_question
 
 log = logging.getLogger(__name__)
 QUESTION_DELETED_TEXT = 'This question was deleted since you\'ve opened it! Redirecting you to {}'
+QSET_QUESTION_FILTERS = {
+    'all': ('All', 'All the questions'),
+    'mine': ('Mine', 'My question'),
+    'others': ('Others', 'The questions of the others'),
+    'unanswered': ('Unanswered', 'The questions that I didn\'t answer before'),
+    'incorrect': ('Incorrect', 'The questions that I was incorrectly answered last time'),
+    'last_7_days': ('Last 7 days', 'The questions that were created in the last 7 days'),
+}
 
 
 def do_redirect_unauthenticated(user, back_url):
@@ -327,19 +338,37 @@ def clean_filter_parameter(parameter):
     """
     Return a clean filter parameter.
     """
-    allowed_filters = ('all', 'mine', 'other')
-    return 'all' if parameter not in allowed_filters else parameter
+    return 'all' if parameter not in QSET_QUESTION_FILTERS else parameter
 
 
 def apply_filter_to_queryset(user_id, filter, queryset):
     """Return a queryset with user filter applied."""
+    if filter in ('mine', 'others'):
+        return apply_mine_or_others_filter(user_id, filter, queryset)
+
+    if filter == 'unanswered':
+        return queryset.filter(answer__isnull=True)
+
+    if filter == 'incorrect':
+        return queryset.annotate(last_answer_date=Max('answer__created_at')).filter(
+            answer__created_at=F('last_answer_date'),
+            answer__self_evaluation__lte=1,  # only "wrong" or sort-of "answers"
+        )
+
+    if filter == 'last_7_days':
+        return queryset.filter(created_at__gte=get_tz_past_datetime(weeks=1))
+
+    return queryset
+
+
+def apply_mine_or_others_filter(user_id, filter, queryset):
+    """
+    Apply the "mine" or the "others" user filters to the given queryset.
+    """
     if filter == 'mine':
         return queryset.filter(user_id=user_id)
 
-    if filter == 'other':
-        return queryset.exclude(user_id=user_id)
-
-    return queryset
+    return queryset.exclude(user_id=user_id)
 
 
 def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
@@ -376,9 +405,9 @@ def select_user_organization(user_id, requested_organization_id, viewer_id=None)
     return get_first_user_organization(user_id, viewer_id)
 
 
-def get_user_profile_context_data(request, profile_user, user_id, selected_organization, viewer_id):
+def get_general_user_profile_context_data(request, profile_user, user_id, selected_organization, viewer_id):
     """
-    Return the context data used in the user profile view template.
+    Return the general context data used in the user profile views templates.
     """
     context_data = {
         'profile_user': profile_user,
@@ -389,12 +418,29 @@ def get_user_profile_context_data(request, profile_user, user_id, selected_organ
         'user_organizations': get_user_organizations_for_filter(profile_user.id, viewer_id),
         'rank_list': tuple(),
         'rank_list_total_users': 0,
-        'own_subjects': get_user_subjects(selected_organization, user_id),
         'selected_organization': selected_organization,
         'select_url_name': 'askup:{}'.format(request.resolver_match.url_name),
     }
     context_data.update(get_user_organization_statistics(user_id, selected_organization))
     return context_data
+
+
+def get_user_profile_context_data(user_id, selected_organization):
+    """
+    Return the context data used in the "User profile" view template.
+    """
+    return {
+        'own_subjects': get_user_subjects(selected_organization, user_id),
+    }
+
+
+def get_my_subscriptions_context_data(user_id, selected_organization):
+    """
+    Return the context data used in the "My subscriptions" view template.
+    """
+    return {
+        'organization_subjects': get_organization_subjects(selected_organization, user_id),
+    }
 
 
 def get_user_profile_rank_list_context_data(
@@ -553,3 +599,20 @@ def get_question_to_answer(request, question_id):
         question_queryset = question_queryset.filter(qset__top_qset__users__id=request.user.id)
 
     return question_queryset.first()
+
+
+def create_destroy_subscription(subject_id, user_id, subscribe):
+    """
+    Create or destroy subscription object for specified user to the specified subject.
+
+    :param subject_id: int
+    :param user_id: int
+    :param subscribe: str
+    """
+    if subscribe == 'subscribe':
+        QsetUserSubscription.objects.get_or_create(qset_id=subject_id, user_id=user_id)
+    else:
+        subscription = QsetUserSubscription.objects.filter(qset_id=subject_id, user_id=user_id).first()
+
+        if subscription:
+            subscription.delete()

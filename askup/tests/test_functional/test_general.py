@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from mock import patch
 
 from askup.mixins.tests import LoginAdminByDefaultMixIn
 from askup.models import Answer, Organization, Qset, Question, Vote
@@ -21,6 +23,7 @@ from askup.utils.general import (
     get_user_place_in_rank_list,
     get_user_profile_rank_list_and_total_users,
     get_user_score_by_id,
+    send_subscription_emails,
 )
 from askup.utils.tests import client_user
 from askup.views import login_view
@@ -220,10 +223,10 @@ class QsetListView(LoginAdminByDefaultMixIn, GeneralTestCase):
         self.assertContains(response, 'Question 1-1-3')  # My question
 
     @client_user('student01', 'student01')
-    def test_apply_filter_other_on_qset(self):
-        """Test the "other" user filter selected."""
+    def test_apply_filter_others_on_qset(self):
+        """Test the "others" user filter selected."""
         response = self.client.get(
-            '{}?filter=other'.format(reverse('askup:qset', kwargs={'pk': 4}))
+            '{}?filter=others'.format(reverse('askup:qset', kwargs={'pk': 4}))
         )
         self.assertNotContains(response, 'Question 1-1-1')  # My question
         self.assertContains(response, 'Question 1-1-2')  # Other's question
@@ -391,7 +394,20 @@ class QuestionModelFormTest(LoginAdminByDefaultMixIn, GeneralTestCase):
     """Tests the Question model form (CRUD etc.)."""
 
     def qset_create_question(self, text, answer_text, qset_id, form_qset_id=None):
-        """Create question by qset's "Generate question" form."""
+        """
+        Create question by qset's "Generate question" form.
+
+        :param self: Object of the TestCase instance containing initialized client to use
+        :param text: Text of the question
+        :param answer_text: Text of the correct question answer
+        :param qset_id: Id of the subject where question will be created
+        :param form_qset_id: Id of the subject, selected in the form of question (may be forged and unpermitted)
+        :type text: TestCase
+        :type text: str
+        :type answer_text: str
+        :type qset_id: int
+        :type form_qset_id: int
+        """
         form_qset_id = qset_id if form_qset_id is None else form_qset_id
         self.client.post(
             reverse(
@@ -1443,3 +1459,169 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
         response = self.get_user_profile(user_id, 1)
 
         self.assertContains(response, 'This user hasn’t created any questions yet.')
+
+
+class UserDashboardMySubscriptionsCase(LoginAdminByDefaultMixIn, GeneralTestCase):
+    """
+    Tests the "My subscriptions" section of the user dashboard.
+    """
+
+    @staticmethod
+    def get_my_subscriptions(self):
+        """
+        Return My subscriptions response.
+        """
+        return self.client.get(
+            reverse(
+                'askup:my_subscriptions',
+                kwargs={}
+            )
+        )
+
+    @staticmethod
+    def change_qset_subscription(self, qset_id, subscribe):
+        """
+        Change qset subscription status (subscribe/unsubscribe).
+        """
+        return self.client.get(
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': subscribe}
+            )
+        )
+
+    @client_user('student01', 'student01')
+    def test_my_subscriptions(self):
+        """
+        Test my subscriptions.
+        """
+        qset_id = 4  # Qset 1-1 from the mockups
+        response = self.get_my_subscriptions(self)
+
+        self.assertContains(response, 'Organization 1')
+        self.assertContains(response, 'Qset 1-1')
+        self.assertContains(response, 'Qset 1-2')
+        self.assertContains(response, 'Qset 1-3')
+        self.assertContains(response, 'Qset 1-4')
+        self.assertContains(response, 'SUBSCRIBE')
+        self.assertNotContains(response, 'UNSUBSCRIBE')
+
+        self.change_qset_subscription(self, qset_id, 'subscribe')  # Subscribe current user to the selected qset
+
+        response = self.get_my_subscriptions(self)
+        self.assertContains(response, 'UNSUBSCRIBE')
+
+        self.change_qset_subscription(self, qset_id, 'unsubscribe')  # Unsubscribe current user from the selected qset
+
+        response = self.get_my_subscriptions(self)
+        self.assertNotContains(response, 'UNSUBSCRIBE')
+
+    @client_user('student01', 'student01')
+    def test_subscription_success(self):
+        """
+        Test successful subscription.
+        """
+        qset_id = 4  # Qset 1-1 from the mockups
+        # Subscribe current user to the selected qset
+        response = self.change_qset_subscription(self, qset_id, 'subscribe').json()
+        self.assertEqual(response['result'], 'success')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 'unsubscribe'}
+            )
+        )
+
+        # Unsubscribe current user to the selected qset
+        response = self.change_qset_subscription(self, qset_id, 'unsubscribe').json()
+        self.assertEqual(response['result'], 'success')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 'subscribe'}
+            )
+        )
+
+    @client_user('student01', 'student01')
+    def test_subscription_fail(self):
+        """
+        Test failed on permission basis subscription.
+        """
+        qset_id = 10  # Qset 4-1 from the mockups
+        # Subscribe current user to the selected qset
+        response = self.change_qset_subscription(self, qset_id, 'subscribe').json()
+        self.assertEqual(response['result'], 'fail')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 'subscribe'}
+            )
+        )
+
+        # Unsubscribe current user to the selected qset
+        response = self.change_qset_subscription(self, qset_id, 'unsubscribe').json()
+        self.assertEqual(response['result'], 'fail')
+        self.assertEqual(
+            response['url'],
+            reverse(
+                'askup:qset_subscription',
+                kwargs={'qset_id': qset_id, 'subscribe': 'unsubscribe'}
+            )
+        )
+
+
+class TestSubscriptionsMailing(TestCase):
+    """
+    Testing the subject subscription mailing functionality.
+    """
+
+    fixtures = ['groups', 'mockup_data']
+
+    def setUp(self):
+        """
+        Set up the test conditions.
+        """
+        settings.DEBUG = False
+
+    @client_user('student01', 'student01')
+    @patch('askup.utils.general.do_send_subscriptions_to_recipients')
+    def test_subscriptions_sending_no_actual_subscriptions(self, mock_do_send_subscriptions_to_recipients):
+        """
+        Test subscriptions sending.
+        """
+        send_subscription_emails()
+        mock_do_send_subscriptions_to_recipients.return_value = None
+        mock_do_send_subscriptions_to_recipients.assert_not_called()
+
+    @client_user('student01', 'student01')
+    @patch('askup.utils.general.do_send_subscriptions_to_recipients')
+    def test_subscriptions_sending_with_subscriptions(self, mock_do_send_subscriptions_to_recipients):
+        """
+        Test subscriptions sending.
+        """
+        qset_id_1 = 4  # Qset 1-1
+        qset_id_2 = 5  # Qset 1-2
+        text_1 = 'Test question 1-1'
+        text_2 = 'Test question 1-2'
+        answer_text_1 = 'Test question answer 1-1'
+        answer_text_2 = 'Test question answer 1-2'
+        QuestionModelFormTest.qset_create_question(self, text_1, answer_text_1, qset_id_1)
+        QuestionModelFormTest.qset_create_question(self, text_2, answer_text_2, qset_id_2)
+        UserDashboardMySubscriptionsCase.change_qset_subscription(self, qset_id_1, 'subscribe')
+        send_subscription_emails()
+
+        user_subscriptions = defaultdict(list)
+        user_subscriptions['curious@student.org###Curious'] = [(qset_id_1, 'Qset 1-1', 1)]
+        question_answer_url = reverse('askup:question_answer', kwargs={'question_id': 5, 'qset_id': qset_id_1})
+        qset_questions = {
+            qset_id_1: (
+                f'<ul>\n<li><a href="{settings.SERVER_PROTOCOL}://{settings.SERVER_HOSTNAME}' +
+                f'{question_answer_url}" title="{text_1}">{text_1}</a></li>\n</ul>'
+            )
+        }
+
+        mock_do_send_subscriptions_to_recipients.return_value = None
+        mock_do_send_subscriptions_to_recipients.assert_called_once_with(user_subscriptions, qset_questions)

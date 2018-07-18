@@ -5,7 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.sites.shortcuts import get_current_site
-from django.http import Http404, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -35,10 +35,13 @@ from .utils.general import (
 from .utils.views import (
     compose_qset_form,
     compose_question_form_and_create,
+    create_destroy_subscription,
     delete_qset_by_form,
     do_make_answer_form,
     do_user_checks_and_evaluate,
     get_clean_filter_parameter,
+    get_general_user_profile_context_data,
+    get_my_subscriptions_context_data,
     get_next_quiz_question,
     get_question_to_answer,
     get_redirect_on_answer_fail,
@@ -236,16 +239,45 @@ def user_profile_view(request, user_id, organization_id=None):
     selected_organization = select_user_organization(
         profile_user.id, organization_id, viewer_id
     )
+
     if organization_id and selected_organization is None:
         # Case, when organization_id is specified in the link and restricted to this user
         return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
 
+    context_data = get_general_user_profile_context_data(
+        request, profile_user, profile_user.id, selected_organization, viewer_id
+    )
+    context_data.update(get_user_profile_context_data(profile_user.id, selected_organization))
     return render(
         request,
         'askup/user_profile.html',
-        get_user_profile_context_data(
-            request, profile_user, profile_user.id, selected_organization, viewer_id
-        ),
+        context_data,
+    )
+
+
+@login_required
+def my_subscriptions_view(request, organization_id=None):
+    """
+    Provide the user profile "My Subscriptions" view.
+    """
+    user = request.user
+    viewer_id = None if check_user_has_groups(user, 'admin') else user.id
+    selected_organization = select_user_organization(
+        user.id, organization_id, viewer_id
+    )
+
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:my_subscriptions'))
+
+    context_data = get_general_user_profile_context_data(
+        request, user, user.id, selected_organization, viewer_id
+    )
+    context_data.update(get_my_subscriptions_context_data(user.id, selected_organization))
+    return render(
+        request,
+        'askup/user_profile.html',
+        context_data,
     )
 
 
@@ -534,6 +566,48 @@ def qset_user_questions(request, qset_id, user_id):
     return JsonResponse(response, safe=False)
 
 
+@user_group_required('student', 'teacher', 'admin')
+def qset_subscription(request, qset_id, subscribe):
+    """
+    Provide a view for the user to subscribe/unsubscribe to the specified subject.
+    """
+    if request._is_admin:
+        qset = Qset.objects.filter(id=qset_id).first()
+    else:
+        qset = Qset.objects.filter(id=qset_id, top_qset__users__id=request.user.id).first()
+
+    if qset is None:
+        response = {
+            'result': 'fail',
+            'message': 'You have no permissions to subscribe to this subject',
+            'url': reverse('askup:qset_subscription', kwargs={'qset_id': qset_id, 'subscribe': subscribe}),
+        }
+    else:
+        create_destroy_subscription(qset.id, request.user.id, subscribe)
+        response = {
+            'result': 'success',
+            'message': 'You\'ve successfuly subscribed to the subject: {}',
+            'url': reverse(
+                'askup:qset_subscription',
+                kwargs={
+                    'qset_id': qset_id,
+                    'subscribe': revert_subscribe_command(subscribe),
+                }
+            ),
+        }
+
+    return JsonResponse(response, safe=False)
+
+
+def revert_subscribe_command(subscribe):
+    """
+    Revert subscribe command and return it.
+
+    :return: str
+    """
+    return '{}subscribe'.format('un' if subscribe == 'subscribe' else '')
+
+
 @login_required
 def question_answer(request, question_id, qset_id):
     """Provide a create question view for the student/teacher/admin."""
@@ -749,7 +823,12 @@ def start_quiz_all(request, qset_id):
         return redirect(reverse('askup:organizations'))
 
     if first_question_id is None:
-        raise Http404
+        return redirect(
+            add_notification_to_url(
+                ('danger', 'This subject is unavailable'),
+                reverse('askup:organizations'),
+            )
+        )
 
     if request.method == 'GET':
         return get_quiz_question_redirect(qset_id, first_question_id, filter)

@@ -37,6 +37,11 @@ urlpatterns = [
         views.qset_user_questions,
         name='qset_user_questions'
     ),
+    url(
+        r'^qset/(?P<qset_id>\d+)/(?P<subscribe>(un)?subscribe)/$',
+        views.qset_subscription,
+        name='qset_subscription'
+    ),
     url(r'^qset/quiz/all/(?P<qset_id>\d+)/$', views.start_quiz_all, name='start_quiz_all'),
     url(
         r'^question/(?P<question_id>\d+)/qset/(?P<qset_id>\d+)/answer/$',
@@ -66,6 +71,11 @@ urlpatterns = [
         r'^user/(?P<user_id>\d+)/profile/(?:organization/(?P<organization_id>\d+)/)?$',
         views.user_profile_view,
         name='user_profile'
+    ),
+    url(
+        r'^user/my-subscriptions/(?:organization/(?P<organization_id>\d+)/)?$',
+        views.my_subscriptions_view,
+        name='my_subscriptions'
     ),
     url(
         r'^user/(?P<user_id>\d+)/profile/rank-list/(?:organization/(?P<organization_id>\d+)/)?$',
