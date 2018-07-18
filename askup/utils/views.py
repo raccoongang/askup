@@ -39,7 +39,7 @@ QUESTION_DELETED_TEXT = 'This question was deleted since you\'ve opened it! Redi
 QSET_QUESTION_FILTERS = {
     'all': ('All', 'All the questions'),
     'mine': ('Mine', 'My question'),
-    'others': ('Others', 'Other\'s questions'),
+    'others': ('Others', 'Others\' questions'),
     'unanswered': ('Unanswered', 'The questions that I haven\'t answered'),
     'incorrect': ('Incorrect', 'The questions that I answered incorrectly last time'),
     'last_7_days': ('Last 7 days', 'The questions that were created in the last 7 days'),
