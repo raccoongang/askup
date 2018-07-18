@@ -9517,3 +9517,14 @@ select.btn-primary {
     transition: background-color ease-in-out 0.2s, width ease-in-out 0.12s;
     text-align: center;
 }
+
+.dash-profile .row.h4.center .center,
+.question_list .actions.center {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.question_list .actions.center {
+    display: block;
+}
