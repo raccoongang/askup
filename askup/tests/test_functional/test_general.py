@@ -1441,21 +1441,24 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
 
         self.assertContains(response, 'User\'s questions')
 
-    @client_user('student03', 'student03')
+    @client_user('student01', 'student01')
     def test_you_have_not_questions(self):
         """
         Test you have no questions.
         """
-        user_id = 5  # student03 from the mockups
+        user_id = 3  # student01 from the mockups
+        Question.objects.filter(user_id=user_id).delete()
         response = self.get_user_profile(user_id, 1)
 
         self.assertContains(response, 'You haven’t created any questions yet.')
 
+    @client_user('student01', 'student01')
     def test_user_has_no_questions(self):
         """
         Test user has no questions.
         """
         user_id = 5  # student03 from the mockups
+        Question.objects.filter(user_id=user_id).delete()
         response = self.get_user_profile(user_id, 1)
 
         self.assertContains(response, 'This user hasn’t created any questions yet.')

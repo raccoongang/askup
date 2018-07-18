@@ -616,3 +616,28 @@ def create_destroy_subscription(subject_id, user_id, subscribe):
 
         if subscription:
             subscription.delete()
+
+
+def process_organization(organization_id, selected_organization, user_id, url_name, is_rank_list=True):
+    """
+    Process selected organization.
+
+    :return: redirect to a correspondent section if it requires otherwise - None.
+    """
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse(url_name, kwargs={'user_id': user_id}))
+
+    if is_rank_list and selected_organization is None:
+        return redirect(reverse('askup:user_profile', kwargs={'user_id': user_id}))
+
+    return None
+
+
+def check_if_subscriptions_redirect_needed(is_admin, is_teacher, user_id, request_user_id):
+    """
+    Check if subscriptions redirect needed.
+
+    :return: bool
+    """
+    return (is_admin or is_teacher) and user_id == request_user_id

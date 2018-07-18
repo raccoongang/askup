@@ -33,6 +33,7 @@ from .utils.general import (
     get_real_questions_queryset,
 )
 from .utils.views import (
+    check_if_subscriptions_redirect_needed,
     compose_qset_form,
     compose_question_form_and_create,
     create_destroy_subscription,
@@ -47,6 +48,7 @@ from .utils.views import (
     get_redirect_on_answer_fail,
     get_user_profile_context_data,
     get_user_profile_rank_list_context_data,
+    process_organization,
     qset_update_form_template,
     question_vote,
     select_user_organization,
@@ -234,15 +236,25 @@ class QsetView(ListViewUserContextDataMixIn, QsetViewMixIn, generic.ListView):
 @login_required
 def user_profile_view(request, user_id, organization_id=None):
     """Provide the user profile my questions view."""
+    is_admin = check_user_has_groups(request.user, 'admin')
+    is_teacher = check_user_has_groups(request.user, 'teacher')
+
+    if check_if_subscriptions_redirect_needed(is_admin, is_teacher, int(user_id), request.user.id):
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:my_subscriptions'))
+
     profile_user = get_object_or_404(User, pk=user_id)
-    viewer_id = None if check_user_has_groups(request.user, 'admin') else request.user.id
+    viewer_id = None if is_admin else request.user.id
     selected_organization = select_user_organization(
         profile_user.id, organization_id, viewer_id
     )
 
-    if organization_id and selected_organization is None:
-        # Case, when organization_id is specified in the link and restricted to this user
-        return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
+    result_redirect = process_organization(
+        organization_id, selected_organization, profile_user.id, 'askup:user_profile'
+    )
+
+    if result_redirect:
+        return result_redirect
 
     context_data = get_general_user_profile_context_data(
         request, profile_user, profile_user.id, selected_organization, viewer_id
@@ -286,18 +298,25 @@ def user_profile_rank_list_view(request, user_id, organization_id=None):
     """
     Provide the user profile rank list view.
     """
+    is_admin = check_user_has_groups(request.user, 'admin')
+    is_teacher = check_user_has_groups(request.user, 'teacher')
+
+    if check_if_subscriptions_redirect_needed(is_admin, is_teacher, int(user_id), request.user.id):
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse('askup:my_subscriptions'))
+
     profile_user = get_object_or_404(User, pk=user_id)
-    viewer_id = None if check_user_has_groups(request.user, 'admin') else request.user.id
+    viewer_id = None if is_admin else request.user.id
     selected_organization = select_user_organization(
         profile_user.id, organization_id, viewer_id
     )
 
-    if organization_id and selected_organization is None:
-        # Case, when organization_id is specified in the link and restricted to this user
-        return redirect(reverse('askup:user_profile_rank_list', kwargs={'user_id': profile_user.id}))
+    result_redirect = process_organization(
+        organization_id, selected_organization, profile_user.id, 'askup:user_profile_rank_list'
+    )
 
-    if selected_organization is None:
-        return redirect(reverse('askup:user_profile', kwargs={'user_id': profile_user.id}))
+    if result_redirect:
+        return result_redirect
 
     return render(
         request,
