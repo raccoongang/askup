@@ -1,6 +1,5 @@
 import logging
 
-from django.conf import settings
 from django.test import TestCase
 
 from askup.models import Qset, Question
@@ -21,12 +20,6 @@ class TestAdminPanelGroupQuestionsDeleting(TestCase):
     """
 
     fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """
-        Set up the test conditions.
-        """
-        settings.DEBUG = False
 
     def test_group_deleting(self):
         """
@@ -50,12 +43,6 @@ class TestUserProfileOrganization(TestCase):
     """
 
     fixtures = ['groups', 'mockup_data']
-
-    def setUp(self):
-        """
-        Set up the test conditions.
-        """
-        settings.DEBUG = False
 
     def test_get_first_user_organization(self):
         """

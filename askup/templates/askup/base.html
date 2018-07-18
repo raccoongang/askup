@@ -47,7 +47,7 @@
                     {% if request.user.is_authenticated %}
                     <li>
                         {% if is_admin or is_teacher %}
-                            {% with id=request.user.id user=request.user %}
+                            {% with user=request.user %}
                             <a class="float" href="{% url 'askup:user_profile' user.id %}">{{ user.email }}
                                 <span class="badge">{{ user.username }}</span>
                             </a>

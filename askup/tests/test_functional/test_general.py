@@ -42,7 +42,6 @@ class GeneralTestCase(TestCase):
         """
         Set up the default test assets.
         """
-        settings.DEBUG = False
         self.default_login()
 
 
@@ -51,7 +50,6 @@ class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
 
     def setUp(self):
         """Set up the test assets."""
-        settings.DEBUG = False
         self.factory = RequestFactory()
 
     def test_authentication(self):
@@ -1192,12 +1190,6 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
 
     fixtures = ['groups', 'mockup_data']
 
-    def setUp(self):
-        """
-        Set up the test assets.
-        """
-        settings.DEBUG = False
-
     def create_dummy_users(self):
         """
         Create 20 dummy users to fill over a rank list.
@@ -1583,21 +1575,15 @@ class TestSubscriptionsMailing(TestCase):
 
     fixtures = ['groups', 'mockup_data']
 
-    def setUp(self):
-        """
-        Set up the test conditions.
-        """
-        settings.DEBUG = False
-
     @client_user('student01', 'student01')
     @patch('askup.utils.general.do_send_subscriptions_to_recipients')
     def test_subscriptions_sending_no_actual_subscriptions(self, mock_do_send_subscriptions_to_recipients):
         """
         Test subscriptions sending.
         """
-        send_subscription_emails()
         mock_do_send_subscriptions_to_recipients.return_value = None
         mock_do_send_subscriptions_to_recipients.assert_not_called()
+        send_subscription_emails()
 
     @client_user('student01', 'student01')
     @patch('askup.utils.general.do_send_subscriptions_to_recipients')

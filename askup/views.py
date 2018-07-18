@@ -253,7 +253,7 @@ def user_profile_view(request, user_id, organization_id=None):
         organization_id, selected_organization, profile_user.id, 'askup:user_profile'
     )
 
-    if result_redirect:
+    if result_redirect is not None:
         return result_redirect
 
     context_data = get_general_user_profile_context_data(
@@ -315,7 +315,7 @@ def user_profile_rank_list_view(request, user_id, organization_id=None):
         organization_id, selected_organization, profile_user.id, 'askup:user_profile_rank_list'
     )
 
-    if result_redirect:
+    if result_redirect is not None:
         return result_redirect
 
     return render(

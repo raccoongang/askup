@@ -39,9 +39,9 @@ QUESTION_DELETED_TEXT = 'This question was deleted since you\'ve opened it! Redi
 QSET_QUESTION_FILTERS = {
     'all': ('All', 'All the questions'),
     'mine': ('Mine', 'My question'),
-    'others': ('Others', 'The questions of the others'),
-    'unanswered': ('Unanswered', 'The questions that I didn\'t answer before'),
-    'incorrect': ('Incorrect', 'The questions that I was incorrectly answered last time'),
+    'others': ('Others', 'Other\'s questions'),
+    'unanswered': ('Unanswered', 'The questions that I haven\'t answered'),
+    'incorrect': ('Incorrect', 'The questions that I answered incorrectly last time'),
     'last_7_days': ('Last 7 days', 'The questions that were created in the last 7 days'),
 }
 
@@ -630,8 +630,6 @@ def process_organization(organization_id, selected_organization, user_id, url_na
 
     if is_rank_list and selected_organization is None:
         return redirect(reverse('askup:user_profile', kwargs={'user_id': user_id}))
-
-    return None
 
 
 def check_if_subscriptions_redirect_needed(is_admin, is_teacher, user_id, request_user_id):
