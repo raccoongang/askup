@@ -46,11 +46,17 @@
                 <ul class="nav navbar-nav navbar-right"> 
                     {% if request.user.is_authenticated %}
                     <li>
-                        {% with id=request.user.id user=request.user %}
-                        <a class="float" href="{% url 'askup:user_profile' user.id %}">{{ user.email }}
-                            <span class="badge">{{ user.username }}</span>
-                        </a>
-                        {% endwith %}
+                        {% if is_admin or is_teacher %}
+                            {% with user=request.user %}
+                            <a class="float" href="{% url 'askup:user_profile' user.id %}">{{ user.email }}
+                                <span class="badge">{{ user.username }}</span>
+                            </a>
+                            {% endwith %}
+                        {% else %}
+                            <a class="float" href="{% url 'askup:my_subscriptions' %}">{{ user.email }}
+                                <span class="badge">{{ user.username }}</span>
+                            </a>
+                        {% endif %}
                     </li>
                     <li>
                         <a class="float" href="{% url 'askup:sign_out' %}" id="sign_out" rel="nofollow">Log out</a>
