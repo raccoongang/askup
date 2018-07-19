@@ -6760,7 +6760,7 @@ a:hover {
 }
 .box {
     background: #fff;
-    margin: 10px;
+    margin: 10px 0;
     border: solid 1px #e6e6e6;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -9516,4 +9516,15 @@ select.btn-primary {
     -o-transition: background-color ease-in-out 0.2s, width ease-in-out 0.12s;
     transition: background-color ease-in-out 0.2s, width ease-in-out 0.12s;
     text-align: center;
+}
+
+.dash-profile .row.h4.center .center,
+.question_list .actions.center {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.question_list .actions.center {
+    display: block;
 }

@@ -39,9 +39,9 @@ QUESTION_DELETED_TEXT = 'This question was deleted since you\'ve opened it! Redi
 QSET_QUESTION_FILTERS = {
     'all': ('All', 'All the questions'),
     'mine': ('Mine', 'My question'),
-    'others': ('Others', 'The questions of the others'),
-    'unanswered': ('Unanswered', 'The questions that I didn\'t answer before'),
-    'incorrect': ('Incorrect', 'The questions that I was incorrectly answered last time'),
+    'others': ('Others', 'Others\' questions'),
+    'unanswered': ('Unanswered', 'The questions that I haven\'t answered'),
+    'incorrect': ('Incorrect', 'The questions that I answered incorrectly last time'),
     'last_7_days': ('Last 7 days', 'The questions that were created in the last 7 days'),
 }
 
@@ -616,3 +616,26 @@ def create_destroy_subscription(subject_id, user_id, subscribe):
 
         if subscription:
             subscription.delete()
+
+
+def process_organization(organization_id, selected_organization, user_id, url_name, is_rank_list=True):
+    """
+    Process selected organization.
+
+    :return: redirect to a correspondent section if it requires otherwise - None.
+    """
+    if organization_id and selected_organization is None:
+        # Case, when organization_id is specified in the link and restricted to this user
+        return redirect(reverse(url_name, kwargs={'user_id': user_id}))
+
+    if is_rank_list and selected_organization is None:
+        return redirect(reverse('askup:user_profile', kwargs={'user_id': user_id}))
+
+
+def check_if_subscriptions_redirect_needed(is_admin, is_teacher, user_id, request_user_id):
+    """
+    Check if subscriptions redirect needed.
+
+    :return: bool
+    """
+    return (is_admin or is_teacher) and user_id == request_user_id

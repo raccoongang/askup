@@ -42,7 +42,6 @@ class GeneralTestCase(TestCase):
         """
         Set up the default test assets.
         """
-        settings.DEBUG = False
         self.default_login()
 
 
@@ -51,7 +50,6 @@ class UserAuthenticationCase(LoginAdminByDefaultMixIn, TestCase):
 
     def setUp(self):
         """Set up the test assets."""
-        settings.DEBUG = False
         self.factory = RequestFactory()
 
     def test_authentication(self):
@@ -1192,12 +1190,6 @@ class StudentProfileRankListCase(LoginAdminByDefaultMixIn, TestCase):
 
     fixtures = ['groups', 'mockup_data']
 
-    def setUp(self):
-        """
-        Set up the test assets.
-        """
-        settings.DEBUG = False
-
     def create_dummy_users(self):
         """
         Create 20 dummy users to fill over a rank list.
@@ -1441,21 +1433,24 @@ class StudentDashboardMyQuestionsCase(LoginAdminByDefaultMixIn, GeneralTestCase)
 
         self.assertContains(response, 'User\'s questions')
 
-    @client_user('student03', 'student03')
+    @client_user('student01', 'student01')
     def test_you_have_not_questions(self):
         """
         Test you have no questions.
         """
-        user_id = 5  # student03 from the mockups
+        user_id = 3  # student01 from the mockups
+        Question.objects.filter(user_id=user_id).delete()
         response = self.get_user_profile(user_id, 1)
 
         self.assertContains(response, 'You haven’t created any questions yet.')
 
+    @client_user('student01', 'student01')
     def test_user_has_no_questions(self):
         """
         Test user has no questions.
         """
         user_id = 5  # student03 from the mockups
+        Question.objects.filter(user_id=user_id).delete()
         response = self.get_user_profile(user_id, 1)
 
         self.assertContains(response, 'This user hasn’t created any questions yet.')
@@ -1580,21 +1575,15 @@ class TestSubscriptionsMailing(TestCase):
 
     fixtures = ['groups', 'mockup_data']
 
-    def setUp(self):
-        """
-        Set up the test conditions.
-        """
-        settings.DEBUG = False
-
     @client_user('student01', 'student01')
     @patch('askup.utils.general.do_send_subscriptions_to_recipients')
     def test_subscriptions_sending_no_actual_subscriptions(self, mock_do_send_subscriptions_to_recipients):
         """
         Test subscriptions sending.
         """
-        send_subscription_emails()
         mock_do_send_subscriptions_to_recipients.return_value = None
         mock_do_send_subscriptions_to_recipients.assert_not_called()
+        send_subscription_emails()
 
     @client_user('student01', 'student01')
     @patch('askup.utils.general.do_send_subscriptions_to_recipients')
