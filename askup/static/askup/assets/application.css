@@ -6760,7 +6760,7 @@ a:hover {
 }
 .box {
     background: #fff;
-    margin: 10px;
+    margin: 10px 0;
     border: solid 1px #e6e6e6;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
