@@ -9519,7 +9519,8 @@ select.btn-primary {
 }
 
 .dash-profile .row.h4.center .center,
-.question_list .actions.center {
+.question_list .actions.center,
+.dash-profile h3 {
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
