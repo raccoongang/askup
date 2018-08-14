@@ -87,3 +87,6 @@ ratings:
    - "**.js"
    - "**.py"
    - "**.md"
+
+ exclude_patterns:
+  - "**.js"
