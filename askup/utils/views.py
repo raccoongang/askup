@@ -503,7 +503,7 @@ def get_next_quiz_question(user_id, filter, qset_id, is_quiz_start):
     cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
 
     if cached_quiz_questions is None:
-        questions_queryset = get_real_questions_queryset(qset_id)
+        questions_queryset = get_real_questions_queryset(qset_id).order_by('?')
         questions_queryset = apply_filter_to_queryset(user_id, filter, questions_queryset)
         cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
 
@@ -597,7 +597,6 @@ def get_question_to_answer(request, question_id):
 
     if not check_user_has_groups(request.user, 'admin'):
         question_queryset = question_queryset.filter(qset__top_qset__users__id=request.user.id)
-
     return question_queryset.first()
 
 
