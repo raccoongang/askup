@@ -5,7 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.sites.shortcuts import get_current_site
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -26,7 +26,7 @@ from .mixins.views import (
     ListViewUserContextDataMixIn,
     QsetViewMixIn,
 )
-from .models import Answer, Organization, Qset, Question, QsetUserSubscription
+from .models import Answer, Organization, Qset, QsetUserSubscription, Question
 from .tokens import account_activation_token
 from .utils.general import (
     add_notification_to_url,
@@ -911,9 +911,12 @@ def public_qsets_view(request):
             'object_list': queryset,
         }
     )
+
+
 @login_required
 @require_POST
 def subscribe_all_qsets(request):
+    """Subscribe all qsets."""
     organization_id = request.POST.get('organization_id')
     user_id = request.user.id
     organization_qsets = Qset.objects.filter(parent_qset_id=organization_id)
@@ -921,9 +924,11 @@ def subscribe_all_qsets(request):
         QsetUserSubscription.objects.get_or_create(qset_id=qset.id, user_id=user_id)
     return JsonResponse({'status': 200})
 
+
 @login_required
 @require_POST
 def unsubscribe_all_qsets(request):
+    """Unsubscribe all qsets."""
     organization_id = request.POST.get('organization_id')
     user_id = request.user.id
     QsetUserSubscription.objects.filter(qset__parent_qset_id=organization_id, user_id=user_id).delete()
