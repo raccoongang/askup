@@ -95,8 +95,11 @@ $(document).ready(function(){
 
     check_active_blooms_taxonomy();
 
-    $('.js-subscribe-all-button').click(subscribe_all_qsets);
-    $('.js-unsubscribe-all-button').click(unsubscribe_all_qsets);
+    $('.js-subscribe-all-button').click(subscribe_unsubscribe_all_qsets);
+    $('.js-unsubscribe-all-button').click(subscribe_unsubscribe_all_qsets);
+    // $('.js-subscribe-all-button').on('click', function () {
+    //     subscribe_unsubscribe_all_qsets(true);
+    // });
 });
 
 function alert_init() {
@@ -338,44 +341,65 @@ function on_subject_questions_get(data, subject_id, subject_questions_element) {
     subject_questions_element.html(questions_wrapper.html());
 }
 
-function subscribe_all_qsets() {
+function subscribe_unsubscribe_all_qsets(subscription) {
     var organizationId = $(this).data('selected-org-id');
     var url = $(this).data('url');
+    var actionType = $(this).data('action-type');
     $.ajax({
         url: url,
         type: 'POST',
         data: {'organization_id': organizationId, 'csrfmiddlewaretoken': getCookie('csrftoken')},
-        success: change_all_qsets_to_unsubscribe
+        success: function () {
+            // if (actionType === 'subscribe') {
+            //     change_all_qsets_to_unsubscribe();
+            // } else if (actionType === 'unsubscribe') {
+            //     change_all_qsets_to_subscribe();
+            // }
+            change_all_qsets_to_subscribe_unsubscribe(actionType);
+        }
     });
 }
 
-function unsubscribe_all_qsets() {
-    var organizationId = $(this).data('selected-org-id');
-    var url = $(this).data('url');
-    $.ajax({
-        url: url,
-        type: 'POST',
-        data: {'organization_id': organizationId, 'csrfmiddlewaretoken': getCookie('csrftoken')},
-        success: change_all_qsets_to_subscribe
-    });
-}
+// function change_all_qsets_to_unsubscribe() {
+//     $(".subject-subscription-button").each(function () {
+//         $(this).html('UNSUBSCRIBE');
+//         $(this).addClass('btn-info').removeClass('btn-success');
+//         var urlData = $(this).parent().parent().data('subscription-url');
+//         var newUrlData = urlData.replace('/subscribe/', '/unsubscribe/');
+//         $(this).parent().parent().data('subscription-url', newUrlData);
+//     });
+// }
+//
+// function change_all_qsets_to_subscribe() {
+//     $(".subject-subscription-button").each(function () {
+//         $(this).html('SUBSCRIBE');
+//         $(this).addClass('btn-success').removeClass('btn-info');
+//         var urlData = $(this).parent().parent().data('subscription-url');
+//         var newUrlData = urlData.replace('/unsubscribe/', '/subscribe/');
+//         $(this).parent().parent().data('subscription-url', newUrlData);
+//     });
+// }
 
-function change_all_qsets_to_unsubscribe() {
+function change_all_qsets_to_subscribe_unsubscribe(actionType) {
+    if (actionType === 'subscribe') {
+        var button_text = 'UNSUBSCRIBE';
+        var button_class_add = 'btn-info';
+        var button_class_remove = 'btn-success';
+        var newActionType = '/unsubscribe/';
+
+    } else if (actionType === 'unsubscribe') {
+        var button_text = 'SUBSCRIBE';
+        var button_class_add = 'btn-success';
+        var button_class_remove = 'btn-info';
+        var newActionType = '/subscribe/';
+    }
+
     $(".subject-subscription-button").each(function () {
-        $(this).html('UNSUBSCRIBE');
-        $(this).addClass('btn-info').removeClass('btn-success');
+        $(this).html(button_text);
+        $(this).addClass(button_class_add).removeClass(button_class_remove);
         var urlData = $(this).parent().parent().data('subscription-url');
-        var newUrlData = urlData.replace('/subscribe/', '/unsubscribe/');
+        var newUrlData = urlData.replace(`/${actionType}/`, newActionType);
         $(this).parent().parent().data('subscription-url', newUrlData);
     });
 }
 
-function change_all_qsets_to_subscribe() {
-    $(".subject-subscription-button").each(function () {
-        $(this).html('SUBSCRIBE');
-        $(this).addClass('btn-success').removeClass('btn-info');
-        var urlData = $(this).parent().parent().data('subscription-url');
-        var newUrlData = urlData.replace('/unsubscribe/', '/subscribe/');
-        $(this).parent().parent().data('subscription-url', newUrlData);
-    });
-}
