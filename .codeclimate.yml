@@ -88,5 +88,6 @@ ratings:
    - "**.py"
    - "**.md"
 
- exclude_patterns:
-  - "**.js"
+exclude_patterns:
+   - "**.js"
+git add
