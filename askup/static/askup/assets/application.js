@@ -4,7 +4,6 @@ function getCookie(name) {
         var cookies = document.cookie.split(';');
         for (var i = 0; i < cookies.length; i++) {
             var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                 break;
@@ -95,11 +94,7 @@ $(document).ready(function(){
 
     check_active_blooms_taxonomy();
 
-    $('.js-subscribe-all-button').click(subscribe_unsubscribe_all_qsets);
-    $('.js-unsubscribe-all-button').click(subscribe_unsubscribe_all_qsets);
-    // $('.js-subscribe-all-button').on('click', function () {
-    //     subscribe_unsubscribe_all_qsets(true);
-    // });
+    $('.js-subscribe-all-button, .js-unsubscribe-all-button').click(subscribe_unsubscribe_all_qsets);
 });
 
 function alert_init() {
@@ -350,35 +345,10 @@ function subscribe_unsubscribe_all_qsets(subscription) {
         type: 'POST',
         data: {'organization_id': organizationId, 'csrfmiddlewaretoken': getCookie('csrftoken')},
         success: function () {
-            // if (actionType === 'subscribe') {
-            //     change_all_qsets_to_unsubscribe();
-            // } else if (actionType === 'unsubscribe') {
-            //     change_all_qsets_to_subscribe();
-            // }
             change_all_qsets_to_subscribe_unsubscribe(actionType);
         }
     });
 }
-
-// function change_all_qsets_to_unsubscribe() {
-//     $(".subject-subscription-button").each(function () {
-//         $(this).html('UNSUBSCRIBE');
-//         $(this).addClass('btn-info').removeClass('btn-success');
-//         var urlData = $(this).parent().parent().data('subscription-url');
-//         var newUrlData = urlData.replace('/subscribe/', '/unsubscribe/');
-//         $(this).parent().parent().data('subscription-url', newUrlData);
-//     });
-// }
-//
-// function change_all_qsets_to_subscribe() {
-//     $(".subject-subscription-button").each(function () {
-//         $(this).html('SUBSCRIBE');
-//         $(this).addClass('btn-success').removeClass('btn-info');
-//         var urlData = $(this).parent().parent().data('subscription-url');
-//         var newUrlData = urlData.replace('/unsubscribe/', '/subscribe/');
-//         $(this).parent().parent().data('subscription-url', newUrlData);
-//     });
-// }
 
 function change_all_qsets_to_subscribe_unsubscribe(actionType) {
     if (actionType === 'subscribe') {
