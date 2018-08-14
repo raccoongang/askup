@@ -1,3 +1,19 @@
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 $(document).ready(function(){
     var alert_timeout = null;
     alert_init();
@@ -78,6 +94,9 @@ $(document).ready(function(){
     });
 
     check_active_blooms_taxonomy();
+
+    $('.js-subscribe-all-button').click(subscribe_all_qsets);
+    $('.js-unsubscribe-all-button').click(unsubscribe_all_qsets);
 });
 
 function alert_init() {
@@ -317,4 +336,46 @@ function on_subject_questions_get(data, subject_id, subject_questions_element) {
     }
 
     subject_questions_element.html(questions_wrapper.html());
+}
+
+function subscribe_all_qsets() {
+    var organizationId = $(this).data('selected-org-id');
+    var url = $(this).data('url');
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: {'organization_id': organizationId, 'csrfmiddlewaretoken': getCookie('csrftoken')},
+        success: change_all_qsets_to_unsubscribe
+    });
+}
+
+function unsubscribe_all_qsets() {
+    var organizationId = $(this).data('selected-org-id');
+    var url = $(this).data('url');
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: {'organization_id': organizationId, 'csrfmiddlewaretoken': getCookie('csrftoken')},
+        success: change_all_qsets_to_subscribe
+    });
+}
+
+function change_all_qsets_to_unsubscribe() {
+    $(".subject-subscription-button").each(function () {
+        $(this).html('UNSUBSCRIBE');
+        $(this).addClass('btn-info').removeClass('btn-success');
+        var urlData = $(this).parent().parent().data('subscription-url');
+        var newUrlData = urlData.replace('/subscribe/', '/unsubscribe/');
+        $(this).parent().parent().data('subscription-url', newUrlData);
+    });
+}
+
+function change_all_qsets_to_subscribe() {
+    $(".subject-subscription-button").each(function () {
+        $(this).html('SUBSCRIBE');
+        $(this).addClass('btn-success').removeClass('btn-info');
+        var urlData = $(this).parent().parent().data('subscription-url');
+        var newUrlData = urlData.replace('/unsubscribe/', '/subscribe/');
+        $(this).parent().parent().data('subscription-url', newUrlData);
+    });
 }

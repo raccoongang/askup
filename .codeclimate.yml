@@ -58,16 +58,7 @@ plugins:
         - python:
             python_version: 3
   eslint:
-    enabled: true
-    exclude_patterns:
-      - "**/migrations/"
-      - "**/tests/"
-      - "**/tests.py"
-      - "askup/static/admin"
-      - "askup/static/debug_toolbar"
-      - ".tox/"
-      - ".eggs/"
-      - ".dc-*/"
+    enabled: false
   markdownlint:
     enabled: true
     exclude_patterns:
@@ -96,3 +87,6 @@ ratings:
    - "**.js"
    - "**.py"
    - "**.md"
+
+exclude_patterns:
+   - "**.js"
