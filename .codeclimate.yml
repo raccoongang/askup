@@ -90,4 +90,3 @@ ratings:
 
 exclude_patterns:
    - "**.js"
-git add
