@@ -83,4 +83,6 @@ urlpatterns = [
         name='user_profile_rank_list'
     ),
     url(r'^feedback/$', views.feedback_form_view, name='feedback'),
+    url(r'^subscribe_all/$', views.subscribe_all_qsets, name='subscribe_all'),
+    url(r'^unsubscribe_all/$', views.unsubscribe_all_qsets, name='unsubscribe_all'),
 ]

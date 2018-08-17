@@ -176,6 +176,20 @@
                                 My subscriptions
                         </a>
                         {% endif %}
+                        <div class="pull-right">
+                            <span class="btn btn-success js-subscribe-all-button"
+                                  data-selected-org-id="{{ selected_organization.id }}"
+                                  data-url="{% url 'askup:subscribe_all' %}"
+                                  data-action-type="subscribe">
+                                Subscribe All
+                            </span>
+                            <span class="btn btn-info js-unsubscribe-all-button"
+                                  data-selected-org-id="{{ selected_organization.id }}"
+                                  data-url="{% url 'askup:unsubscribe_all' %}"
+                                  data-action-type="unsubscribe">
+                                Unsubscribe All
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="list">

@@ -1,3 +1,18 @@
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 $(document).ready(function(){
     var alert_timeout = null;
     alert_init();
@@ -78,6 +93,8 @@ $(document).ready(function(){
     });
 
     check_active_blooms_taxonomy();
+
+    $('.js-subscribe-all-button, .js-unsubscribe-all-button').click(subscribe_unsubscribe_all_qsets);
 });
 
 function alert_init() {
@@ -318,3 +335,41 @@ function on_subject_questions_get(data, subject_id, subject_questions_element) {
 
     subject_questions_element.html(questions_wrapper.html());
 }
+
+function subscribe_unsubscribe_all_qsets(subscription) {
+    var organizationId = $(this).data('selected-org-id');
+    var url = $(this).data('url');
+    var actionType = $(this).data('action-type');
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: {'organization_id': organizationId, 'csrfmiddlewaretoken': getCookie('csrftoken')},
+        success: function () {
+            change_all_qsets_to_subscribe_unsubscribe(actionType);
+        }
+    });
+}
+
+function change_all_qsets_to_subscribe_unsubscribe(actionType) {
+    if (actionType === 'subscribe') {
+        var button_text = 'UNSUBSCRIBE';
+        var button_class_add = 'btn-info';
+        var button_class_remove = 'btn-success';
+        var newActionType = '/unsubscribe/';
+
+    } else if (actionType === 'unsubscribe') {
+        var button_text = 'SUBSCRIBE';
+        var button_class_add = 'btn-success';
+        var button_class_remove = 'btn-info';
+        var newActionType = '/subscribe/';
+    }
+
+    $(".subject-subscription-button").each(function () {
+        $(this).html(button_text);
+        $(this).addClass(button_class_add).removeClass(button_class_remove);
+        var urlData = $(this).parent().parent().data('subscription-url');
+        var newUrlData = urlData.replace(`/${actionType}/`, newActionType);
+        $(this).parent().parent().data('subscription-url', newUrlData);
+    });
+}
+
