@@ -88,7 +88,7 @@ $(document).ready(function(){
     $('.my-subject-row').click(on_click_my_subject);
     $('.subject-subscription-button').click(on_click_subscribe_to_subject);
 
-    $('#user_organization_filter, .all-mine-other-filter').on('change', function(event) {
+    $('#user_organization_filter, .quiz-filter').on('change', function(event) {
         window.location.href = $(this).val();
     });
 

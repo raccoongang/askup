@@ -4,6 +4,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.middleware import SessionMiddleware
+from django.core.cache import cache
 from django.db import models
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -1614,3 +1615,111 @@ class TestSubscriptionsMailing(TestCase):
 
         mock_do_send_subscriptions_to_recipients.return_value = None
         mock_do_send_subscriptions_to_recipients.assert_called_once_with(user_subscriptions, qset_questions)
+
+
+class TestOrganizationQuiz(LoginAdminByDefaultMixIn, GeneralTestCase):
+    """Tests the Organizations view."""
+
+    def start_quiz(self, organization_id, filter):
+        """
+        Start quiz by organization id and filter.
+        """
+        url = '{}?filter={}&quiz_start=1&is_organization=1'.format(
+            reverse('askup:start_quiz_all', kwargs={'qset_id': organization_id}),
+            filter
+        )
+        return self.client.get(url)
+
+    def create_answer_and_evaluate(self, user_id, first_question_id, organization_id, filter):
+        """
+        Start quiz by organization id and filter.
+        """
+        first_question_answer = Answer.objects.create(
+            question_id=first_question_id,
+            text='Answer text',
+            user_id=user_id,
+        )
+        url = '{}?filter={}'.format(
+            reverse(
+                'askup:answer_evaluate',
+                kwargs={
+                    'answer_id': first_question_answer.id, 'qset_id': organization_id, 'evaluation': 2
+                }
+            ),
+            filter
+        )
+        return self.client.get(url)
+
+    def test_if_quiz_button_present(self):
+        """
+        Test if quiz select box is present due to the presence of the questions in the organization.
+        """
+        organization_id = 1  # Organization 1 - has questions
+        response = self.client.get(reverse('askup:organization', kwargs={'pk': organization_id}))
+        self.assertContains(response, 'Start quiz by...')
+
+    def test_if_quiz_button_hidden(self):
+        """
+        Test if quiz select box is hidden due to no questions under the organization.
+        """
+        organization_id = 2  # Organization 2 - has no questions
+        response = self.client.get(reverse('askup:organization', kwargs={'pk': organization_id}))
+        self.assertNotContains(response, 'Start quiz by...')
+
+    def test_if_cache_fills_with_the_ids(self):
+        """
+        Test if the cache is filling up with the questions ids on quiz successful start.
+        """
+        organization_id = 1  # Organization 1
+        user_id = 1  # Admin
+        self.start_quiz(organization_id, "all")  # Redirects us to the first question in the queue and leaves 3 in cache
+        cache_key = 'quiz_user_{}_qset_{}'.format(user_id, organization_id)
+        questions_ids = cache.get(cache_key)
+        self.assertEqual(len(questions_ids), 3)
+
+    def test_if_quiz_continues_after_middle_question_deleted(self):
+        """
+        Test if quiz continues successfuly after the next (but not last) question was deleted.
+        """
+        organization_id = 1  # Organization 1
+        user_id = 1  # admin
+        filter = 'all'
+
+        # Redirects us to the first question in the queue and leaves 3 in cache
+        first_question_response = self.start_quiz(organization_id, filter)
+
+        first_question_id = first_question_response.url.split('/')[3]
+
+        # Has all the questions but the first one (it was alreade popped out)
+        cache_key = 'quiz_user_{}_qset_{}'.format(user_id, organization_id)
+
+        questions_ids = cache.get(cache_key)
+        Question.objects.filter(id=questions_ids[0]).delete()
+        second_question_response = self.create_answer_and_evaluate(user_id, first_question_id, organization_id, filter)
+        second_question_id = second_question_response.url.split('/')[3]
+        self.assertEqual(second_question_id, str(questions_ids[1]))
+
+    @client_user('student01', 'student01')
+    def test_if_quiz_finishes_after_last_question_deleted(self):
+        """
+        Test if quiz redirects user to the organization after the next (and last) question was deleted.
+        """
+        organization_id = 1  # Organization 1
+        user_id = 3  # student01
+        filter = 'mine'
+
+        # Redirects us to the first question in the queue and leaves 3 in cache
+        first_question_response = self.start_quiz(organization_id, filter)
+
+        first_question_id = first_question_response.url.split('/')[3]
+
+        # Has all the questions but the first one (it was alreade popped out)
+        cache_key = 'quiz_user_{}_qset_{}'.format(user_id, organization_id)
+
+        questions_ids = cache.get(cache_key)
+        Question.objects.filter(id=questions_ids[0]).delete()
+
+        # Redirected to the organization instead of inexistent last question in the quiz
+        second_question_response = self.create_answer_and_evaluate(user_id, first_question_id, organization_id, filter)
+        organization_url = reverse('askup:organization', kwargs={'pk': organization_id})
+        self.assertEqual(second_question_response.url, organization_url)

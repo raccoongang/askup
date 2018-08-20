@@ -805,11 +805,14 @@ def get_organization_subjects(organization, user_id):
     return result
 
 
-def get_real_questions_queryset(qset_id):
+def get_real_questions_queryset(qset_id, is_organization_quiz=False):
     """
     Get a questions queryset for the questions type qset (subject) by qset_id.
     """
-    return askup.models.Question.objects.filter(qset_id=qset_id).order_by('-vote_value', 'text')
+    if is_organization_quiz:
+        return askup.models.Question.objects.filter(qset__top_qset_id=qset_id).order_by('-vote_value', 'text')
+    else:
+        return askup.models.Question.objects.filter(qset_id=qset_id).order_by('-vote_value', 'text')
 
 
 def get_tz_past_datetime(**kwargs):
