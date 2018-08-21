@@ -13,9 +13,9 @@
                 {% endif %}
             </h3>
         </div>
-        <div id="all-mine-other-container" class="col-xs-4">
-            <label for="all-mine-other-group" class="all-mine-other-label">
-                <select id="all-mine-other-group" class="select btn-primary form-control all-mine-other-filter">
+        <div id="qset-filter-container" class="col-xs-4">
+            <label for="qset-filter-group" class="qset-filter-label">
+                <select id="qset-filter-group" class="select btn-primary form-control quiz-filter">
                     {% for key, qset_filter in qset_question_filters.items %}
                     <option value="?filter={{ key }}" class="btn btn-primary{% if filter == key %} active" selected="selected{% endif %}" title="{{ qset_filter.1 }}">{{ qset_filter.0 }}</option>
                     {% endfor %}

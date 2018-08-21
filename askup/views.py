@@ -34,6 +34,8 @@ from .utils.general import (
     get_real_questions_queryset,
 )
 from .utils.views import (
+    check_if_organization_has_questions,
+    check_if_qset_is_organization,
     check_if_subscriptions_redirect_needed,
     compose_qset_form,
     compose_question_form_and_create,
@@ -46,10 +48,13 @@ from .utils.views import (
     get_my_subscriptions_context_data,
     get_next_quiz_question,
     get_question_to_answer,
+    get_quiz_question_redirect,
+    get_quiz_start_error_notification_and_redirect,
     get_redirect_on_answer_fail,
     get_user_profile_context_data,
     get_user_profile_rank_list_context_data,
     process_organization,
+    QSET_QUESTION_FILTERS,
     qset_update_form_template,
     question_vote,
     select_user_organization,
@@ -131,6 +136,11 @@ class OrganizationView(
         context['main_title'] = self._current_qset.name
         context['current_qset_name'] = self._current_qset.name
         context['current_qset_id'] = self._current_qset.id
+        context['qset_question_filters'] = QSET_QUESTION_FILTERS
+        context['organization_quiz_base_url'] = reverse(
+            'askup:start_quiz_all', kwargs={'qset_id': self._current_qset.id}
+        )
+        context['has_questions'] = check_if_organization_has_questions(self._current_qset.id)
         self.fill_user_context(context)
         return context
 
@@ -656,7 +666,7 @@ def question_answer(request, question_id, qset_id):
             }
         )
     else:
-        response = validate_answer_form_and_create(form, request, question)
+        response = validate_answer_form_and_create(form, request, question, qset_id)
         return JsonResponse(response)
 
 
@@ -820,6 +830,9 @@ def answer_evaluate(request, qset_id, answer_id, evaluation):
         if next_question_id:
             return get_quiz_question_redirect(qset_id, next_question_id, filter)
 
+    if check_if_qset_is_organization(qset_id):
+        return redirect(reverse('askup:organization', kwargs={'pk': qset_id}))
+
     return redirect(reverse('askup:qset', kwargs={'pk': qset_id}))
 
 
@@ -844,29 +857,13 @@ def start_quiz_all(request, qset_id):
 
     if first_question_id is None:
         return redirect(
-            add_notification_to_url(
-                ('danger', 'This subject is unavailable'),
-                reverse('askup:organizations'),
-            )
+            add_notification_to_url(*get_quiz_start_error_notification_and_redirect(qset_id))
         )
 
     if request.method == 'GET':
         return get_quiz_question_redirect(qset_id, first_question_id, filter)
     else:
         return redirect(reverse('askup:organizations'))
-
-
-def get_quiz_question_redirect(qset_id, next_question_id, filter):
-    """Get quiz question redirect."""
-    return redirect(
-        '{0}?filter={1}'.format(
-            reverse(
-                'askup:question_answer',
-                kwargs={'question_id': next_question_id, 'qset_id': qset_id}
-            ),
-            filter,
-        )
-    )
 
 
 @login_required

@@ -8861,14 +8861,21 @@ a:hover {
 .all-mine-other-filter-wrapper {
     min-width: 444px;
 }
-#all-mine-other-container {
+#qset-filter-container {
     padding: 20px 25px 10px 0px
 }
-#all-mine-other-group {
+#qset-filter-group, #organization-filter-group {
     float: right
 }
+#organization-filter-group {
+    margin: 0;
+    height: 30px;
+}
+#organization-filter-group label {
+    font-size: 28px;
+}
 @media only screen and (max-width: 767px) {
-    #all-mine-other-group {
+    #qset-filter-group, #organization-filter-group {
         float: none !important;
         text-align: center
     }
@@ -9218,9 +9225,12 @@ select.form-control, input.form-control {
     border-color: #5083ae;
 }
 
-#all-mine-other-container a:hover,
-#all-mine-other-container a:active,
-#all-mine-other-container a:focus {
+#qset-filter-container a:hover,
+#qset-filter-container a:active,
+#qset-filter-container a:focus,
+#organization-filter-container a:hover,
+#organization-filter-container a:active,
+#organization-filter-container a:focus {
     text-decoration: none;
     color: white;
 }
@@ -9480,7 +9490,7 @@ select.btn-primary {
     border: 0;
 }
 
-.all-mine-other-filter {
+.quiz-filter {
     position: relative;
     appearance: none;
     -webkit-appearance: none;
@@ -9488,17 +9498,21 @@ select.btn-primary {
     -ms-appearance: none;
 }
 
-.all-mine-other-filter option {
+.quiz-filter option {
     padding: 5px;
 }
 
-.all-mine-other-label {
+.qset-filter-label, .organization-filter-label {
     width: 80%;
     position: relative;
     float: right;
 }
 
-.all-mine-other-label:after {
+.organization-filter-label {
+    margin-bottom: 0;
+}
+
+.qset-filter-label:after, .organization-filter-label:after {
     position: absolute;
     content: '';
     width: 0;
