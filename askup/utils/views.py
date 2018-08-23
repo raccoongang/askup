@@ -2,7 +2,7 @@ import logging
 
 from django.core.cache import cache
 from django.core.handlers.wsgi import WSGIRequest
-from django.db.models import F, Max
+from django.db.models import F, OuterRef, Subquery
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -242,7 +242,7 @@ def question_vote(user, question_id, value):
     return JsonResponse(response)
 
 
-def validate_answer_form_and_create(form, request, question):
+def validate_answer_form_and_create(form, request, question, started_from_qset_id):
     """
     Validate answer form and create an Answer object on success.
 
@@ -267,7 +267,7 @@ def validate_answer_form_and_create(form, request, question):
             question_id=question.id,
             user_id=user.id
         )
-        response['evaluation_urls'] = get_evaluation_urls(request, question.qset_id, answer.id)
+        response['evaluation_urls'] = get_evaluation_urls(request, started_from_qset_id, answer.id)
     else:
         response['result'] = 'error'
 
@@ -350,10 +350,12 @@ def apply_filter_to_queryset(user_id, filter, queryset):
         return queryset.filter(answer__isnull=True)
 
     if filter == 'incorrect':
-        return queryset.annotate(last_answer_date=Max('answer__created_at')).filter(
+        subquery = Answer.objects.filter(question_id=OuterRef('pk')).order_by('-created_at').values('created_at')[:1]
+        queryset = queryset.annotate(last_answer_date=Subquery(subquery)).filter(
             answer__created_at=F('last_answer_date'),
             answer__self_evaluation__lte=1,  # only "wrong" or sort-of "answers"
         )
+        return queryset
 
     if filter == 'last_7_days':
         return queryset.filter(created_at__gte=get_tz_past_datetime(weeks=1))
@@ -377,7 +379,12 @@ def do_user_checks_and_evaluate(user, answer, evaluation, qset_id):
     """
     evaluation_int = int(evaluation)
     is_admin = check_user_has_groups(user, 'admin')
-    user_permitted = Organization.objects.filter(qset__in=[qset_id], users__in=[user.id]).exists()
+    is_organization_qset = check_if_qset_is_organization(qset_id)
+
+    if is_organization_qset:
+        user_permitted = Organization.objects.filter(id=qset_id, users__in=[user.id]).exists()
+    else:
+        user_permitted = Organization.objects.filter(qset__in=[qset_id], users__in=[user.id]).exists()
 
     if not is_admin and not user_permitted:
         return False
@@ -503,8 +510,10 @@ def get_next_quiz_question(user_id, filter, qset_id, is_quiz_start):
     cached_quiz_questions = None if is_quiz_start else cache.get(cache_key)
 
     if cached_quiz_questions is None:
-        questions_queryset = get_real_questions_queryset(qset_id).order_by('?')
+        is_organization_quiz = check_if_qset_is_organization(qset_id)
+        questions_queryset = get_real_questions_queryset(qset_id, is_organization_quiz=is_organization_quiz)
         questions_queryset = apply_filter_to_queryset(user_id, filter, questions_queryset)
+        questions_queryset = questions_queryset.order_by('?')
         cached_quiz_questions = list(questions_queryset.values_list("id", flat=True))
 
     if not cached_quiz_questions:
@@ -597,6 +606,7 @@ def get_question_to_answer(request, question_id):
 
     if not check_user_has_groups(request.user, 'admin'):
         question_queryset = question_queryset.filter(qset__top_qset__users__id=request.user.id)
+
     return question_queryset.first()
 
 
@@ -638,3 +648,59 @@ def check_if_subscriptions_redirect_needed(is_admin, is_teacher, user_id, reques
     :return: bool
     """
     return (is_admin or is_teacher) and user_id == request_user_id
+
+
+def check_if_organiation_quiz(request, qset_id):
+    """
+    Check if this is the organization quiz.
+    """
+    if request.GET.get('is_organization_quiz', False):
+        return True
+
+    return check_if_qset_is_organization(qset_id)
+
+
+def check_if_qset_is_organization(qset_id):
+    """
+    Check if qset is organization by qset_id.
+    """
+    organization = Organization.objects.filter(id=qset_id).first()
+    return True if organization else False
+
+
+def get_quiz_start_error_notification_and_redirect(qset_id):
+    """
+    Get quiz start error notification tuple.
+    """
+    is_organization_qset = check_if_qset_is_organization(qset_id)
+
+    if is_organization_qset:
+        notification = ('danger', 'There is no questions under this filter')
+        reverse_url = reverse('askup:organization', kwargs={'pk': qset_id})
+    else:
+        notification = ('danger', 'This subject is unavailable')
+        reverse_url = reverse('askup:organizations')
+
+    return (notification, reverse_url)
+
+
+def get_quiz_question_redirect(qset_id, next_question_id, filter):
+    """Get quiz question redirect."""
+    return redirect(
+        '{0}?filter={1}'.format(
+            reverse(
+                'askup:question_answer',
+                kwargs={'question_id': next_question_id, 'qset_id': qset_id}
+            ),
+            filter,
+        )
+    )
+
+
+def check_if_organization_has_questions(organization_id):
+    """
+    Check if organization have a questions in it's subjects.
+
+    :return: bool - True if has and False if hasn't
+    """
+    return Question.objects.filter(qset__top_qset_id=organization_id).exists()

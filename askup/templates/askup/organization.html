@@ -22,8 +22,22 @@
             <h5>Subjects within {{main_title}}:</h5>
         </div>
         {% if is_qset_creator %}
-        <div>
-            <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">New subject</a>
+        <div class="row">
+            <div class="col-xs-8">
+                <a class="btn btn-primary btn-sm" id="new-qset" data-toggle="modal" data-target="#modal-new-qset">New subject</a>
+            </div>
+            <div id="organization-filter-container" class="col-xs-4">
+                {% if has_questions %}
+                <label for="organization-filter-group" class="organization-filter-label">
+                    <select id="organization-filter-group" class="select btn-primary form-control quiz-filter">
+                        <option value="" class="btn btn-primary active" selected="selected" title="Select a filter to quiz by...">Start quiz by...</option>
+                        {% for key, qset_filter in qset_question_filters.items %}
+                        <option value="{{ organization_quiz_base_url }}?filter={{ key }}&quiz_start=1&is_organization=1" class="btn btn-primary" title="{{ qset_filter.1 }}">{{ qset_filter.0 }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
         <div class="qset-list">
