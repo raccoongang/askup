@@ -288,7 +288,10 @@ class Domain(models.Model):
         on_delete=models.CASCADE,
         null=True
     )
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, unique=False)
+
+    class Meta:
+        unique_together = ('organization', 'name')
 
 
 class QuestionQuerySet(models.query.QuerySet):
